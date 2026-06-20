@@ -1,0 +1,16 @@
+{
+  "name": "@visualplan/core",
+  "version": "0.1.0",
+  "description": "Isomorphic component vocabulary (zod schemas + catalog) shared by the visualplan CLI and runtime",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "zod": "^4.4.3"
+  }
+}

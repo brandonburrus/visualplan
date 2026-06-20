@@ -13,6 +13,10 @@ coverage
 *.lcov
 .nyc_output
 
+# Vendored workspace source copied into the publishable CLI package at pack time
+/packages/cli/runtime/
+/packages/cli/core/
+
 # TypeScript cache
 *.tsbuildinfo
 

@@ -1,8 +1,8 @@
 # VisualPlan
 
-A Node CLI that renders a plan written as MDX into a polished, self-contained HTML
-page, so Claude can present plans as scannable visuals (diagrams, charts, file-change
-maps, option comparisons) instead of walls of terminal text.
+A pnpm monorepo for `visualplan`: a Node CLI that renders a plan written as MDX into a
+polished, self-contained HTML page, so Claude can present plans as scannable visuals
+(diagrams, charts, file-change maps, option comparisons) instead of walls of terminal text.
 
 ## What it does
 
@@ -14,62 +14,81 @@ maps, option comparisons) instead of walls of terminal text.
 - `visualplan components` prints the component vocabulary cheat-sheet.
 
 Plans use a fixed, tiny component vocabulary (`Phase`, `FileTree`, `Chart`, `Compare`,
-`Callout`, and ` ```mermaid ` fences) with no imports — the components are auto-injected
-into MDX scope. A plan starts with a `# Title` heading; there is no frontmatter. `Phase`
-sections render as a numbered vertical timeline; there is no sidebar.
+`Callout`, `Questions`, `Checklist`, and ` ```mermaid ` fences) with no imports — the
+components are auto-injected into MDX scope. A plan starts with a `# Title` heading; there
+is no frontmatter. `Phase` sections render as a numbered vertical timeline; no sidebar.
 
-## Structure
+## Workspace layout
 
-- `src/` — the Node CLI (built with tsup to `dist/index.js`, the `bin`).
-  - `index.ts` — commander dispatch. `commands/` — one file per command.
-  - `build/compile.ts` — Vite orchestration for render + watch. `build/check.ts` — static validator.
-- `runtime/` — the browser/React code, shipped as **source** (see Critical Constraints) and
-  compiled at render time by Vite. Components, `Layout.tsx`, `main.tsx` (build entry),
-  `index.tsx` (MDX scope + `mount`), `theme.css`.
-  - `runtime/shared/catalog.ts` — the component vocabulary's single source of truth.
-- `templates/example.mdx` — exercises every component; used by the integration tests.
-- `tests/` — component (jsdom), check, and compile (node env) tests.
-- `skill/visual-plan/` — the Claude skill teaching the vocabulary (install into `~/.claude/skills`).
+`pnpm-workspace.yaml` globs `packages/*`. Three packages, one published:
+
+- `packages/cli` — **the only published package** (`visualplan`). The Node CLI (commander
+  dispatch + Vite/MDX build), built with tsup to `dist/index.js` (the `bin`). Holds
+  `templates/example.mdx` (used by the integration tests) and `scripts/vendor.mjs`.
+- `packages/runtime` — `@visualplan/runtime` (private). The browser/React code, shipped as
+  **source** and compiled at render time by Vite. Components, `Layout.tsx`, `main.tsx`,
+  `index.tsx` (MDX scope + `mount`), `theme.css`, `fullscreen.ts`.
+- `packages/core` — `@visualplan/core` (private). The isomorphic component vocabulary
+  (zod schemas + `CATALOG`); imported by both the runtime and the CLI.
+- `skill/visual-plan/` — the Claude skill (a top-level sibling, not a package).
+
+## Publishing (single package, vendored)
+
+Only `visualplan` is published; `core` and `runtime` are private and **vendored** into the
+tarball, because the runtime is compiled from source at render time and must physically ship.
+
+- `cli` depends on the third-party packages the vendored runtime needs at render time
+  (react, recharts, beautiful-mermaid, tabler, mdx, vite, ...) as real `dependencies`, and
+  references `@visualplan/{core,runtime}` only as `workspace:*` **devDependencies**.
+- `tsup` bundles `@visualplan/core` into `dist/` (`noExternal`) for the Node check/components
+  path. `compile.ts` resolves the runtime in dev (workspace) or prod (vendored) and aliases
+  `@visualplan/core` to the core source in the Vite build either way.
+- `prepack` runs `scripts/vendor.mjs` (copies `packages/runtime` -> `cli/runtime` and the core
+  entry -> `cli/core/index.ts`, both git-ignored) then `tsup`. `files` ships `dist`, `runtime`,
+  `core`. **Publish with `pnpm publish` (from `packages/cli`)** so the `workspace:*` protocol is
+  rewritten; plain `npm publish` would leave it literal.
 
 ## Conventions
 
 - TypeScript ESM, biome (`single` quotes, no semicolons), pnpm. Build: tsup. Tests: vitest.
-- Two tsconfigs: `tsconfig.json` (Node CLI, NodeNext) and `tsconfig.runtime.json` (React/DOM/JSX).
-  `pnpm typecheck` runs both. `pnpm test` runs vitest. `pnpm check` runs biome.
+- `tsconfig.base.json` holds shared strict options; each package extends it with its own
+  `tsconfig.json` (core/cli are NodeNext, runtime is Bundler + DOM/JSX). `pnpm typecheck`
+  runs `tsc` in every package. `pnpm test` runs one vitest config with a project per package.
+  `pnpm check` runs biome. `pnpm build` builds the CLI.
 - No emojis or em/en dashes in code, output, or docs.
 
 ## Critical Constraints
 
 - **Render uses Vite with esbuild's automatic JSX and NO `@vitejs/plugin-react`.** This is
   deliberate: plugin-react's babel transform skips `node_modules`, so the shipped runtime
-  `.tsx` would fail to compile once the CLI is installed. Vite's `root` is the shipped
-  `runtime/` dir and the user's MDX is injected via the `virtual:plan` resolve alias. Do not
-  add plugin-react or move the runtime out of the package.
-- **`runtime/shared/catalog.ts` is imported by both the browser runtime and the Node CLI.**
-  Keep it isomorphic: no React, recharts, or mermaid imports. It is the only place the
-  component vocabulary (enums, schemas, catalog) is defined.
-- **`check` is static (AST-based).** It validates string-literal enum props (e.g. `status`,
-  `type`) and flags unknown components. Complex props (`data`, `files`, `options` arrays) are
-  validated at render time by the zod schemas. Do not claim `check` catches every error.
+  `.tsx` would fail to compile once the CLI is installed. Vite's `root` is the runtime dir and
+  the user's MDX is injected via the `virtual:plan` resolve alias. Do not add plugin-react.
+- **`@visualplan/core` is imported by both the runtime and the Node CLI.** Keep it isomorphic:
+  no React, recharts, or mermaid imports. It is the only place the vocabulary is defined.
+- **`check` is static (AST-based).** It validates string-literal enum props and flags unknown
+  components; complex array props are validated at render time by zod. Do not overclaim it.
 - **Single-file output cannot be verified by scanning for external `<script src>`/`<link>`
-  tags** — the React/Vite bundles contain those as JS string literals. Assert the positive
-  (inline `<script type="module">` and `<style>` with content) instead.
-- Node-side tests (`check`, `compile`) must declare `// @vitest-environment node`; under the
-  default jsdom env `import.meta.url` is an `http:` URL and `fileURLToPath` throws.
+  tags** — the bundles contain those as JS string literals. Assert the positive (inline
+  `<script type="module">` and `<style>` with content) instead.
+- Node-side tests (`check`, `compile`, `render`) declare `// @vitest-environment node`; under
+  jsdom `import.meta.url` is an `http:` URL and `fileURLToPath` throws.
+- **The vendored `cli/runtime` and `cli/core` are generated** (git-ignored, written by
+  `vendor.mjs`). Never edit them; edit `packages/runtime` / `packages/core` and re-vendor.
 
 ## Key Decisions
 
-- 2026-06-20: Plans authored as MDX with a fixed ~6-component vocabulary, rendered to a
+- 2026-06-20: Plans authored as MDX with a fixed component vocabulary, rendered to a
   self-contained HTML page. Why: visual, scannable plans without per-plan toolchain setup.
-- 2026-06-20: Mermaid (one ` ```mermaid ` fence) covers the diagram needs instead of bespoke
-  components. Why: text-based, reliable for Claude, one dep covers many shapes.
-- 2026-06-20: Diagrams render via `beautiful-mermaid` (`renderMermaidSVG`), replacing the `mermaid`
-  package. Why: synchronous and DOM-free, so it renders in SSR/static HTML, themes from our CSS
-  vars (no scheme hack), and is far lighter. Tradeoff: no gantt/pie support.
-- 2026-06-20: Fenced code is highlighted by `rehype-expressive-code` (build-time), with a
-  `remarkMermaid` plugin extracting mermaid fences BEFORE it. Why: file-title frames and dual
-  light/dark; the remark step keeps mermaid from being highlighted. Replaced highlight.js.
-- 2026-06-20: Icons use `@tabler/icons-react` project-wide (one family). Why: the design standard
-  forbids hand-rolled icon paths / text glyphs.
-- 2026-06-20: Render with Vite root=`runtime/` + esbuild JSX, MDX via `virtual:plan` alias.
-  Why: avoids plugin-react's node_modules transpile gap when the CLI is installed.
+- 2026-06-20: Mermaid (one ` ```mermaid ` fence) covers diagrams instead of bespoke components.
+  Why: text-based, reliable for Claude, one dep covers many shapes.
+- 2026-06-20: Diagrams render via `beautiful-mermaid` (`renderMermaidSVG`). Why: synchronous,
+  DOM-free (renders in static HTML), themes from our CSS vars. Tradeoff: no gantt/pie.
+- 2026-06-20: Fenced code highlighted by `rehype-expressive-code` (build-time), with a
+  `remarkMermaid` plugin extracting mermaid fences BEFORE it. Why: file-title frames + dual
+  light/dark; the remark step keeps mermaid out of the highlighter. Replaced highlight.js.
+- 2026-06-20: Icons use `@tabler/icons-react` project-wide. Why: design standard forbids
+  hand-rolled icon paths / text glyphs.
+- 2026-06-20: Monorepo with one published package (`visualplan`); `core` and `runtime` are
+  private and vendored into the tarball at pack time. Why: the runtime ships as source, so a
+  single self-contained published package must physically contain it; the split keeps the
+  catalog and React surface as their own units without three npm entries.
