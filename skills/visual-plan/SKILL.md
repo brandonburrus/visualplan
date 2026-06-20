@@ -56,4 +56,9 @@ Begin the file with a single `# Heading`; it becomes the plan title. There is no
   then `<Phase>` sections. Put risks and key decisions in `<Callout>`s, not buried in prose.
 - Prefer a diagram or a `<FileTree>` over describing structure in sentences.
 - Keep prose tight inside phases; the visual is the point.
+- Keep `<Chart>` labels short (a word or two). Long bar/line x-axis labels get dropped or
+  crowded; put the detail in the title or the surrounding prose, not the label.
+- For mermaid, prefer top-down (`flowchart TD`) once a diagram has many nodes. A very wide
+  left-to-right (`LR`) chain shrinks to fit the page and becomes hard to read; split large
+  flows into a few smaller diagrams instead of one sprawling one.
 - Always `check` before presenting, so the user never sees a broken render.

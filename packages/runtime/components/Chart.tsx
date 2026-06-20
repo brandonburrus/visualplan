@@ -35,6 +35,14 @@ const COLORS = [
 ]
 
 const AXIS_TICK = { fill: 'var(--vp-muted)', fontSize: 12 }
+
+/** Compact large axis numbers (100000 -> 100k) so y-axis ticks never clip. */
+function formatTick(value: number): string {
+  const abs = Math.abs(value)
+  if (abs >= 1_000_000) return `${+(value / 1_000_000).toFixed(1)}M`
+  if (abs >= 1_000) return `${+(value / 1_000).toFixed(1)}k`
+  return `${value}`
+}
 const TOOLTIP_STYLE = {
   background: 'var(--vp-surface)',
   border: '1px solid var(--vp-border)',
@@ -55,9 +63,14 @@ export function Chart(props: ChartProps) {
             <BarChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
               <CartesianGrid strokeDasharray='3 3' stroke='var(--vp-border)' vertical={false} />
               <XAxis dataKey='label' tick={AXIS_TICK} stroke='var(--vp-border)' />
-              <YAxis allowDecimals tick={AXIS_TICK} stroke='var(--vp-border)' />
+              <YAxis
+                allowDecimals
+                tick={AXIS_TICK}
+                stroke='var(--vp-border)'
+                tickFormatter={formatTick}
+              />
               <Tooltip cursor={{ fill: 'var(--vp-surface-2)' }} contentStyle={TOOLTIP_STYLE} />
-              <Bar dataKey='value' radius={[4, 4, 0, 0]} maxBarSize={64}>
+              <Bar dataKey='value' radius={[4, 4, 0, 0]} maxBarSize={64} isAnimationActive={false}>
                 {data.map((point, index) => (
                   <Cell key={point.label} fill={COLORS[index % COLORS.length]} />
                 ))}
@@ -67,7 +80,12 @@ export function Chart(props: ChartProps) {
             <LineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
               <CartesianGrid strokeDasharray='3 3' stroke='var(--vp-border)' vertical={false} />
               <XAxis dataKey='label' tick={AXIS_TICK} stroke='var(--vp-border)' />
-              <YAxis allowDecimals tick={AXIS_TICK} stroke='var(--vp-border)' />
+              <YAxis
+                allowDecimals
+                tick={AXIS_TICK}
+                stroke='var(--vp-border)'
+                tickFormatter={formatTick}
+              />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
               <Line
                 type='monotone'
@@ -75,12 +93,20 @@ export function Chart(props: ChartProps) {
                 stroke={COLORS[0]}
                 strokeWidth={2.5}
                 dot={{ fill: COLORS[0], r: 3 }}
+                isAnimationActive={false}
               />
             </LineChart>
           ) : (
             <PieChart>
               <Tooltip contentStyle={TOOLTIP_STYLE} />
-              <Pie data={data} dataKey='value' nameKey='label' outerRadius={88} stroke='none'>
+              <Pie
+                data={data}
+                dataKey='value'
+                nameKey='label'
+                outerRadius={88}
+                stroke='none'
+                isAnimationActive={false}
+              >
                 {data.map((point, index) => (
                   <Cell key={point.label} fill={COLORS[index % COLORS.length]} />
                 ))}

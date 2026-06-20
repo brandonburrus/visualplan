@@ -31,6 +31,13 @@ Either way, the Vite build aliases `@visualplan/core` to the resolved core sourc
 user's plan via `virtual:plan`. `server.fs.strict` is off because the runtime, core, and plan
 span sibling dirs in the monorepo.
 
+The build also aliases `react/jsx-runtime`, `react/jsx-dev-runtime`, and `@mdx-js/react` to the
+CLI's own copies (via `require.resolve`). The plan `.mdx` is an external absolute path, so
+@mdx-js/rollup's emitted imports would otherwise resolve relative to the plan's own directory,
+which usually has no `node_modules` (e.g. a global install rendering `~/plan.mdx`). Without these
+aliases, rendering a plan outside a node project fails with "failed to resolve react/jsx-runtime".
+Do not remove them.
+
 ## Constraints
 
 - `@visualplan/{core,runtime}` are `workspace:*` **devDependencies** here (dev/test/vendor only).

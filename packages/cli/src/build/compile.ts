@@ -109,7 +109,20 @@ function baseConfig(paths: RuntimePaths, mdxPath: string): InlineConfig {
     root: paths.runtimeDir,
     configFile: false,
     logLevel: 'silent',
-    resolve: { alias: { 'virtual:plan': mdxPath, '@visualplan/core': paths.coreEntry } },
+    resolve: {
+      alias: {
+        'virtual:plan': mdxPath,
+        '@visualplan/core': paths.coreEntry,
+        // The plan .mdx lives anywhere on disk, often outside any node project, but
+        // @mdx-js/rollup makes it import react/jsx-runtime and @mdx-js/react. Those
+        // are attributed to the plan's own directory, which usually has no
+        // node_modules, so resolve them from the CLI's install instead. Without this
+        // a plan in a bare directory fails with "failed to resolve react/jsx-runtime".
+        'react/jsx-runtime': require.resolve('react/jsx-runtime'),
+        'react/jsx-dev-runtime': require.resolve('react/jsx-dev-runtime'),
+        '@mdx-js/react': require.resolve('@mdx-js/react'),
+      },
+    },
     esbuild: { jsx: 'automatic', jsxImportSource: 'react' },
     plugins: [mdxPlugin()],
     // The runtime, core, and the user's plan span sibling dirs (and a hoisted
