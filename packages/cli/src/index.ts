@@ -5,7 +5,7 @@ import { runComponents } from './commands/components.js'
 import { runRender, type RenderOptions } from './commands/render.js'
 
 const program = new Command('vplan')
-  .description('Render Claude plans as visual MDX pages instead of walls of text')
+  .description("Render an AI agent's plans as visual MDX pages instead of walls of text")
   .version(packageJson.version)
 
 program

@@ -1,7 +1,7 @@
 # VisualPlan
 
 A pnpm monorepo for `vplan`: a Node CLI that renders a plan written as MDX into a
-polished, self-contained HTML page, so Claude can present plans as scannable visuals
+polished, self-contained HTML page, so an AI agent can present plans as scannable visuals
 (diagrams, charts, file-change maps, option comparisons) instead of walls of terminal text.
 
 ## What it does
@@ -30,7 +30,7 @@ is no frontmatter. `Phase` sections render as a numbered vertical timeline; no s
   `index.tsx` (MDX scope + `mount`), `theme.css`, `fullscreen.ts`.
 - `packages/core` — `@visualplan/core` (private). The isomorphic component vocabulary
   (zod schemas + `CATALOG`); imported by both the runtime and the CLI.
-- `skills/visual-plan/` — the Claude skill (a top-level sibling, not a package). The plural
+- `skills/visual-plan/` — the agent skill (a top-level sibling, not a package). The plural
   `skills/` name is required for the skills.sh CLI (`npx skills add ...`) to discover it.
 
 ## Publishing (single package, vendored)
@@ -81,7 +81,7 @@ tarball, because the runtime is compiled from source at render time and must phy
 - 2026-06-20: Plans authored as MDX with a fixed component vocabulary, rendered to a
   self-contained HTML page. Why: visual, scannable plans without per-plan toolchain setup.
 - 2026-06-20: Mermaid (one ` ```mermaid ` fence) covers diagrams instead of bespoke components.
-  Why: text-based, reliable for Claude, one dep covers many shapes.
+  Why: text-based, reliable for an agent to author, one dep covers many shapes.
 - 2026-06-20: Diagrams render via `beautiful-mermaid` (`renderMermaidSVG`). Why: synchronous,
   DOM-free (renders in static HTML), themes from our CSS vars. Tradeoff: no gantt/pie.
 - 2026-06-20: Fenced code highlighted by `rehype-expressive-code` (build-time), with a

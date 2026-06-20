@@ -119,7 +119,7 @@ export const CATALOG: readonly CatalogEntry[] = [
   {
     name: 'Questions',
     summary:
-      'Open questions you (Claude) want the reader to weigh in on before building, as a highlighted panel. Title defaults to "Open questions"; override with title.',
+      'Open questions you want the reader to weigh in on before building, as a highlighted panel. Title defaults to "Open questions"; override with title.',
     staticEnums: {},
     example:
       '<Questions items={["Should refresh tokens rotate on every use?", "Is a 15-minute access-token TTL acceptable?"]} />',

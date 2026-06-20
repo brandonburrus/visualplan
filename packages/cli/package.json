@@ -1,7 +1,7 @@
 {
   "name": "vplan",
   "version": "0.1.0",
-  "description": "Render Claude's plans as visual MDX pages instead of walls of text",
+  "description": "Render an AI agent's plans as visual MDX pages instead of walls of text",
   "author": "Brandon Burrus <brandon@burrus.io>",
   "license": "MIT",
   "type": "module",
