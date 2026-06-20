@@ -7,6 +7,9 @@ description: Use this skill when writing an implementation or design plan that w
 
 Render a plan as a visual MDX page instead of a wall of text, using the `vplan` CLI.
 
+> **If the `vplan` command is not found**, install it globally first: `npm i -g vplan`
+> (published on npm). Re-run the failed command afterward.
+
 ## Workflow
 
 1. Write the plan to a `.mdx` file. Start with a `# Title` heading (no frontmatter), then use
