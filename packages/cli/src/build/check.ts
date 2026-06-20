@@ -51,14 +51,22 @@ export async function checkPlan(mdxPath: string): Promise<CheckIssue[]> {
     const vfileError = error as {
       line?: number
       column?: number
+      place?: { line?: number; column?: number; start?: { line?: number; column?: number } }
       reason?: string
       message?: string
     }
+    const message = vfileError.reason ?? vfileError.message ?? 'MDX failed to compile'
+    // Some MDX errors (e.g. an unclosed JSX tag) carry no structured position; the
+    // location is embedded in the message as "(line:col-line:col)". Fall back to the
+    // `place` point, then to the message, so the file:line:col prefix is accurate.
+    const placeStart = vfileError.place?.start ?? vfileError.place
+    const fromMessage = message.match(/\((\d+):(\d+)/)
     return [
       {
-        line: vfileError.line ?? 1,
-        column: vfileError.column ?? 1,
-        message: vfileError.reason ?? vfileError.message ?? 'MDX failed to compile',
+        line: vfileError.line ?? placeStart?.line ?? (fromMessage ? Number(fromMessage[1]) : 1),
+        column:
+          vfileError.column ?? placeStart?.column ?? (fromMessage ? Number(fromMessage[2]) : 1),
+        message,
       },
     ]
   }
