@@ -47,8 +47,13 @@ jobs:
           npm version "$VERSION" --no-git-tag-version --allow-same-version
         working-directory: packages/cli
 
-      # prepack vendors runtime + core and runs tsup; pnpm rewrites the workspace
-      # protocol. --no-git-checks is required because the version bump dirties the tree.
-      - name: Publish to npm (OIDC trusted publishing)
-        run: pnpm publish --no-git-checks --access public
+      # pnpm pack runs prepack (vendors runtime + core, runs tsup) and rewrites the
+      # workspace protocol into the tarball's manifest. We then publish the tarball
+      # with npm directly: npm performs the OIDC trusted-publishing handshake, whereas
+      # pnpm publish shells out to npm in a way that bypasses OIDC (ENEEDAUTH).
+      - name: Pack the publishable tarball
+        run: pnpm pack --pack-destination "$RUNNER_TEMP"
         working-directory: packages/cli
+
+      - name: Publish to npm (OIDC trusted publishing)
+        run: npm publish "$RUNNER_TEMP"/vplan-*.tgz --access public
