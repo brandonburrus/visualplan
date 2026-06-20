@@ -119,8 +119,50 @@ body {
 
 .vp-main a {
   color: var(--vp-accent);
-  text-decoration-color: var(--vp-border-strong);
+  text-decoration-color: var(--vp-muted);
   text-underline-offset: 2px;
+}
+
+/* GFM tables: row-line style (no outer box, no zebra), header in muted. */
+.vp-main table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  font-size: 0.9rem;
+}
+
+.vp-main th,
+.vp-main td {
+  padding: 0.5rem 0.85rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--vp-border);
+}
+
+.vp-main thead th {
+  font-weight: 600;
+  color: var(--vp-muted);
+  border-bottom-color: var(--vp-border-strong);
+}
+
+.vp-main tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Blockquote: a neutral (non-semantic) quote, not a colored callout. */
+.vp-main blockquote {
+  margin: 1.25rem 0;
+  padding: 0.1rem 0 0.1rem 1rem;
+  border-left: 2px solid var(--vp-border-strong);
+  color: var(--vp-muted);
+}
+
+.vp-main blockquote :first-child {
+  margin-top: 0;
+}
+
+.vp-main blockquote :last-child {
+  margin-bottom: 0;
 }
 
 :focus-visible {
