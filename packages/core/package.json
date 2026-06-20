@@ -1,7 +1,7 @@
 {
   "name": "@visualplan/core",
   "version": "0.1.0",
-  "description": "Isomorphic component vocabulary (zod schemas + catalog) shared by the visualplan CLI and runtime",
+  "description": "Isomorphic component vocabulary (zod schemas + catalog) shared by the vplan CLI and runtime",
   "license": "MIT",
   "private": true,
   "type": "module",

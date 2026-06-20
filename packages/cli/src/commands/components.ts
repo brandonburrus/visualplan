@@ -1,6 +1,6 @@
 import { CATALOG } from '@visualplan/core'
 
-/** `visualplan components` — print the component vocabulary cheat-sheet. */
+/** `vplan components` — print the component vocabulary cheat-sheet. */
 export function runComponents(): void {
   const lines: string[] = [
     'VisualPlan components — use these directly in a plan .mdx (no imports):',

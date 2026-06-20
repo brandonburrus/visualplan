@@ -1,7 +1,7 @@
 {
-  "name": "visualplan-monorepo",
+  "name": "vplan-monorepo",
   "version": "0.1.0",
-  "description": "Monorepo for the visualplan CLI and its private runtime/core packages",
+  "description": "Monorepo for the vplan CLI and its private runtime/core packages",
   "author": "Brandon Burrus <brandon@burrus.io>",
   "license": "MIT",
   "private": true,
@@ -16,7 +16,7 @@
     ]
   },
   "scripts": {
-    "build": "pnpm --filter visualplan build",
+    "build": "pnpm --filter vplan build",
     "typecheck": "pnpm -r typecheck",
     "lint": "biome lint .",
     "format": "biome format --write .",

@@ -1,22 +1,22 @@
 ---
 name: visual-plan
-description: Use this skill when writing an implementation or design plan that would benefit from visuals instead of a wall of text, especially in plan mode. Authors the plan as an MDX file and renders it to a self-contained HTML page with the `visualplan` CLI, using a fixed component vocabulary (Phase, FileTree, Chart, Compare, Callout, and mermaid diagrams). Use when the user says "make a visual plan", "render this plan", "show me the plan", or asks for a plan with diagrams/charts. Do not use for prose-only notes or when no `visualplan` CLI is available.
+description: Use this skill when writing an implementation or design plan that would benefit from visuals instead of a wall of text, especially in plan mode. Authors the plan as an MDX file and renders it to a self-contained HTML page with the `vplan` CLI, using a fixed component vocabulary (Phase, FileTree, Chart, Compare, Callout, and mermaid diagrams). Use when the user says "make a visual plan", "render this plan", "show me the plan", or asks for a plan with diagrams/charts. Do not use for prose-only notes or when no `vplan` CLI is available.
 ---
 
 # Visual Plan
 
-Render a plan as a visual MDX page instead of a wall of text, using the `visualplan` CLI.
+Render a plan as a visual MDX page instead of a wall of text, using the `vplan` CLI.
 
 ## Workflow
 
 1. Write the plan to a `.mdx` file. Start with a `# Title` heading (no frontmatter), then use
    the components below. You never write `import` statements; the components are always in scope.
-2. Validate before showing the user: `visualplan check <file>.mdx`. Fix any reported
+2. Validate before showing the user: `vplan check <file>.mdx`. Fix any reported
    `file:line:col` issues (it names the valid values for bad enums and flags unknown components).
-3. Render: `visualplan <file>.mdx` opens a self-contained HTML page. Use
-   `visualplan <file>.mdx --watch` to iterate live while you refine the plan.
+3. Render: `vplan <file>.mdx` opens a self-contained HTML page. Use
+   `vplan <file>.mdx --watch` to iterate live while you refine the plan.
 
-Run `visualplan components` anytime for the exact prop signatures.
+Run `vplan components` anytime for the exact prop signatures.
 
 ## Title
 

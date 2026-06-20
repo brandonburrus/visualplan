@@ -1,17 +1,17 @@
 # VisualPlan
 
-A pnpm monorepo for `visualplan`: a Node CLI that renders a plan written as MDX into a
+A pnpm monorepo for `vplan`: a Node CLI that renders a plan written as MDX into a
 polished, self-contained HTML page, so Claude can present plans as scannable visuals
 (diagrams, charts, file-change maps, option comparisons) instead of walls of terminal text.
 
 ## What it does
 
-- `visualplan <file.mdx>` (alias `render`) compiles a plan to a single self-contained
+- `vplan <file.mdx>` (alias `render`) compiles a plan to a single self-contained
   `<file>.plan.html` and opens it. `--watch` starts a hot-reloading dev server instead;
   `--out <path>` sets the output; `--no-open` suppresses the browser.
-- `visualplan check <file.mdx>` validates a plan without rendering (the self-correction
+- `vplan check <file.mdx>` validates a plan without rendering (the self-correction
   loop): MDX compile errors plus static component checks, printed as `file:line:col`.
-- `visualplan components` prints the component vocabulary cheat-sheet.
+- `vplan components` prints the component vocabulary cheat-sheet.
 
 Plans use a fixed, tiny component vocabulary (`Phase`, `FileTree`, `Chart`, `Compare`,
 `Callout`, `Questions`, `Checklist`, and ` ```mermaid ` fences) with no imports — the
@@ -22,7 +22,7 @@ is no frontmatter. `Phase` sections render as a numbered vertical timeline; no s
 
 `pnpm-workspace.yaml` globs `packages/*`. Three packages, one published:
 
-- `packages/cli` — **the only published package** (`visualplan`). The Node CLI (commander
+- `packages/cli` — **the only published package** (`vplan`). The Node CLI (commander
   dispatch + Vite/MDX build), built with tsup to `dist/index.js` (the `bin`). Holds
   `templates/example.mdx` (used by the integration tests) and `scripts/vendor.mjs`.
 - `packages/runtime` — `@visualplan/runtime` (private). The browser/React code, shipped as
@@ -34,7 +34,7 @@ is no frontmatter. `Phase` sections render as a numbered vertical timeline; no s
 
 ## Publishing (single package, vendored)
 
-Only `visualplan` is published; `core` and `runtime` are private and **vendored** into the
+Only `vplan` is published; `core` and `runtime` are private and **vendored** into the
 tarball, because the runtime is compiled from source at render time and must physically ship.
 
 - `cli` depends on the third-party packages the vendored runtime needs at render time
@@ -88,7 +88,10 @@ tarball, because the runtime is compiled from source at render time and must phy
   light/dark; the remark step keeps mermaid out of the highlighter. Replaced highlight.js.
 - 2026-06-20: Icons use `@tabler/icons-react` project-wide. Why: design standard forbids
   hand-rolled icon paths / text glyphs.
-- 2026-06-20: Monorepo with one published package (`visualplan`); `core` and `runtime` are
+- 2026-06-20: Monorepo with one published package (`vplan`); `core` and `runtime` are
   private and vendored into the tarball at pack time. Why: the runtime ships as source, so a
   single self-contained published package must physically contain it; the split keeps the
   catalog and React surface as their own units without three npm entries.
+- 2026-06-20: Published npm name and CLI command are `vplan`, not `visualplan`. Why: npm's
+  similarity filter rejects `visualplan` as too close to the existing `visual-plan` package.
+  The product display name (VisualPlan) and the private `@visualplan/*` scope are unaffected.

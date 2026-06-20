@@ -15,7 +15,7 @@ function defaultOutPath(absMdx: string): string {
   return join(dirname(absMdx), `${stem}.plan.html`)
 }
 
-/** `visualplan render <file>` — validate, then build a static page or start a watch server. */
+/** `vplan render <file>` — validate, then build a static page or start a watch server. */
 export async function runRender(file: string, options: RenderOptions): Promise<void> {
   const absMdx = resolve(file)
 

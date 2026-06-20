@@ -1,7 +1,7 @@
 # packages/runtime (@visualplan/runtime)
 
 The browser-side React code that renders a compiled MDX plan. Private package, shipped as
-**source** by vendoring it into the published `visualplan` CLI tarball (see the root AGENTS.md
+**source** by vendoring it into the published `vplan` CLI tarball (see the root AGENTS.md
 "Publishing" section), and compiled at render time by the CLI's Vite build, not prebuilt. See
 the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
 

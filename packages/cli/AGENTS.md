@@ -1,6 +1,6 @@
-# packages/cli (visualplan)
+# packages/cli (vplan)
 
-The published package: the `visualplan` Node CLI (commander dispatch + the Vite/MDX build that
+The published package: the `vplan` Node CLI (commander dispatch + the Vite/MDX build that
 renders a plan to a self-contained HTML page). Built with tsup to `dist/index.js` (the `bin`).
 
 ## Structure

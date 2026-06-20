@@ -7,7 +7,7 @@ CLI's `check` and `components` commands. One file: `src/index.ts`.
 ## Critical Constraints
 
 - **Stay isomorphic.** This module is imported by BOTH the browser runtime (`@visualplan/runtime`,
-  for render-time validation) and the Node CLI (`visualplan`, for static `check` and the catalog
+  for render-time validation) and the Node CLI (`vplan`, for static `check` and the catalog
   printer). It must have **no** React, recharts, or mermaid imports. `zod` is the only dependency.
 - The package is private and never published on its own. The CLI bundles it into `dist` (tsup
   `noExternal`) for the Node path, and vendors its source (`-> cli/core/index.ts`) for the Vite

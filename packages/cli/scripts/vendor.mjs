@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 
 /**
  * Vendor the private workspace packages into this (published) package so the
- * single `visualplan` tarball is self-contained.
+ * single `vplan` tarball is self-contained.
  *
  * The runtime is compiled from SOURCE by Vite at render time, so the published
  * package must physically contain those source files plus the core catalog the

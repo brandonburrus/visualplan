@@ -8,7 +8,7 @@ export function printIssues(file: string, issues: CheckIssue[]): void {
   }
 }
 
-/** `visualplan check <file>` — validate a plan's MDX without rendering it. */
+/** `vplan check <file>` — validate a plan's MDX without rendering it. */
 export async function runCheck(file: string): Promise<void> {
   const issues = await checkPlan(resolve(file))
   if (issues.length === 0) {
