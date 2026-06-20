@@ -1,0 +1,46 @@
+name: Publish
+
+# Publish the vplan CLI to npm when a GitHub release is published. The package
+# version is taken from the release tag (e.g. tag "0.2.0" -> version 0.2.0), set
+# at build time only; the repo's package.json version is not committed back.
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Gate the release on a green build before anything is published.
+      - run: pnpm -r typecheck
+      - run: pnpm test
+
+      - name: Set version from the release tag
+        run: |
+          TAG="${{ github.event.release.tag_name }}"
+          VERSION="${TAG#v}"
+          echo "Publishing vplan@$VERSION (from tag $TAG)"
+          npm version "$VERSION" --no-git-tag-version --allow-same-version
+        working-directory: packages/cli
+
+      # prepack vendors runtime + core and runs tsup; pnpm rewrites the workspace
+      # protocol. --no-git-checks is required because the version bump dirties the tree.
+      - name: Publish to npm
+        run: pnpm publish --no-git-checks --access public
+        working-directory: packages/cli
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
