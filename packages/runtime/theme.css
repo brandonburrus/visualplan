@@ -612,15 +612,19 @@ body {
   margin: 0.25rem 0;
 }
 
-.vp-compare__pro {
+/* Center the 15px icon on the first text line (same technique as the Checklist),
+   so it stays aligned whether the item is one line or wraps to several. */
+.vp-compare__pro,
+.vp-compare__con {
   flex: 0 0 auto;
-  margin-top: 0.12rem;
+  margin-top: calc((1lh - 15px) / 2);
+}
+
+.vp-compare__pro {
   color: var(--vp-done);
 }
 
 .vp-compare__con {
-  flex: 0 0 auto;
-  margin-top: 0.12rem;
   color: var(--vp-risk);
 }
 
