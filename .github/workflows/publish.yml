@@ -28,6 +28,11 @@ jobs:
           node-version: 22
           cache: pnpm
 
+      # pnpm publish shells out to npm for the upload, and OIDC trusted publishing
+      # requires npm >= 11.5.1 (the runner ships npm 10.x). Node 22 already satisfies
+      # the >= 22.14.0 requirement.
+      - run: npm install -g npm@latest
+
       - run: pnpm install --frozen-lockfile
 
       # Gate the release on a green build before anything is published.
