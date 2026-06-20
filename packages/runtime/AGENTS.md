@@ -85,6 +85,10 @@ page. The rules below are deliberate; changing them needs a reason.
   (yellow). Each must stay visually different. `Questions` uses its own blue "needs input" tint.
 - **Visual verification:** `playwright-core` (devDep) drives the system Chrome to screenshot a
   rendered `.plan.html` in light and dark. Re-check both schemes after any theme change.
+  Screenshot pages that contain a `<Chart>` at a **fixed tall viewport, not `fullPage`**:
+  `fullPage` resizes the viewport mid-capture, which fires recharts' ResizeObserver and
+  re-renders every ResponsiveContainer, leaving ghost/bleed artifacts in the stitched image
+  that real users never see. Non-chart content is unaffected by `fullPage`.
 
 ## Adding a component
 
