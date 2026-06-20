@@ -9,8 +9,8 @@ Render a plan as a visual MDX page instead of a wall of text, using the `visualp
 
 ## Workflow
 
-1. Write the plan to a `.mdx` file. Start with YAML frontmatter, then use the components below.
-   You never write `import` statements; the components are always in scope.
+1. Write the plan to a `.mdx` file. Start with a `# Title` heading (no frontmatter), then use
+   the components below. You never write `import` statements; the components are always in scope.
 2. Validate before showing the user: `visualplan check <file>.mdx`. Fix any reported
    `file:line:col` issues (it names the valid values for bad enums and flags unknown components).
 3. Render: `visualplan <file>.mdx` opens a self-contained HTML page. Use
@@ -18,26 +18,31 @@ Render a plan as a visual MDX page instead of a wall of text, using the `visualp
 
 Run `visualplan components` anytime for the exact prop signatures.
 
-## Frontmatter
+## Title
+
+Begin the file with a single `# Heading`; it becomes the plan title. There is no frontmatter.
 
 ```mdx
----
-title: Add rate limiting to the API
-author: Claude
-date: 2026-06-20
----
+# Add rate limiting to the API
 ```
 
 ## Components
 
-- `<Phase title="..." status="planned|active|done">` — a collapsible stage; wraps markdown
-  (ordered lists, prose, nested components). One per major step of the plan.
-- ` ```mermaid ` fenced block — ALL diagrams: architecture (`flowchart`), sequence, dependency
-  graphs, `gantt` timelines, `stateDiagram`, ER. Reach for this first for anything structural.
+- `<Phase title="..." status="planned|active|done">` — one step in a numbered vertical
+  timeline; wraps markdown (ordered lists, prose, nested components). The steps auto-number in
+  order. One per major step of the plan.
+- ` ```mermaid ` fenced block — diagrams: architecture (`flowchart`), `sequenceDiagram`,
+  dependency graphs, `stateDiagram`, `classDiagram`, ER, and XY charts. Reach for this first for
+  anything structural. (gantt and pie are not supported; use `<Chart>` for quantitative data.)
 - `<FileTree files={[{ path, change }]} />` — file-change map; `change` is `add|modify|delete|move`.
 - `<Chart type="bar|line|pie" title="..." data={[{ label, value }]} />` — estimates/metrics.
 - `<Compare options={[{ name, pros: [], cons: [], pick: true }]} />` — weigh approaches side by side.
 - `<Callout type="note|risk|decision|warn">` — highlight a risk, decision, or note; wraps markdown.
+  (`risk` is red, `warn` is yellow.)
+- `<Questions items={["...", "..."]} />` — open questions you want the reader to resolve before
+  building. Use this instead of burying uncertainties in prose.
+- Fenced code blocks are syntax-highlighted: write ` ```ts ` (or js, json, bash, python, go, rust,
+  sql, yaml, css, etc.) to show a key snippet.
 
 ## Guidance
 

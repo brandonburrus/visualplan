@@ -35,11 +35,31 @@ describe('full plan render (MDX -> component DOM)', () => {
     expect(html).toContain('Redis sliding window')
   })
 
-  it('routes a ```mermaid fence to the Mermaid container (golden)', () => {
+  it('renders a ```mermaid fence to an inline SVG synchronously (golden)', () => {
     expect(html).toContain('vp-mermaid')
+    // beautiful-mermaid renders synchronously and DOM-free, so the SVG is present
+    // in the server-rendered markup, not just a client-mounted container.
+    expect(html).toContain('<svg')
   })
 
   it('mounts the chart container for the estimate chart (edge)', () => {
     expect(html).toContain('vp-chart')
+  })
+
+  it('renders the H1 title and numbered timeline nodes, not a sidebar (golden)', () => {
+    expect(html).toContain('<h1>Add rate limiting to the API</h1>')
+    expect(html).toContain('vp-phase__node')
+    expect(html).not.toContain('vp-toc')
+    expect(html).not.toContain('vp-header')
+  })
+
+  it('leaks no raw frontmatter into the content (edge)', () => {
+    expect(html).not.toContain('author:')
+  })
+
+  it('syntax-highlights a fenced code block (golden)', () => {
+    // the ```ts block renders through highlight.js into hljs token spans
+    expect(html).toContain('class="hljs')
+    expect(html).toContain('hljs-keyword')
   })
 })

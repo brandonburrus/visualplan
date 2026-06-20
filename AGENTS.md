@@ -15,7 +15,8 @@ maps, option comparisons) instead of walls of terminal text.
 
 Plans use a fixed, tiny component vocabulary (`Phase`, `FileTree`, `Chart`, `Compare`,
 `Callout`, and ` ```mermaid ` fences) with no imports — the components are auto-injected
-into MDX scope. Plan metadata comes from YAML frontmatter.
+into MDX scope. A plan starts with a `# Title` heading; there is no frontmatter. `Phase`
+sections render as a numbered vertical timeline; there is no sidebar.
 
 ## Structure
 
@@ -60,7 +61,10 @@ into MDX scope. Plan metadata comes from YAML frontmatter.
 
 - 2026-06-20: Plans authored as MDX with a fixed ~6-component vocabulary, rendered to a
   self-contained HTML page. Why: visual, scannable plans without per-plan toolchain setup.
-- 2026-06-20: Mermaid (one ` ```mermaid ` fence) covers all diagram/graph/flow/timeline needs
-  instead of bespoke components. Why: text-based, reliable for Claude, one dep covers many shapes.
+- 2026-06-20: Mermaid (one ` ```mermaid ` fence) covers the diagram needs instead of bespoke
+  components. Why: text-based, reliable for Claude, one dep covers many shapes.
+- 2026-06-20: Diagrams render via `beautiful-mermaid` (`renderMermaidSVG`), replacing the `mermaid`
+  package. Why: synchronous and DOM-free, so it renders in SSR/static HTML, themes from our CSS
+  vars (no scheme hack), and is far lighter. Tradeoff: no gantt/pie support.
 - 2026-06-20: Render with Vite root=`runtime/` + esbuild JSX, MDX via `virtual:plan` alias.
   Why: avoids plugin-react's node_modules transpile gap when the CLI is installed.

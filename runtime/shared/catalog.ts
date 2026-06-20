@@ -55,6 +55,10 @@ export const calloutSchema = z.object({
   type: z.enum(CALLOUT_TYPE_VALUES).default('note'),
 })
 
+export const questionsSchema = z.object({
+  items: z.array(z.string().min(1)).min(1, 'questions needs at least one item'),
+})
+
 /** Describes a component for the `components` printer and the static checker. */
 export interface CatalogEntry {
   name: string
@@ -73,10 +77,11 @@ export const CATALOG: readonly CatalogEntry[] = [
   },
   {
     name: 'FileTree',
-    summary: 'A file-change map with add/modify/delete/move markers.',
+    summary:
+      'A nested directory tree of file changes, built from the paths, with add/modify/delete/move markers.',
     staticEnums: {},
     example:
-      '<FileTree files={[{ path: "src/api.ts", change: "add" }, { path: "src/db.ts", change: "modify" }]} />',
+      '<FileTree files={[{ path: "src/api/routes.ts", change: "add" }, { path: "src/api/db.ts", change: "modify" }, { path: "src/legacy.ts", change: "delete" }]} />',
   },
   {
     name: 'Chart',
@@ -99,9 +104,17 @@ export const CATALOG: readonly CatalogEntry[] = [
     example: '<Callout type="risk">\n  Migration locks the table for ~2s.\n</Callout>',
   },
   {
+    name: 'Questions',
+    summary:
+      'Open questions you (Claude) want the reader to weigh in on before building, as a highlighted panel.',
+    staticEnums: {},
+    example:
+      '<Questions items={["Should refresh tokens rotate on every use?", "Is a 15-minute access-token TTL acceptable?"]} />',
+  },
+  {
     name: 'mermaid (code fence)',
     summary:
-      'Any diagram, graph, flow, sequence, gantt, state, or ER diagram. Write a ```mermaid fenced block.',
+      'A flowchart, sequence, state, class, ER, or XY-chart diagram. Write a ```mermaid fenced block. (gantt/pie are not supported by the renderer.)',
     staticEnums: {},
     example: '```mermaid\nflowchart LR\n  A[Client] --> B[API] --> C[(DB)]\n```',
   },

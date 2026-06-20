@@ -19,8 +19,6 @@ export function runComponents(): void {
     }
     lines.push('')
   }
-  lines.push(
-    'Plan metadata (title, author, date) comes from YAML frontmatter at the top of the file.',
-  )
+  lines.push('Start the plan with a `# Title` heading. Do not use YAML frontmatter.')
   process.stdout.write(`${lines.join('\n')}\n`)
 }

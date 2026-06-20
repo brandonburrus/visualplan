@@ -5,19 +5,38 @@ import { Callout } from './components/Callout.js'
 import { Chart } from './components/Chart.js'
 import { Compare } from './components/Compare.js'
 import { FileTree } from './components/FileTree.js'
+import { highlightCode } from './components/highlight.js'
 import { Mermaid } from './components/Mermaid.js'
 import { Phase } from './components/Phase.js'
-import { Layout, type PlanMeta } from './Layout.js'
+import { Questions } from './components/Questions.js'
+import { Layout } from './Layout.js'
 import './theme.css'
 
-/** Intercepts ```mermaid fences (rendered by MDX as <pre><code class="language-mermaid">). */
+/**
+ * Handles fenced code blocks (rendered by MDX as <pre><code class="language-X">):
+ * ```mermaid becomes a diagram, any known language is syntax-highlighted, and
+ * everything else falls through to a plain <pre>.
+ */
 function Pre(props: { children?: ReactNode }) {
   const child = props.children
   if (isValidElement<{ className?: string; children?: ReactNode }>(child)) {
     const className = child.props.className ?? ''
+    const code = String(child.props.children ?? '').replace(/\n$/, '')
     if (/language-mermaid/.test(className)) {
-      const code = String(child.props.children ?? '').replace(/\n$/, '')
       return <Mermaid chart={code} />
+    }
+    const language = /language-([\w-]+)/.exec(className)?.[1]
+    const highlighted = language ? highlightCode(code, language) : null
+    if (highlighted) {
+      return (
+        <pre className='vp-code'>
+          <code
+            className={`hljs language-${highlighted.language}`}
+            // biome-ignore lint/security/noDangerouslySetInnerHtml: highlight.js escapes the source and emits trusted token spans
+            dangerouslySetInnerHTML={{ __html: highlighted.html }}
+          />
+        </pre>
+      )
     }
   }
   return <pre {...props} />
@@ -30,16 +49,17 @@ export const components = {
   Chart,
   Compare,
   Callout,
+  Questions,
   pre: Pre,
 }
 
 /** Mount a compiled MDX plan into the page shell. */
-export function mount(Plan: ComponentType, meta: PlanMeta) {
+export function mount(Plan: ComponentType) {
   const container = document.getElementById('root')
   if (!container) throw new Error('VisualPlan: #root element not found')
   createRoot(container).render(
     <MDXProvider components={components}>
-      <Layout meta={meta}>
+      <Layout>
         <Plan />
       </Layout>
     </MDXProvider>,

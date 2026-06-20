@@ -7,29 +7,67 @@ prebuilt. See the root AGENTS.md for why Vite is configured without `@vitejs/plu
 ## How it fits together
 
 - `main.tsx` is the build entry. It imports the user's plan via the `virtual:plan` alias
-  (`Plan` default export + `frontmatter` named export from remark-mdx-frontmatter) and calls
-  `mount`.
+  (`Plan` default export) and calls `mount`. Plans use no frontmatter; the title is the plan's
+  own first `# Heading`, rendered as normal markdown.
 - `index.tsx` defines `mount` and the `components` map auto-injected into MDX via `MDXProvider`.
   No plan ever writes an `import` — every component resolves through this map.
-- `Layout.tsx` is page chrome: title/meta header, and a sticky table-of-contents built in a
-  `useEffect` by querying the rendered `.vp-phase` elements (it assigns their `id`s too).
-- `components/` holds the six components. Each validates its props through `validate.ts`
+- `Layout.tsx` is a single centered content column — no header and no sidebar.
+- `Phase` renders as a numbered vertical timeline. The step number comes from a CSS counter
+  (`counter-reset: vp-phase` on `.vp-main`, `counter-increment` on `.vp-phase`, number drawn by
+  `.vp-phase__node::before`), so phases self-number in document order with no index prop. The
+  connector line is a `.vp-phase__rail::after` pseudo-element omitted on the last step.
+- `components/` holds the seven components (Phase, FileTree, Chart, Compare, Callout, Questions,
+  Mermaid). `FileTree` builds a nested directory tree from flat `{path}` entries (collapsing
+  single-child dir chains); `Questions` renders open questions Claude wants the reader to resolve.
+  Each validates its props through `validate.ts`
   against the matching zod schema in `shared/catalog.ts`, throwing a readable, component-named
   error on invalid input (this surfaces in the page and is the render-time half of validation).
 
 ## Gotchas
 
-- **Mermaid render ids:** `useId()` returns a string containing `:`, which is not a valid CSS
-  selector. `Mermaid.tsx` strips non-alphanumerics before passing the id to `mermaid.render`.
-- **`pre` override drives mermaid:** MDX renders a ` ```mermaid ` fence as `<pre><code
-  class="language-mermaid">`. The `Pre` component in `index.tsx` intercepts that and renders
-  `<Mermaid>`; everything else falls through to a normal `<pre>`.
+- **Mermaid is rendered by `beautiful-mermaid`**, not the `mermaid` package: `renderMermaidSVG`
+  is synchronous and DOM-free, so `Mermaid.tsx` renders the SVG inline during React render (no
+  effect, no async) and the diagram appears in the static HTML and SSR output. It is themed via
+  our CSS vars, so one SVG adapts to light and dark with no theme detection. Supported diagram
+  types: flowchart, sequence, state, class, ER, XY chart. gantt/pie are not supported and throw,
+  which the component catches and shows as an inline error.
+- **`pre` override drives mermaid and code highlighting:** MDX renders a fence as `<pre><code
+  class="language-X">`. The `Pre` component in `index.tsx` intercepts it: ` ```mermaid ` becomes a
+  `<Mermaid>`, any language `highlight.js` knows (see `components/highlight.ts`) is
+  syntax-highlighted, and everything else falls through to a plain `<pre>`. Highlighting is
+  synchronous/DOM-free so it is in the static/SSR output; do NOT add a build-time rehype
+  highlighter — it would rewrite the mermaid node and break the mermaid branch. Token colors are
+  dual-theme via `--hl-*` CSS vars (github-light / github-dark).
 - **Recharts `Cell` is deprecation-flagged** in recharts 3 but still functional; it is how
   per-bar/slice colors are set. The hint does not fail typecheck.
 - **`shared/catalog.ts` must stay isomorphic** (no React/recharts/mermaid) — the Node CLI
   imports it too.
 - A side-effect CSS import needs the `*.css` ambient declaration in `css.d.ts`; `virtual:plan`
   needs the ambient module in `virtual-plan.d.ts`.
+
+## Design language (do not regress)
+
+The plan page is a product-register reading surface (Linear/Stripe-clean), not a marketing
+page. The rules below are deliberate; changing them needs a reason.
+
+- **Near-monochrome ink accent.** `--vp-accent` is ink (near-black light / near-white dark), not
+  a colored brand hue. Chroma is reserved for *semantic* meaning only: done/add green, risk/delete
+  red, modify amber, move cyan. Do not introduce a blue/purple accent (the AI-tool reflex).
+- **No side-stripe accents.** Callouts use a flat tint plus a full 1px border and a colored label,
+  never a `border-left` color stripe (a hard ban).
+- **Off-white / off-black only**, never pure `#fff` / `#000`. All colors are CSS vars with a
+  `prefers-color-scheme: dark` block; both schemes must stay legible.
+- **Mermaid colors come from our CSS vars** (passed to `beautiful-mermaid` as `bg`/`fg`/`line`/
+  `accent`/`surface`/`border`), so the diagram tracks the theme automatically. Do not hard-code
+  diagram colors or reintroduce scheme detection.
+- **Charts are colored** from a shared `COLORS` palette in `Chart.tsx` (vibrant mid-tones that read
+  on both surfaces). The pie renders its labels as a custom HTML legend below the chart, not as
+  recharts outside labels (those clip against the container). Axis ticks and tooltips are driven by
+  CSS vars so dark mode is correct.
+- **Callout colors are semantic and distinct:** decision (neutral), risk (red tint), warn (yellow
+  tint). Risk and warn must stay visually different. `Questions` uses its own blue "needs input" tint.
+- **Visual verification:** `playwright-core` (devDep) drives the system Chrome to screenshot a
+  rendered `.plan.html` in light and dark. Re-check both schemes after any theme change.
 
 ## Adding a component
 

@@ -1,8 +1,4 @@
----
-title: Add rate limiting to the API
-author: Claude
-date: 2026-06-20
----
+# Add rate limiting to the API
 
 We are adding per-token rate limiting to the public API to protect upstream
 services from bursty clients. The goal is a sliding-window limiter enforced at
@@ -32,6 +28,14 @@ flowchart LR
   ]}
 />
 
+<Questions
+  items={[
+    'What is the limit per token: a fixed number, or per-plan tier?',
+    'Should the limiter fail open or fail closed if Redis is unreachable?',
+    'Do internal service-to-service calls get exempted from limiting?',
+  ]}
+/>
+
 <Phase title='Build the limiter' status='active'>
   1. Add a `RateLimiter` backed by Redis `INCR` + `EXPIRE`.
   2. Return `429` with a `Retry-After` header when the window is exceeded.
@@ -43,6 +47,16 @@ flowchart LR
       { path: 'src/gateway/legacy-throttle.ts', change: 'delete' },
     ]}
   />
+
+  ```ts
+  // sliding-window check against Redis, returns false when over the limit
+  async function allow(token: string): Promise<boolean> {
+    const key = `rl:${token}`
+    const count = await redis.incr(key)
+    if (count === 1) await redis.expire(key, WINDOW_SECONDS)
+    return count <= MAX_REQUESTS
+  }
+  ```
 </Phase>
 
 <Phase title='Roll out behind a flag' status='planned'>
@@ -61,4 +75,9 @@ flowchart LR
 
 <Callout type='risk'>
   A Redis outage must fail open, not closed, or every request becomes a 429.
+</Callout>
+
+<Callout type='warn'>
+  Returning `429` without a `Retry-After` header makes well-behaved clients retry
+  immediately and amplify the load. Always set it.
 </Callout>

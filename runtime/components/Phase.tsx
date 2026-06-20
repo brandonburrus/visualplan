@@ -8,18 +8,27 @@ interface PhaseProps {
   children?: ReactNode
 }
 
-/** A collapsible plan stage with a status badge. Wraps markdown children. */
+/**
+ * One step in the plan's vertical numbered timeline. The step number is supplied
+ * by a CSS counter on the timeline container (see `.vp-phase__node` in theme.css),
+ * so phases self-number in document order with no index prop.
+ */
 export function Phase(props: PhaseProps) {
   const { title, status } = validateProps('Phase', phaseSchema, props)
   return (
-    <details className='vp-phase' data-status={status} open>
-      <summary className='vp-phase__summary'>
-        <span className='vp-phase__title'>{title}</span>
-        <span className='vp-phase__badge' data-status={status}>
-          {status}
-        </span>
-      </summary>
-      <div className='vp-phase__body'>{props.children}</div>
-    </details>
+    <section className='vp-phase' data-status={status}>
+      <div className='vp-phase__rail'>
+        <div className='vp-phase__node' />
+      </div>
+      <div className='vp-phase__content'>
+        <div className='vp-phase__head'>
+          <h3 className='vp-phase__title'>{title}</h3>
+          <span className='vp-phase__badge' data-status={status}>
+            {status}
+          </span>
+        </div>
+        <div className='vp-phase__body'>{props.children}</div>
+      </div>
+    </section>
   )
 }

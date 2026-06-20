@@ -1,50 +1,46 @@
-import mermaid from 'mermaid'
-import { useEffect, useId, useRef, useState } from 'react'
+import { renderMermaidSVG, type RenderOptions } from 'beautiful-mermaid'
 
 interface MermaidProps {
   chart: string
 }
 
-let initialized = false
-
-function ensureInitialized() {
-  if (initialized) return
-  mermaid.initialize({ startOnLoad: false, theme: 'default', securityLevel: 'strict' })
-  initialized = true
+/**
+ * Theme mapped onto our CSS custom properties. Because beautiful-mermaid emits the
+ * colors as CSS variables, one synchronously-rendered SVG adapts to light and dark
+ * automatically (the vars change with `prefers-color-scheme`), so there is no theme
+ * detection and no re-render on scheme change.
+ */
+const THEME: RenderOptions = {
+  bg: 'var(--vp-bg)',
+  fg: 'var(--vp-text)',
+  line: 'var(--vp-muted)',
+  accent: 'var(--vp-accent)',
+  muted: 'var(--vp-muted)',
+  surface: 'var(--vp-surface)',
+  border: 'var(--vp-border-strong)',
+  font: 'var(--vp-font)',
+  transparent: true,
 }
 
-/** Renders a mermaid diagram from the text of a ```mermaid code fence. */
+/**
+ * Renders a mermaid diagram from the text of a ```mermaid code fence. Rendering is
+ * synchronous and DOM-free, so the SVG is present in the static HTML output (not
+ * just after a client-side effect).
+ */
 export function Mermaid({ chart }: MermaidProps) {
-  const containerRef = useRef<HTMLDivElement>(null)
-  const reactId = useId()
-  const [error, setError] = useState<string | null>(null)
-  // mermaid ids must be valid CSS selectors; React's useId contains ':'.
-  const renderId = `vp-mermaid-${reactId.replace(/[^a-zA-Z0-9]/g, '')}`
-
-  useEffect(() => {
-    let cancelled = false
-    ensureInitialized()
-    mermaid
-      .render(renderId, chart)
-      .then(({ svg }) => {
-        if (!cancelled && containerRef.current) containerRef.current.innerHTML = svg
-      })
-      .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : String(err))
-      })
-    return () => {
-      cancelled = true
-    }
-  }, [chart, renderId])
-
-  if (error) {
+  let svg: string
+  try {
+    svg = renderMermaidSVG(chart, THEME)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
     return (
       <pre className='vp-mermaid vp-mermaid--error'>
-        Mermaid error: {error}
+        Mermaid error: {message}
         {'\n\n'}
         {chart}
       </pre>
     )
   }
-  return <div className='vp-mermaid' ref={containerRef} />
+  // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted SVG from our own synchronous renderer over author-provided diagram text, not untrusted HTML
+  return <div className='vp-mermaid' dangerouslySetInnerHTML={{ __html: svg }} />
 }

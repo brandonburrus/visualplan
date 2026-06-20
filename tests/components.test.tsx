@@ -4,6 +4,7 @@ import { Callout } from '../runtime/components/Callout.js'
 import { Compare } from '../runtime/components/Compare.js'
 import { FileTree } from '../runtime/components/FileTree.js'
 import { Phase } from '../runtime/components/Phase.js'
+import { Questions } from '../runtime/components/Questions.js'
 import { chartSchema } from '../runtime/shared/catalog.js'
 
 describe('Phase', () => {
@@ -41,17 +42,23 @@ describe('Callout', () => {
 })
 
 describe('FileTree', () => {
-  it('renders a marker per file (golden)', () => {
+  it('renders a nested tree: collapsed dirs, leaf names, and change markers (golden)', () => {
     const html = renderToStaticMarkup(
       <FileTree
         files={[
-          { path: 'src/a.ts', change: 'add' },
-          { path: 'src/b.ts', change: 'delete' },
+          { path: 'src/api/routes.ts', change: 'add' },
+          { path: 'src/api/db.ts', change: 'modify' },
+          { path: 'legacy.ts', change: 'delete' },
         ]}
       />,
     )
-    expect(html).toContain('src/a.ts')
+    // src/api is a single-child chain, so it collapses to one directory row.
+    expect(html).toContain('src/api/')
+    expect(html).toContain('routes.ts')
+    expect(html).toContain('db.ts')
+    expect(html).toContain('legacy.ts')
     expect(html).toContain('data-change="add"')
+    expect(html).toContain('data-change="modify"')
     expect(html).toContain('data-change="delete"')
   })
 
@@ -91,6 +98,26 @@ describe('Compare', () => {
     const html = renderToStaticMarkup(<Compare options={[{ name: 'A' }, { name: 'B' }]} />)
     expect(html).toContain('A')
     expect(html).toContain('B')
+  })
+})
+
+describe('Questions', () => {
+  it('renders each open question with a marker (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Questions items={['Is 15 minutes the right TTL?', 'Should refresh tokens rotate?']} />,
+    )
+    expect(html).toContain('Open questions')
+    expect(html).toContain('Is 15 minutes the right TTL?')
+    expect(html).toContain('Should refresh tokens rotate?')
+  })
+
+  it('throws on an empty question list (error)', () => {
+    expect(() => renderToStaticMarkup(<Questions items={[]} />)).toThrow(/at least one item/)
+  })
+
+  it('renders a single question (edge)', () => {
+    const html = renderToStaticMarkup(<Questions items={['Only one?']} />)
+    expect(html).toContain('Only one?')
   })
 })
 
