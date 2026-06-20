@@ -4,11 +4,53 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import mdx from '@mdx-js/rollup'
+import rehypeExpressiveCode, { type RehypeExpressiveCodeOptions } from 'rehype-expressive-code'
 import remarkFrontmatter from 'remark-frontmatter'
 import remarkGfm from 'remark-gfm'
 import remarkMdxFrontmatter from 'remark-mdx-frontmatter'
 import { build, createServer, type InlineConfig, type Plugin } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
+import { remarkMermaid } from './remark-mermaid.js'
+
+const expressiveCodeOptions: RehypeExpressiveCodeOptions = {
+  themes: ['github-dark', 'github-light'],
+  useDarkModeMediaQuery: true,
+  // The copy-button script does not execute reliably in our client-rendered SPA;
+  // frames (titles) are CSS-only, so keep those and drop the interactive button.
+  frames: { showCopyToClipboardButton: false },
+  // Match the flat ink design: our borders/radius/surfaces/fonts, no shadow, no
+  // colored tab accent. Values are CSS vars so the frame chrome tracks light/dark too.
+  styleOverrides: {
+    borderRadius: '10px',
+    borderColor: 'var(--vp-border)',
+    codeBackground: 'var(--vp-surface)',
+    codeFontFamily: 'var(--vp-mono)',
+    codeFontSize: '0.8rem',
+    codeLineHeight: '1.6',
+    codePaddingBlock: '0.9rem',
+    codePaddingInline: '1rem',
+    uiFontFamily: 'var(--vp-font)',
+    uiFontSize: '0.78rem',
+    frames: {
+      frameBoxShadowCssValue: 'none',
+      // A flat filename header on the same surface as the code, separated by one
+      // border. No editor-tab metaphor, no colored indicator line.
+      editorBackground: 'var(--vp-surface)',
+      editorTabBarBackground: 'var(--vp-surface)',
+      editorTabBarBorderBottomColor: 'var(--vp-border)',
+      editorActiveTabBackground: 'var(--vp-surface)',
+      editorActiveTabForeground: 'var(--vp-muted)',
+      editorActiveTabBorderColor: 'transparent',
+      editorActiveTabIndicatorTopColor: 'transparent',
+      editorActiveTabIndicatorBottomColor: 'transparent',
+      editorTabsMarginInlineStart: '0',
+      terminalBackground: 'var(--vp-surface)',
+      terminalTitlebarBackground: 'var(--vp-surface)',
+      terminalTitlebarForeground: 'var(--vp-muted)',
+      terminalTitlebarBorderBottomColor: 'var(--vp-border)',
+    },
+  },
+}
 
 /**
  * Locate the shipped `runtime/` directory by walking up from this module.
@@ -34,7 +76,10 @@ function mdxPlugin(): Plugin {
         remarkFrontmatter,
         [remarkMdxFrontmatter, { name: 'frontmatter' }],
         remarkGfm,
+        // Must run before rehype-expressive-code so mermaid never reaches the highlighter.
+        remarkMermaid,
       ],
+      rehypePlugins: [[rehypeExpressiveCode, expressiveCodeOptions]],
     }),
   }
 }

@@ -21,14 +21,12 @@
   --vp-question: #2f6fed;
   --vp-question-tint: #eef3fe;
   --vp-question-border: #d4e0fb;
-  --hl-comment: #6e7781;
-  --hl-keyword: #cf222e;
-  --hl-string: #0a3069;
-  --hl-number: #0550ae;
-  --hl-function: #8250df;
-  --hl-attr: #0550ae;
-  --hl-tag: #116329;
-  --hl-symbol: #953800;
+  --vp-note: #7c3aed;
+  --vp-note-tint: #f6f2fe;
+  --vp-note-border: #e4d8fb;
+  --vp-decision: #0d9488;
+  --vp-decision-tint: #ecfbf7;
+  --vp-decision-border: #c2ebe2;
   --vp-ease: cubic-bezier(0.25, 1, 0.5, 1);
   --vp-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --vp-mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
@@ -58,14 +56,12 @@
     --vp-question: #7aa2ff;
     --vp-question-tint: #161d2e;
     --vp-question-border: #2b3a5e;
-    --hl-comment: #8b949e;
-    --hl-keyword: #ff7b72;
-    --hl-string: #a5d6ff;
-    --hl-number: #79c0ff;
-    --hl-function: #d2a8ff;
-    --hl-attr: #79c0ff;
-    --hl-tag: #7ee787;
-    --hl-symbol: #ffa657;
+    --vp-note: #b794f6;
+    --vp-note-tint: #1d1830;
+    --vp-note-border: #362a52;
+    --vp-decision: #2dd4bf;
+    --vp-decision-tint: #0e2421;
+    --vp-decision-border: #1d433c;
   }
 }
 
@@ -133,7 +129,8 @@ body {
   border-radius: 3px;
 }
 
-.vp-main code {
+/* Inline code only; fenced code blocks are owned by Expressive Code. */
+.vp-main :not(pre) > code {
   font-family: var(--vp-mono);
   font-size: 0.84em;
   background: var(--vp-surface);
@@ -142,78 +139,35 @@ body {
   border-radius: 5px;
 }
 
-.vp-main pre {
-  background: var(--vp-surface);
-  border: 1px solid var(--vp-border);
-  border-radius: 10px;
-  padding: 1rem;
-  overflow-x: auto;
+/* Expressive Code frame fits the page rhythm */
+.vp-main .expressive-code {
+  margin: 1.25rem 0;
 }
 
-.vp-main pre code {
-  background: none;
+/* Flatten Expressive Code's editor-tab title into a plain filename header bar.
+   EC injects its own <style> in the body, so the .vp-main prefix wins the cascade. */
+.vp-main .expressive-code .frame.has-title .header {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid var(--vp-border);
+}
+
+.vp-main .expressive-code .frame.has-title .header .title {
+  position: static;
+  margin: 0;
+  padding: 0.5rem 1rem;
   border: none;
-  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--vp-muted);
+  font-size: 0.74rem;
+  font-weight: 500;
+  letter-spacing: 0.01em;
 }
 
-/* Syntax highlighting (highlight.js tokens), dual light/dark via --hl-* tokens */
-.hljs {
-  color: var(--vp-text);
-}
-.hljs-comment,
-.hljs-quote {
-  color: var(--hl-comment);
-  font-style: italic;
-}
-.hljs-keyword,
-.hljs-selector-tag,
-.hljs-literal,
-.hljs-type,
-.hljs-built_in,
-.hljs-doctag {
-  color: var(--hl-keyword);
-}
-.hljs-string,
-.hljs-regexp,
-.hljs-char,
-.hljs-meta .hljs-string,
-.hljs-addition {
-  color: var(--hl-string);
-}
-.hljs-number,
-.hljs-meta {
-  color: var(--hl-number);
-}
-.hljs-title,
-.hljs-section {
-  color: var(--hl-function);
-}
-.hljs-attr,
-.hljs-attribute,
-.hljs-property,
-.hljs-params,
-.hljs-selector-attr,
-.hljs-selector-pseudo {
-  color: var(--hl-attr);
-}
-.hljs-tag,
-.hljs-name,
-.hljs-selector-id,
-.hljs-selector-class {
-  color: var(--hl-tag);
-}
-.hljs-symbol,
-.hljs-bullet,
-.hljs-variable,
-.hljs-template-variable,
-.hljs-link {
-  color: var(--hl-symbol);
-}
-.hljs-emphasis {
-  font-style: italic;
-}
-.hljs-strong {
-  font-weight: 600;
+.vp-main .expressive-code .frame.has-title .header .title::before,
+.vp-main .expressive-code .frame.has-title .header .title::after {
+  display: none;
 }
 
 /* Phase: a numbered vertical-timeline step */
@@ -330,9 +284,14 @@ body {
   background: var(--vp-surface);
 }
 
+.vp-callout[data-type="note"] {
+  background: var(--vp-note-tint);
+  border-color: var(--vp-note-border);
+}
+
 .vp-callout[data-type="decision"] {
-  background: var(--vp-surface-2);
-  border-color: var(--vp-border-strong);
+  background: var(--vp-decision-tint);
+  border-color: var(--vp-decision-border);
 }
 
 .vp-callout[data-type="risk"] {
@@ -346,6 +305,9 @@ body {
 }
 
 .vp-callout__label {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
   font-size: 0.68rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -354,8 +316,12 @@ body {
   margin-bottom: 0.3rem;
 }
 
+.vp-callout[data-type="note"] .vp-callout__label {
+  color: var(--vp-note);
+}
+
 .vp-callout[data-type="decision"] .vp-callout__label {
-  color: var(--vp-text);
+  color: var(--vp-decision);
 }
 
 .vp-callout[data-type="risk"] .vp-callout__label {
@@ -393,9 +359,14 @@ body {
 }
 
 .vp-filetree__marker {
-  width: 1ch;
-  font-weight: 700;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.vp-filetree__folder {
+  color: var(--vp-faint);
+  flex: 0 0 auto;
 }
 
 .vp-filetree__row[data-change="add"] .vp-filetree__marker {
@@ -476,89 +447,63 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Questions: open questions for the reader */
+/* Questions: open questions for the reader. Neutral card like the other list cards,
+   with blue kept only as the accent on the icon, title, and numbers. */
 .vp-questions {
-  border: 1px solid var(--vp-question-border);
-  background: var(--vp-question-tint);
-  border-radius: 12px;
-  padding: 0.4rem;
+  border: 1px solid var(--vp-border);
+  background: var(--vp-surface);
+  border-radius: 10px;
+  padding: 0.85rem 1.1rem;
   margin: 1.4rem 0;
 }
 
 .vp-questions__head {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.45rem 0.6rem 0.6rem;
+  gap: 0.6rem;
+  margin-bottom: 0.6rem;
 }
 
+/* The header icon shares a fixed-width column with the item numbers below, so the
+   title and every question text line up on the same left edge. */
 .vp-questions__icon {
   flex: 0 0 auto;
-  width: 22px;
-  height: 22px;
-  border-radius: 999px;
-  background: var(--vp-question);
-  color: #ffffff;
-  font-weight: 700;
-  font-size: 0.85rem;
-  display: flex;
+  width: 1.15rem;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  color: var(--vp-question);
 }
 
 .vp-questions__title {
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: var(--vp-text);
-}
-
-.vp-questions__count {
-  margin-left: auto;
-  font-size: 0.72rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  color: var(--vp-question);
-  background: var(--vp-bg);
-  border: 1px solid var(--vp-question-border);
-  border-radius: 999px;
-  padding: 0.05rem 0.5rem;
 }
 
 .vp-questions__list {
   list-style: none;
   margin: 0;
   padding: 0;
-  background: var(--vp-bg);
-  border: 1px solid var(--vp-question-border);
-  border-radius: 9px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .vp-questions__item {
   display: flex;
-  align-items: flex-start;
-  gap: 0.7rem;
-  padding: 0.65rem 0.8rem;
-}
-
-.vp-questions__item + .vp-questions__item {
-  border-top: 1px solid var(--vp-border);
+  align-items: baseline;
+  gap: 0.6rem;
 }
 
 .vp-questions__num {
   flex: 0 0 auto;
-  width: 20px;
-  height: 20px;
-  margin-top: 0.1rem;
-  border-radius: 6px;
-  background: var(--vp-question-tint);
-  border: 1px solid var(--vp-question-border);
+  width: 1.15rem;
+  text-align: center;
   color: var(--vp-question);
   font-weight: 700;
-  font-size: 0.74rem;
+  font-size: 0.85rem;
   font-variant-numeric: tabular-nums;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .vp-questions__text {
@@ -581,7 +526,7 @@ body {
 }
 
 .vp-compare__card[data-pick="true"] {
-  border-color: var(--vp-accent);
+  border-color: var(--vp-border-strong);
   background: var(--vp-bg);
 }
 
@@ -598,10 +543,11 @@ body {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--vp-on-accent);
-  background: var(--vp-accent);
+  color: var(--vp-muted);
+  background: var(--vp-surface-2);
+  border: 1px solid var(--vp-border);
   border-radius: 5px;
-  padding: 0.12rem 0.42rem;
+  padding: 0.1rem 0.42rem;
 }
 
 .vp-compare__pros,
@@ -614,26 +560,80 @@ body {
 
 .vp-compare__pros li,
 .vp-compare__cons li {
-  position: relative;
-  padding-left: 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.45rem;
   color: var(--vp-text);
-  margin: 0.2rem 0;
+  margin: 0.25rem 0;
 }
 
-.vp-compare__pros li::before {
-  content: "+";
-  position: absolute;
-  left: 0.15rem;
-  font-weight: 700;
+.vp-compare__pro {
+  flex: 0 0 auto;
+  margin-top: 0.12rem;
   color: var(--vp-done);
 }
 
-.vp-compare__cons li::before {
-  content: "\00d7";
-  position: absolute;
-  left: 0.15rem;
-  font-weight: 700;
+.vp-compare__con {
+  flex: 0 0 auto;
+  margin-top: 0.12rem;
   color: var(--vp-risk);
+}
+
+/* Checklist */
+.vp-checklist {
+  margin: 1.25rem 0;
+  padding: 0.85rem 1.1rem;
+  border: 1px solid var(--vp-border);
+  border-radius: 10px;
+  background: var(--vp-surface);
+}
+
+.vp-checklist__title {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--vp-muted);
+  margin-bottom: 0.55rem;
+}
+
+.vp-checklist__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.vp-checklist__item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+/* Center the 17px icon within the first text line (1lh = the line height). */
+.vp-checklist__check,
+.vp-checklist__box {
+  flex: 0 0 auto;
+  margin-top: calc((1lh - 17px) / 2);
+}
+
+.vp-checklist__check {
+  color: var(--vp-done);
+}
+
+.vp-checklist__box {
+  color: var(--vp-faint);
+}
+
+.vp-checklist__text {
+  color: var(--vp-text);
+}
+
+.vp-checklist__item[data-done="true"] .vp-checklist__text {
+  color: var(--vp-muted);
+  text-decoration: line-through;
 }
 
 /* Mermaid */
@@ -642,8 +642,148 @@ body {
   text-align: center;
 }
 
+/* Scale wide diagrams to the column instead of clipping past it. */
+.vp-mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
 .vp-mermaid--error {
   text-align: left;
   color: var(--vp-risk);
   white-space: pre-wrap;
+}
+
+/* Chart canvas sizing (ResponsiveContainer fills 100% of these) */
+.vp-chart__canvas {
+  height: 250px;
+}
+.vp-chart__canvas[data-type="pie"] {
+  height: 230px;
+}
+
+/* Fullscreen affordance for code blocks, diagrams, and charts */
+.vp-expandable {
+  position: relative;
+}
+
+/* Scoped under .vp-expandable so it outranks Expressive Code's `.expressive-code
+   button` reset (specificity 0,1,1) on the code-block button. */
+.vp-expandable > .vp-expand-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid var(--vp-border);
+  border-radius: 7px;
+  background: var(--vp-bg);
+  color: var(--vp-muted);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 120ms var(--vp-ease),
+    color 120ms var(--vp-ease),
+    border-color 120ms var(--vp-ease);
+}
+
+.vp-expandable:hover > .vp-expand-btn,
+.vp-expandable > .vp-expand-btn:focus-visible {
+  opacity: 1;
+}
+
+.vp-expandable > .vp-expand-btn:hover {
+  color: var(--vp-text);
+  border-color: var(--vp-border-strong);
+}
+
+.vp-expandable:fullscreen {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--vp-bg);
+  cursor: grab;
+}
+
+/* The pan/zoom content layer: absolute, transformed from its top-left corner. */
+.vp-expandable:fullscreen .vp-fs-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+/* In fullscreen the corner button is replaced by the control toolbar. */
+.vp-expandable:fullscreen > .vp-expand-btn {
+  display: none;
+}
+
+.vp-fs-toolbar {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.25rem;
+  border: 1px solid var(--vp-border);
+  border-radius: 9px;
+  background: var(--vp-surface);
+}
+
+.vp-fs-toolbar .vp-fs-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 30px;
+  min-width: 30px;
+  padding: 0 0.4rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--vp-muted);
+  font: inherit;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+  transition:
+    background 120ms var(--vp-ease),
+    color 120ms var(--vp-ease);
+}
+
+.vp-fs-toolbar .vp-fs-btn:hover {
+  background: var(--vp-surface-2);
+  color: var(--vp-text);
+}
+
+.vp-fs-toolbar .vp-fs-close {
+  margin-left: 0.2rem;
+  border-left: 1px solid var(--vp-border);
+  border-radius: 0 6px 6px 0;
+}
+
+/* In fullscreen the content renders at its natural size; the pan/zoom transform
+   scales it. The fit-on-open computes the scale that fills the viewport. */
+.vp-mermaid:fullscreen .vp-mermaid__svg svg {
+  max-width: none;
+  width: auto;
+  height: auto;
+}
+
+.vp-chart:fullscreen .vp-chart__canvas {
+  width: 900px;
+  height: 520px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vp-expand-btn {
+    transition: none;
+  }
 }

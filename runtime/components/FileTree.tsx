@@ -1,3 +1,4 @@
+import { IconArrowRight, IconFolder, IconMinus, IconPencil, IconPlus } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { fileTreeSchema } from '../shared/catalog.js'
 import { validateProps } from './validate.js'
@@ -6,11 +7,11 @@ interface FileTreeProps {
   files: Array<{ path: string; change: string }>
 }
 
-const MARKER: Record<string, string> = {
-  add: '+',
-  modify: '~',
-  delete: '-',
-  move: '→',
+const MARKER: Record<string, ReactNode> = {
+  add: <IconPlus size={15} stroke={2.5} />,
+  modify: <IconPencil size={14} stroke={2} />,
+  delete: <IconMinus size={15} stroke={2.5} />,
+  move: <IconArrowRight size={15} stroke={2} />,
 }
 
 interface DirNode {
@@ -68,6 +69,7 @@ function renderDir(node: DirNode, depth: number): ReactNode[] {
         className='vp-filetree__row vp-filetree__row--dir'
         style={{ paddingLeft: `${depth * 1.15}rem` }}
       >
+        <IconFolder size={15} stroke={2} className='vp-filetree__folder' aria-hidden='true' />
         <span className='vp-filetree__dir'>{collapsed.label}/</span>
       </li>,
     )

@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { Callout } from '../runtime/components/Callout.js'
+import { Checklist } from '../runtime/components/Checklist.js'
 import { Compare } from '../runtime/components/Compare.js'
 import { FileTree } from '../runtime/components/FileTree.js'
 import { Phase } from '../runtime/components/Phase.js'
@@ -118,6 +119,31 @@ describe('Questions', () => {
   it('renders a single question (edge)', () => {
     const html = renderToStaticMarkup(<Questions items={['Only one?']} />)
     expect(html).toContain('Only one?')
+  })
+})
+
+describe('Checklist', () => {
+  it('renders done and todo items with a title (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Checklist
+        title='Done when'
+        items={[{ text: 'Returns 429', done: true }, { text: 'Dashboards live' }]}
+      />,
+    )
+    expect(html).toContain('Done when')
+    expect(html).toContain('Returns 429')
+    expect(html).toContain('Dashboards live')
+    expect(html).toContain('data-done="true"')
+    expect(html).toContain('data-done="false"')
+  })
+
+  it('throws on an empty item list (error)', () => {
+    expect(() => renderToStaticMarkup(<Checklist items={[]} />)).toThrow(/at least one item/)
+  })
+
+  it('defaults an item to not done (edge)', () => {
+    const html = renderToStaticMarkup(<Checklist items={[{ text: 'only' }]} />)
+    expect(html).toContain('data-done="false"')
   })
 })
 

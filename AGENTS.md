@@ -66,5 +66,10 @@ sections render as a numbered vertical timeline; there is no sidebar.
 - 2026-06-20: Diagrams render via `beautiful-mermaid` (`renderMermaidSVG`), replacing the `mermaid`
   package. Why: synchronous and DOM-free, so it renders in SSR/static HTML, themes from our CSS
   vars (no scheme hack), and is far lighter. Tradeoff: no gantt/pie support.
+- 2026-06-20: Fenced code is highlighted by `rehype-expressive-code` (build-time), with a
+  `remarkMermaid` plugin extracting mermaid fences BEFORE it. Why: file-title frames and dual
+  light/dark; the remark step keeps mermaid from being highlighted. Replaced highlight.js.
+- 2026-06-20: Icons use `@tabler/icons-react` project-wide (one family). Why: the design standard
+  forbids hand-rolled icon paths / text glyphs.
 - 2026-06-20: Render with Vite root=`runtime/` + esbuild JSX, MDX via `virtual:plan` alias.
   Why: avoids plugin-react's node_modules transpile gap when the CLI is installed.

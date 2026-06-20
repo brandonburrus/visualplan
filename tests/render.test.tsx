@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import remarkFrontmatter from 'remark-frontmatter'
 import remarkMdxFrontmatter from 'remark-mdx-frontmatter'
 import { beforeAll, describe, expect, it } from 'vitest'
+import { remarkMermaid } from '../src/build/remark-mermaid.js'
 import { components } from '../runtime/index.js'
 
 const examplePath = join(process.cwd(), 'templates/example.mdx')
@@ -17,7 +18,11 @@ beforeAll(async () => {
   const mdxModule = await evaluate(source, {
     ...runtime,
     useMDXComponents,
-    remarkPlugins: [remarkFrontmatter, [remarkMdxFrontmatter, { name: 'frontmatter' }]],
+    remarkPlugins: [
+      remarkFrontmatter,
+      [remarkMdxFrontmatter, { name: 'frontmatter' }],
+      remarkMermaid,
+    ],
   })
   const Content = mdxModule.default
   html = renderToStaticMarkup(
@@ -55,11 +60,5 @@ describe('full plan render (MDX -> component DOM)', () => {
 
   it('leaks no raw frontmatter into the content (edge)', () => {
     expect(html).not.toContain('author:')
-  })
-
-  it('syntax-highlights a fenced code block (golden)', () => {
-    // the ```ts block renders through highlight.js into hljs token spans
-    expect(html).toContain('class="hljs')
-    expect(html).toContain('hljs-keyword')
   })
 })

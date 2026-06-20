@@ -1,3 +1,4 @@
+import { IconCheck, IconX } from '@tabler/icons-react'
 import { compareSchema } from '../shared/catalog.js'
 import { validateProps } from './validate.js'
 
@@ -23,12 +24,23 @@ export function Compare(props: CompareProps) {
           <div className='vp-compare__lists'>
             <ul className='vp-compare__pros'>
               {option.pros.map(pro => (
-                <li key={pro}>{pro}</li>
+                <li key={pro}>
+                  <IconCheck
+                    size={15}
+                    stroke={2.5}
+                    className='vp-compare__pro'
+                    aria-hidden='true'
+                  />
+                  <span>{pro}</span>
+                </li>
               ))}
             </ul>
             <ul className='vp-compare__cons'>
               {option.cons.map(con => (
-                <li key={con}>{con}</li>
+                <li key={con}>
+                  <IconX size={15} stroke={2.5} className='vp-compare__con' aria-hidden='true' />
+                  <span>{con}</span>
+                </li>
               ))}
             </ul>
           </div>

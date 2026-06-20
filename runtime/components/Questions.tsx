@@ -1,3 +1,4 @@
+import { IconHelpCircle } from '@tabler/icons-react'
 import { questionsSchema } from '../shared/catalog.js'
 import { validateProps } from './validate.js'
 
@@ -11,11 +12,8 @@ export function Questions(props: QuestionsProps) {
   return (
     <section className='vp-questions'>
       <div className='vp-questions__head'>
-        <span className='vp-questions__icon' aria-hidden='true'>
-          ?
-        </span>
+        <IconHelpCircle size={16} stroke={2} className='vp-questions__icon' aria-hidden='true' />
         <span className='vp-questions__title'>Open questions</span>
-        <span className='vp-questions__count'>{items.length}</span>
       </div>
       <ol className='vp-questions__list'>
         {items.map((item, index) => (

@@ -48,7 +48,7 @@ flowchart LR
     ]}
   />
 
-  ```ts
+  ```ts title="src/gateway/rate-limiter.ts"
   // sliding-window check against Redis, returns false when over the limit
   async function allow(token: string): Promise<boolean> {
     const key = `rl:${token}`

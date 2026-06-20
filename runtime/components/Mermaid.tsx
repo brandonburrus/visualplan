@@ -1,4 +1,5 @@
 import { renderMermaidSVG, type RenderOptions } from 'beautiful-mermaid'
+import { ExpandButton } from './ExpandButton.js'
 
 interface MermaidProps {
   chart: string
@@ -41,6 +42,11 @@ export function Mermaid({ chart }: MermaidProps) {
       </pre>
     )
   }
-  // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted SVG from our own synchronous renderer over author-provided diagram text, not untrusted HTML
-  return <div className='vp-mermaid' dangerouslySetInnerHTML={{ __html: svg }} />
+  return (
+    <div className='vp-mermaid vp-expandable'>
+      {/* biome-ignore lint/security/noDangerouslySetInnerHtml: trusted SVG from our own synchronous renderer over author-provided diagram text, not untrusted HTML */}
+      <div className='vp-mermaid__svg' dangerouslySetInnerHTML={{ __html: svg }} />
+      <ExpandButton />
+    </div>
+  )
 }

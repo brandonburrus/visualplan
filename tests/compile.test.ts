@@ -40,6 +40,12 @@ describe('renderToFile', () => {
     }
   })
 
+  it('highlights code via Expressive Code with a file title (golden)', () => {
+    // the build runs rehype-expressive-code; the ```ts block has title="...rate-limiter.ts"
+    expect(html).toContain('expressive-code')
+    expect(html).toContain('src/gateway/rate-limiter.ts')
+  })
+
   it('inlines the script and styles directly into the page (edge)', () => {
     // A text scan for external tags false-positives on JS string literals in the
     // bundle, so assert the positive instead: singlefile emits the JS as an inline

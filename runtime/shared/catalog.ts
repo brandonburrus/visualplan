@@ -59,6 +59,18 @@ export const questionsSchema = z.object({
   items: z.array(z.string().min(1)).min(1, 'questions needs at least one item'),
 })
 
+export const checklistSchema = z.object({
+  title: z.string().optional(),
+  items: z
+    .array(
+      z.object({
+        text: z.string().min(1, 'each item needs text'),
+        done: z.boolean().default(false),
+      }),
+    )
+    .min(1, 'checklist needs at least one item'),
+})
+
 /** Describes a component for the `components` printer and the static checker. */
 export interface CatalogEntry {
   name: string
@@ -110,6 +122,13 @@ export const CATALOG: readonly CatalogEntry[] = [
     staticEnums: {},
     example:
       '<Questions items={["Should refresh tokens rotate on every use?", "Is a 15-minute access-token TTL acceptable?"]} />',
+  },
+  {
+    name: 'Checklist',
+    summary: 'Acceptance criteria / definition of done, with done and todo states.',
+    staticEnums: {},
+    example:
+      '<Checklist title="Done when" items={[{ text: "Returns 429 over the limit", done: true }, { text: "Dashboards live" }]} />',
   },
   {
     name: 'mermaid (code fence)',

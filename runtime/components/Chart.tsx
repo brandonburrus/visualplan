@@ -13,6 +13,7 @@ import {
   YAxis,
 } from 'recharts'
 import { chartSchema } from '../shared/catalog.js'
+import { ExpandButton } from './ExpandButton.js'
 import { validateProps } from './validate.js'
 
 interface ChartProps {
@@ -46,10 +47,10 @@ export function Chart(props: ChartProps) {
   const { type, title, data } = validateProps('Chart', chartSchema, props)
   const total = data.reduce((sum, point) => sum + point.value, 0)
   return (
-    <figure className='vp-chart'>
+    <figure className='vp-chart vp-expandable'>
       {title ? <figcaption className='vp-chart__title'>{title}</figcaption> : null}
-      <div className='vp-chart__canvas'>
-        <ResponsiveContainer width='100%' height={type === 'pie' ? 220 : 250}>
+      <div className='vp-chart__canvas' data-type={type}>
+        <ResponsiveContainer width='100%' height='100%'>
           {type === 'bar' ? (
             <BarChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
               <CartesianGrid strokeDasharray='3 3' stroke='var(--vp-border)' vertical={false} />
@@ -105,6 +106,7 @@ export function Chart(props: ChartProps) {
           ))}
         </ul>
       ) : null}
+      <ExpandButton />
     </figure>
   )
 }

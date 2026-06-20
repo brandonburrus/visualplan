@@ -16,10 +16,10 @@ prebuilt. See the root AGENTS.md for why Vite is configured without `@vitejs/plu
   (`counter-reset: vp-phase` on `.vp-main`, `counter-increment` on `.vp-phase`, number drawn by
   `.vp-phase__node::before`), so phases self-number in document order with no index prop. The
   connector line is a `.vp-phase__rail::after` pseudo-element omitted on the last step.
-- `components/` holds the seven components (Phase, FileTree, Chart, Compare, Callout, Questions,
-  Mermaid). `FileTree` builds a nested directory tree from flat `{path}` entries (collapsing
-  single-child dir chains); `Questions` renders open questions Claude wants the reader to resolve.
-  Each validates its props through `validate.ts`
+- `components/` holds the components (Phase, FileTree, Chart, Compare, Callout, Questions,
+  Checklist, Mermaid). `FileTree` builds a nested directory tree from flat `{path}` entries
+  (collapsing single-child dir chains); `Checklist` renders done/todo acceptance criteria. Each
+  validates its props through `validate.ts`
   against the matching zod schema in `shared/catalog.ts`, throwing a readable, component-named
   error on invalid input (this surfaces in the page and is the render-time half of validation).
 
@@ -31,13 +31,29 @@ prebuilt. See the root AGENTS.md for why Vite is configured without `@vitejs/plu
   our CSS vars, so one SVG adapts to light and dark with no theme detection. Supported diagram
   types: flowchart, sequence, state, class, ER, XY chart. gantt/pie are not supported and throw,
   which the component catches and shows as an inline error.
-- **`pre` override drives mermaid and code highlighting:** MDX renders a fence as `<pre><code
-  class="language-X">`. The `Pre` component in `index.tsx` intercepts it: ` ```mermaid ` becomes a
-  `<Mermaid>`, any language `highlight.js` knows (see `components/highlight.ts`) is
-  syntax-highlighted, and everything else falls through to a plain `<pre>`. Highlighting is
-  synchronous/DOM-free so it is in the static/SSR output; do NOT add a build-time rehype
-  highlighter — it would rewrite the mermaid node and break the mermaid branch. Token colors are
-  dual-theme via `--hl-*` CSS vars (github-light / github-dark).
+- **Fenced code is handled at build time, not in a `pre` override.** Two plugins in
+  `src/build/compile.ts` cooperate, and ORDER matters: `remarkMermaid` (remark, mdast stage)
+  rewrites ` ```mermaid ` fences into `<Mermaid>` JSX FIRST, then `rehype-expressive-code` (rehype
+  stage) highlights every remaining code block. Because mermaid is extracted before the
+  highlighter runs, the two never collide. Do NOT reorder them, and do NOT route code through a
+  React `pre` override again. Expressive Code gives file-title frames (` ```ts title="src/x.ts" `)
+  and dual light/dark via `useDarkModeMediaQuery` (github-dark / github-light). Its copy button is
+  off (the injected script would not execute in our client-rendered SPA).
+- **Icons are Tabler (`@tabler/icons-react`), one family, stroke ~2.** Components render icon
+  elements (FileTree change markers + folder, Compare check/x/star, Callout type icon, Questions
+  help icon); never hand-roll SVG paths or text glyphs. Icons inherit `currentColor`, so the
+  semantic color CSS still drives them.
+- **Fullscreen applies to diagrams and charts only (not code).** React surfaces (Mermaid, Chart)
+  render `<ExpandButton>` and get the `.vp-expandable` class; `Layout`'s `useEffect` calls
+  `initFullscreenControls()`. Code blocks deliberately have no fullscreen.
+  `initFullscreenControls` adds a `fullscreenchange` listener that builds a `PanZoom` viewer + the
+  toolbar (zoom out / level / zoom in / close). The viewer fits-to-fill and centers the content on
+  open, and supports drag-pan, two-finger touch pinch, and trackpad pinch (ctrl + wheel). It uses an
+  absolutely-positioned `.vp-fs-content` layer with a `translate() scale()` transform (origin 0,0),
+  so zoom-to-cursor math is exact; the zoom % is shown relative to the fit scale (fit = 100%).
+- **Expressive Code header is flattened** to a plain filename bar via `.vp-main .expressive-code
+  .frame.has-title .header` overrides (the `.vp-main` prefix is required because EC injects its
+  `<style>` in the body, after our head styles). Do not remove the prefix.
 - **Recharts `Cell` is deprecation-flagged** in recharts 3 but still functional; it is how
   per-bar/slice colors are set. The hint does not fail typecheck.
 - **`shared/catalog.ts` must stay isomorphic** (no React/recharts/mermaid) — the Node CLI
@@ -64,8 +80,8 @@ page. The rules below are deliberate; changing them needs a reason.
   on both surfaces). The pie renders its labels as a custom HTML legend below the chart, not as
   recharts outside labels (those clip against the container). Axis ticks and tooltips are driven by
   CSS vars so dark mode is correct.
-- **Callout colors are semantic and distinct:** decision (neutral), risk (red tint), warn (yellow
-  tint). Risk and warn must stay visually different. `Questions` uses its own blue "needs input" tint.
+- **Callout colors are semantic and distinct:** note (purple), decision (teal), risk (red), warn
+  (yellow). Each must stay visually different. `Questions` uses its own blue "needs input" tint.
 - **Visual verification:** `playwright-core` (devDep) drives the system Chrome to screenshot a
   rendered `.plan.html` in light and dark. Re-check both schemes after any theme change.
 

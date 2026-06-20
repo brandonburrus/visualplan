@@ -41,8 +41,11 @@ Begin the file with a single `# Heading`; it becomes the plan title. There is no
   (`risk` is red, `warn` is yellow.)
 - `<Questions items={["...", "..."]} />` — open questions you want the reader to resolve before
   building. Use this instead of burying uncertainties in prose.
-- Fenced code blocks are syntax-highlighted: write ` ```ts ` (or js, json, bash, python, go, rust,
-  sql, yaml, css, etc.) to show a key snippet.
+- `<Checklist title="Done when" items={[{ text: "...", done: true }]} />` — acceptance criteria /
+  definition of done, with done and todo states.
+- Fenced code blocks are syntax-highlighted (Expressive Code): write ` ```ts ` (or js, json, bash,
+  python, go, rust, sql, yaml, etc.) to show a key snippet. Add a file name with
+  ` ```ts title="src/path/file.ts" ` to render a filename header on the block.
 
 ## Guidance
 
