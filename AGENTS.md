@@ -30,7 +30,8 @@ is no frontmatter. `Phase` sections render as a numbered vertical timeline; no s
   `index.tsx` (MDX scope + `mount`), `theme.css`, `fullscreen.ts`.
 - `packages/core` — `@visualplan/core` (private). The isomorphic component vocabulary
   (zod schemas + `CATALOG`); imported by both the runtime and the CLI.
-- `skill/visual-plan/` — the Claude skill (a top-level sibling, not a package).
+- `skills/visual-plan/` — the Claude skill (a top-level sibling, not a package). The plural
+  `skills/` name is required for the skills.sh CLI (`npx skills add ...`) to discover it.
 
 ## Publishing (single package, vendored)
 
