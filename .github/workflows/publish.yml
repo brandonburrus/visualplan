@@ -3,6 +3,11 @@ name: Publish
 # Publish the vplan CLI to npm when a GitHub release is published. The package
 # version is taken from the release tag (e.g. tag "0.2.0" -> version 0.2.0), set
 # at build time only; the repo's package.json version is not committed back.
+#
+# Auth is npm trusted publishing (OIDC): no NPM_TOKEN. It requires the `id-token:
+# write` permission below and a trusted publisher configured for `vplan` on npmjs.com
+# pointing at this workflow. pnpm exchanges the GitHub OIDC token for a short-lived
+# npm credential at publish time.
 on:
   release:
     types: [published]
@@ -12,6 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -20,7 +26,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          registry-url: https://registry.npmjs.org
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
@@ -39,8 +44,6 @@ jobs:
 
       # prepack vendors runtime + core and runs tsup; pnpm rewrites the workspace
       # protocol. --no-git-checks is required because the version bump dirties the tree.
-      - name: Publish to npm
+      - name: Publish to npm (OIDC trusted publishing)
         run: pnpm publish --no-git-checks --access public
         working-directory: packages/cli
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
