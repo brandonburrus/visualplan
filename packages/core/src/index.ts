@@ -56,6 +56,7 @@ export const calloutSchema = z.object({
 })
 
 export const questionsSchema = z.object({
+  title: z.string().default('Open questions'),
   items: z.array(z.string().min(1)).min(1, 'questions needs at least one item'),
 })
 
@@ -118,7 +119,7 @@ export const CATALOG: readonly CatalogEntry[] = [
   {
     name: 'Questions',
     summary:
-      'Open questions you (Claude) want the reader to weigh in on before building, as a highlighted panel.',
+      'Open questions you (Claude) want the reader to weigh in on before building, as a highlighted panel. Title defaults to "Open questions"; override with title.',
     staticEnums: {},
     example:
       '<Questions items={["Should refresh tokens rotate on every use?", "Is a 15-minute access-token TTL acceptable?"]} />',

@@ -43,7 +43,8 @@ Begin the file with a single `# Heading`; it becomes the plan title. There is no
 - `<Callout type="note|risk|decision|warn">` — highlight a risk, decision, or note; wraps markdown.
   (`risk` is red, `warn` is yellow.)
 - `<Questions items={["...", "..."]} />` — open questions you want the reader to resolve before
-  building. Use this instead of burying uncertainties in prose.
+  building. Use this instead of burying uncertainties in prose. The title defaults to "Open
+  questions"; override with `title="..."`.
 - `<Checklist title="Done when" items={[{ text: "...", done: true }]} />` — acceptance criteria /
   definition of done, with done and todo states.
 - Fenced code blocks are syntax-highlighted (Expressive Code): write ` ```ts ` (or js, json, bash,

@@ -111,6 +111,13 @@ describe('Questions', () => {
     expect(html).toContain('Should refresh tokens rotate?')
   })
 
+  it('defaults the title to "Open questions" and accepts an override (edge)', () => {
+    expect(renderToStaticMarkup(<Questions items={['x?']} />)).toContain('Open questions')
+    const custom = renderToStaticMarkup(<Questions title='Risks to resolve' items={['x?']} />)
+    expect(custom).toContain('Risks to resolve')
+    expect(custom).not.toContain('Open questions')
+  })
+
   it('throws on an empty question list (error)', () => {
     expect(() => renderToStaticMarkup(<Questions items={[]} />)).toThrow(/at least one item/)
   })

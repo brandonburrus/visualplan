@@ -494,7 +494,7 @@ body {
 }
 
 /* Questions: open questions for the reader. Neutral card like the other list cards,
-   with blue kept only as the accent on the icon, title, and numbers. */
+   with blue kept only as the accent on the item numbers. */
 .vp-questions {
   border: 1px solid var(--vp-border);
   background: var(--vp-surface);
@@ -503,28 +503,14 @@ body {
   margin: 1.4rem 0;
 }
 
-.vp-questions__head {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 0.6rem;
-}
-
-/* The header icon shares a fixed-width column with the item numbers below, so the
-   title and every question text line up on the same left edge. */
-.vp-questions__icon {
-  flex: 0 0 auto;
-  width: 1.15rem;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--vp-question);
-}
-
+/* Small uppercase label, identical to the Checklist title. */
 .vp-questions__title {
+  font-size: 0.68rem;
   font-weight: 600;
-  font-size: 0.9rem;
-  color: var(--vp-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--vp-muted);
+  margin-bottom: 0.55rem;
 }
 
 .vp-questions__list {
