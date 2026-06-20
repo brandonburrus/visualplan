@@ -555,7 +555,10 @@ body {
 /* Compare */
 .vp-compare {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  /* Cards stack once the column is too narrow for two comfortably (narrow windows),
+     while keeping the desktop multi-column layout. min(100%, ...) avoids overflow
+     on ultra-narrow screens. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 15.5rem), 1fr));
   gap: 0.85rem;
   margin: 1.25rem 0;
 }
