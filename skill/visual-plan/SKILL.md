@@ -1,6 +1,6 @@
 ---
 name: visual-plan
-description: Use this skill when writing an implementation or design plan that would benefit from visuals instead of a wall of text, especially in plan mode. Authors the plan as an MDX file and renders it to a self-contained HTML page with the `vplan` CLI, using a fixed component vocabulary (Phase, FileTree, Chart, Compare, Callout, and mermaid diagrams). Use when the user says "make a visual plan", "render this plan", "show me the plan", or asks for a plan with diagrams/charts. Do not use for prose-only notes or when no `vplan` CLI is available.
+description: Always use when planning anything non-trivial (an implementation, design, refactor, or migration), as the default and better way to show your plan visually instead of as a wall of text, especially in plan mode. Authors the plan as an MDX file and renders it to a self-contained HTML page with the `vplan` CLI, using a fixed component vocabulary (Phase, FileTree, Chart, Compare, Callout, Questions, Checklist, and mermaid diagrams). Also use when the user says "make a visual plan", "render this plan", "show me the plan", or asks for a plan with diagrams/charts. Skip only for trivial one-step changes or prose-only notes.
 ---
 
 # Visual Plan
