@@ -1,4 +1,4 @@
-import { IconHelpCircle } from '@tabler/icons-react'
+import { IconQuestionMark } from '@tabler/icons-react'
 import { questionsSchema } from '@visualplan/core'
 import { validateProps } from './validate.js'
 
@@ -12,7 +12,7 @@ export function Questions(props: QuestionsProps) {
   return (
     <section className='vp-questions'>
       <div className='vp-questions__head'>
-        <IconHelpCircle size={16} stroke={2} className='vp-questions__icon' aria-hidden='true' />
+        <IconQuestionMark size={16} stroke={2} className='vp-questions__icon' aria-hidden='true' />
         <span className='vp-questions__title'>Open questions</span>
       </div>
       <ol className='vp-questions__list'>

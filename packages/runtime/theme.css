@@ -9,6 +9,7 @@
   --vp-border-strong: #d6d6d2;
   --vp-accent: #1a1a1c;
   --vp-on-accent: #fbfbfa;
+  --vp-link: #2f6fed;
   --vp-done: #15803d;
   --vp-modify: #b45309;
   --vp-risk: #b91c1c;
@@ -21,12 +22,12 @@
   --vp-question: #2f6fed;
   --vp-question-tint: #eef3fe;
   --vp-question-border: #d4e0fb;
-  --vp-note: #7c3aed;
-  --vp-note-tint: #f6f2fe;
-  --vp-note-border: #e4d8fb;
-  --vp-decision: #0d9488;
-  --vp-decision-tint: #ecfbf7;
-  --vp-decision-border: #c2ebe2;
+  --vp-note: #2f6fed;
+  --vp-note-tint: #eef3fe;
+  --vp-note-border: #d4e0fb;
+  --vp-decision: #7c3aed;
+  --vp-decision-tint: #f6f2fe;
+  --vp-decision-border: #e4d8fb;
   --vp-ease: cubic-bezier(0.25, 1, 0.5, 1);
   --vp-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --vp-mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
@@ -44,6 +45,7 @@
     --vp-border-strong: #3a3a3f;
     --vp-accent: #e9e9e6;
     --vp-on-accent: #161618;
+    --vp-link: #7aa2ff;
     --vp-done: #45c97a;
     --vp-modify: #d99a3a;
     --vp-risk: #ef8f8f;
@@ -56,12 +58,12 @@
     --vp-question: #7aa2ff;
     --vp-question-tint: #161d2e;
     --vp-question-border: #2b3a5e;
-    --vp-note: #b794f6;
-    --vp-note-tint: #1d1830;
-    --vp-note-border: #362a52;
-    --vp-decision: #2dd4bf;
-    --vp-decision-tint: #0e2421;
-    --vp-decision-border: #1d433c;
+    --vp-note: #7aa2ff;
+    --vp-note-tint: #161d2e;
+    --vp-note-border: #2b3a5e;
+    --vp-decision: #b794f6;
+    --vp-decision-tint: #1d1830;
+    --vp-decision-border: #362a52;
   }
 }
 
@@ -118,8 +120,9 @@ body {
 }
 
 .vp-main a {
-  color: var(--vp-accent);
-  text-decoration-color: var(--vp-muted);
+  color: var(--vp-link);
+  text-decoration-color: var(--vp-link);
+  text-decoration-thickness: 1px;
   text-underline-offset: 2px;
 }
 
@@ -275,9 +278,10 @@ body {
 
 .vp-phase__content {
   min-width: 0;
-  padding-top: 0.15rem;
 }
 
+/* The head matches the node height and centers its content, so the title sits on the
+   node's center line (both columns start at the row top). */
 .vp-phase__head {
   display: flex;
   align-items: center;
