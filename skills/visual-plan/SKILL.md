@@ -49,8 +49,9 @@ brace errors that break a render.
 - `<Callout type="note|tip|risk|decision|warn">` — highlight a risk, decision, tip, or note; wraps
   markdown. (`note` is blue, `tip` is green, `decision` is purple, `risk` is red, `warn` is yellow.)
 - `<FileTree>` — file-change map. One bullet per file, `- <change> <path>`, where `change` is
-  `add|modify|delete|move`. A move reads `- move <from> -> <to>`. A path ending in `/` marks a
-  whole directory (e.g. `- delete src/legacy/`).
+  `add|modify|delete|move`. A move needs both ends, `- move <from> -> <to>` (the file renders at
+  its destination with the origin shown). A path ending in `/` marks a whole directory (e.g.
+  `- delete src/legacy/`).
 
   ```mdx
   <FileTree>
@@ -61,7 +62,9 @@ brace errors that break a render.
   ```
 - `<Chart type="bar|line|pie" title="...">` — estimates/metrics. For a single series, one bullet
   per point, `- <label>: <value>` (value is a number). For multiple series (bar/line only), write
-  a table whose header is `category | series1 | series2`.
+  a table whose header is `category | series1 | series2`; the header cells after the first name the
+  series (they become the legend), and the first column is the category axis. `pie` is always
+  single-series, so use the list form for it (a table is rejected).
 
   ```mdx
   <Chart type="bar" title="Effort (days)">
@@ -140,10 +143,19 @@ brace errors that break a render.
 
 - Lead with structure: open with an optional one-paragraph context, then a mermaid architecture
   diagram, then `<Phase>` sections. Put risks and key decisions in `<Callout>`s, not buried in prose.
+- Right-size the structure to the change. A large effort opens with a diagram and several phases;
+  a two-or-three-file change may need only a short `<FileTree>` and a `<Checklist>`. Do not add a
+  diagram or phases that carry no information, an empty 2-node flowchart is worse than no diagram.
 - Prefer a diagram or a `<FileTree>` over describing structure in sentences.
 - Keep prose tight inside phases; the visual is the point.
+- In prose, `<`, `{`, and `}` are MDX syntax, so a bare `<Thing>` or `{value}` can break the
+  render. Wrap literal angle brackets, braces, generics (`List<T>`), or tag-like text in backticks
+  or a code fence, where every character is safe and literal.
 - Keep `<Chart>` labels short (a word or two). Long bar/line x-axis labels get dropped or
   crowded; put the detail in the title or the surrounding prose, not the label.
+- Do not put series of wildly different magnitudes on one `<Chart>` (e.g. a value near 50 beside
+  one near 2,000,000). They share a single y-axis, so the small series flattens to the zero line
+  and reads as nothing. Split them into separate charts or normalize to the same unit.
 - For mermaid, prefer top-down (`flowchart TD`) once a diagram has many nodes. A very wide
   left-to-right (`LR`) chain shrinks to fit the page and becomes hard to read; split large
   flows into a few smaller diagrams instead of one sprawling one.
