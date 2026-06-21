@@ -106,6 +106,10 @@ A release is cut by creating a GitHub release; the tag is the published version 
 
 ## Key Decisions
 
+- 2026-06-21: Plan sharing encodes the plan's **MDX source** (deflate + base64url) into a
+  `visualplan.dev/view?data=...` link, not the compiled output. Why: the source is small, compresses
+  well, and is the one form `/view` can recompile with the same plugins; `/view` (the in-browser
+  consumer) is a still-pending follow-up, so keep the codec (`@visualplan/core/share`) isomorphic.
 - 2026-06-20: Plans authored as MDX with a fixed component vocabulary, rendered to a
   self-contained HTML page. Why: visual, scannable plans without per-plan toolchain setup.
 - 2026-06-20: Mermaid (one ` ```mermaid ` fence) covers diagrams instead of bespoke components.

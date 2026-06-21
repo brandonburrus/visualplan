@@ -78,6 +78,9 @@ importers:
       expressive-code-color-chips:
         specifier: ^0.1.4
         version: 0.1.4(@expressive-code/core@0.43.1)
+      fflate:
+        specifier: ^0.8.2
+        version: 0.8.3
       hast-util-from-html:
         specifier: ^2.0.3
         version: 2.0.3
@@ -145,6 +148,9 @@ importers:
 
   packages/core:
     dependencies:
+      fflate:
+        specifier: ^0.8.2
+        version: 0.8.3
       zod:
         specifier: ^4.4.3
         version: 4.4.3
@@ -2158,6 +2164,9 @@ packages:
     peerDependenciesMeta:
       picomatch:
         optional: true
+
+  fflate@0.8.3:
+    resolution: {integrity: sha512-tbZNuJrLwGUp3zshBtdy4W+ORxZuIh8a5ilyIEQDC5rY1f3U20JMry0Ll3WBzU58EZKsEuJFXhb5gwv8CsPvgA==}
 
   figures@1.7.0:
     resolution: {integrity: sha512-UxKlfCRuCBxSXU4C6t9scbDyWZ4VlaFFdojKtzJuSkuOBQ5CNFum+zZXFwHjo+CxBC1t6zlYPgHIgFjL8ggoEQ==}
@@ -5849,6 +5858,8 @@ snapshots:
   fdir@6.5.0(picomatch@4.0.4):
     optionalDependencies:
       picomatch: 4.0.4
+
+  fflate@0.8.3: {}
 
   figures@1.7.0:
     dependencies:

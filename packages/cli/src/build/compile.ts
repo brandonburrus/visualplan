@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import mdx from '@mdx-js/rollup'
+import { encodePlan } from '@visualplan/core/share'
 import { pluginColorChips } from 'expressive-code-color-chips'
 import rehypeExpressiveCode, { type RehypeExpressiveCodeOptions } from 'rehype-expressive-code'
 import remarkFrontmatter from 'remark-frontmatter'
@@ -145,6 +146,54 @@ function htmlTitlePlugin(mdxPath: string): Plugin {
   }
 }
 
+/** The shape injected onto `globalThis.__VP_SHARE__` for the runtime share button. */
+interface PlanShare {
+  /** The plan's MDX source, deflated + base64url, for the `?data=` link. */
+  data: string
+  /** True on the `--watch` dev server, where the link is a point-in-time snapshot. */
+  dev: boolean
+}
+
+/**
+ * Embed the plan's encoded MDX source so the runtime share button can build a
+ * stateless `visualplan.dev/view?data=...` link. The source is read fresh on
+ * every call (BOM-stripped to match `planTitle`), so the `--watch` dev server
+ * always reflects the current file: `transformIndexHtml` seeds the initial value,
+ * and a `/__vp_share` dev endpoint re-encodes on demand when the button is clicked.
+ */
+function planSharePlugin(mdxPath: string): Plugin {
+  const encode = () => encodePlan(readFileSync(mdxPath, 'utf8').replace(/^\ufeff/, ''))
+  return {
+    name: 'visualplan:share',
+    configureServer(server) {
+      server.middlewares.use('/__vp_share', (_req, res) => {
+        try {
+          const data = encode()
+          res.setHeader('content-type', 'text/plain; charset=utf-8')
+          res.setHeader('cache-control', 'no-store')
+          res.end(data)
+        } catch {
+          res.statusCode = 500
+          res.end('')
+        }
+      })
+    },
+    transformIndexHtml: {
+      order: 'pre',
+      handler(_html, ctx) {
+        const share: PlanShare = { data: encode(), dev: ctx.server != null }
+        return [
+          {
+            tag: 'script',
+            injectTo: 'head',
+            children: `globalThis.__VP_SHARE__=${JSON.stringify(share)}`,
+          },
+        ]
+      },
+    },
+  }
+}
+
 function baseConfig(paths: RuntimePaths, mdxPath: string): InlineConfig {
   return {
     root: paths.runtimeDir,
@@ -165,7 +214,7 @@ function baseConfig(paths: RuntimePaths, mdxPath: string): InlineConfig {
       },
     },
     esbuild: { jsx: 'automatic', jsxImportSource: 'react' },
-    plugins: [mdxPlugin(), htmlTitlePlugin(mdxPath)],
+    plugins: [mdxPlugin(), htmlTitlePlugin(mdxPath), planSharePlugin(mdxPath)],
     // The runtime, core, and the user's plan span sibling dirs (and a hoisted
     // node_modules) in the monorepo, so the dev server cannot use a single allow
     // root. This is a local tool rendering the user's own file, so fs is unrestricted.

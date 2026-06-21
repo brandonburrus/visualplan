@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Callout } from '../components/Callout.js'
 import { Checklist } from '../components/Checklist.js'
 import { Compare } from '../components/Compare.js'
@@ -8,6 +8,7 @@ import { MathBlock } from '../components/Math.js'
 import { Matrix } from '../components/Matrix.js'
 import { Phase } from '../components/Phase.js'
 import { Questions } from '../components/Questions.js'
+import { copyText, ShareButton } from '../components/ShareButton.js'
 
 describe('Phase', () => {
   it('renders the title and a status badge for active/done (golden)', () => {
@@ -276,5 +277,74 @@ describe('Checklist', () => {
   it('defaults an item to not done (edge)', () => {
     const html = renderToStaticMarkup(<Checklist items={[{ text: 'only' }]} />)
     expect(html).toContain('data-done="false"')
+  })
+})
+
+describe('ShareButton', () => {
+  const setShare = (value: unknown) => {
+    ;(globalThis as { __VP_SHARE__?: unknown }).__VP_SHARE__ = value
+  }
+
+  afterEach(() => {
+    setShare(undefined)
+    vi.restoreAllMocks()
+  })
+
+  it('renders the share button when plan data is injected (golden)', () => {
+    setShare({ data: 'abc123', dev: false })
+    const html = renderToStaticMarkup(<ShareButton />)
+    expect(html).toContain('vp-share__btn')
+    expect(html).toContain('Share')
+  })
+
+  it('renders nothing when no plan data is injected (edge)', () => {
+    setShare(undefined)
+    expect(renderToStaticMarkup(<ShareButton />)).toBe('')
+  })
+
+  it('shows a snapshot note on the watch dev server (edge)', () => {
+    setShare({ data: 'abc', dev: true })
+    const html = renderToStaticMarkup(<ShareButton />)
+    expect(html).toContain('vp-share__note')
+    expect(html).toContain('snapshot')
+  })
+})
+
+describe('copyText', () => {
+  // jsdom does not implement document.execCommand, so install a stub per test and
+  // remove it after (restoreAllMocks only reverts spies, not a defined property).
+  const stubExecCommand = (result: boolean) => {
+    const execCommand = vi.fn().mockReturnValue(result)
+    Object.defineProperty(document, 'execCommand', { value: execCommand, configurable: true })
+    return execCommand
+  }
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+    Reflect.deleteProperty(document, 'execCommand')
+  })
+
+  it('uses the async clipboard API when available (golden)', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    expect(await copyText('https://visualplan.dev/view?data=x')).toBe(true)
+    expect(writeText).toHaveBeenCalledWith('https://visualplan.dev/view?data=x')
+  })
+
+  it('falls back to execCommand when the clipboard API rejects (edge)', async () => {
+    vi.stubGlobal('navigator', {
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error('blocked')) },
+    })
+    const execCommand = stubExecCommand(true)
+    expect(await copyText('https://x')).toBe(true)
+    expect(execCommand).toHaveBeenCalledWith('copy')
+  })
+
+  it('returns false when both the clipboard API and execCommand fail (error)', async () => {
+    vi.stubGlobal('navigator', {
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error('blocked')) },
+    })
+    stubExecCommand(false)
+    expect(await copyText('https://x')).toBe(false)
   })
 })

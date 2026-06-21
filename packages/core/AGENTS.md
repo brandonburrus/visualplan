@@ -8,7 +8,14 @@ CLI's `check` and `components` commands. One file: `src/index.ts`.
 
 - **Stay isomorphic.** This module is imported by BOTH the browser runtime (`@visualplan/runtime`,
   for render-time validation) and the Node CLI (`vplan`, for static `check` and the catalog
-  printer). It must have **no** React, recharts, or mermaid imports. `zod` is the only dependency.
+  printer). It must have **no** React, recharts, or mermaid imports. `index.ts` depends only on
+  `zod`.
+- **`src/share.ts` is the stateless-share codec** (`encodePlan`/`decodePlan`: deflate via `fflate`
+  + a hand-rolled base64url). It is exposed as the `@visualplan/core/share` subpath (`exports` map)
+  and is deliberately NOT re-exported from `index.ts`, so the vendored render path (only `index.ts`
+  is vendored) and the runtime's import of `@visualplan/core` stay free of `fflate`. The CLI encodes
+  at render time, `/view` decodes in the browser; keep it isomorphic (no Node `Buffer`, no DOM
+  `btoa`) so one format serves both.
 - The package is private and never published on its own. The CLI bundles it into `dist` (tsup
   `noExternal`) for the Node path, and vendors its source (`-> cli/core/index.ts`) for the Vite
   render path, where it is aliased to `@visualplan/core`. `main`/`types` point at the raw `.ts`

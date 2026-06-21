@@ -951,3 +951,99 @@ body {
     transition: none;
   }
 }
+
+/* Share: a fixed top-right button that copies a stateless ?data= link to this plan. */
+.vp-share {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4rem;
+}
+
+.vp-share__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 32px;
+  padding: 0 0.7rem;
+  border: 1px solid var(--vp-border);
+  border-radius: 8px;
+  background: var(--vp-surface);
+  color: var(--vp-muted);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    color 120ms var(--vp-ease),
+    border-color 120ms var(--vp-ease),
+    background 120ms var(--vp-ease);
+}
+
+.vp-share__btn:hover {
+  color: var(--vp-text);
+  border-color: var(--vp-border-strong);
+  background: var(--vp-surface-2);
+}
+
+.vp-share__btn[data-copied="true"] {
+  color: var(--vp-done);
+  border-color: var(--vp-done);
+}
+
+.vp-share__note {
+  margin: 0;
+  max-width: 12rem;
+  text-align: right;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  color: var(--vp-faint);
+}
+
+.vp-share__manual {
+  width: min(20rem, 70vw);
+  padding: 0.6rem 0.7rem;
+  border: 1px solid var(--vp-border);
+  border-radius: 8px;
+  background: var(--vp-surface);
+}
+
+.vp-share__manual p {
+  margin: 0 0 0.35rem;
+  font-size: 0.72rem;
+  color: var(--vp-muted);
+}
+
+.vp-share__input {
+  width: 100%;
+  padding: 0.35rem 0.45rem;
+  border: 1px solid var(--vp-border);
+  border-radius: 6px;
+  background: var(--vp-bg);
+  color: var(--vp-text);
+  font-family: var(--vp-mono);
+  font-size: 0.72rem;
+}
+
+/* Compact to an icon-only button where a labeled pill would crowd the title. */
+@media (max-width: 640px) {
+  .vp-share__label {
+    display: none;
+  }
+
+  .vp-share__btn {
+    width: 32px;
+    padding: 0;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vp-share__btn {
+    transition: none;
+  }
+}

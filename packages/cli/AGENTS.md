@@ -8,7 +8,10 @@ renders a plan to a self-contained HTML page). Built with tsup to `dist/index.js
 - `src/index.ts` — commander dispatch. `src/commands/` — one file per command (render, check,
   components).
 - `src/build/compile.ts` — Vite orchestration for `render` (single-file build via
-  `vite-plugin-singlefile`) and `--watch` (dev server). Holds the `rehype-expressive-code` options,
+  `vite-plugin-singlefile`) and `--watch` (dev server). `planSharePlugin` encodes the plan's MDX
+  (`@visualplan/core/share` `encodePlan`) and injects it onto `globalThis.__VP_SHARE__` for the
+  runtime share button; on the dev server it also serves `/__vp_share`, which re-encodes the file on
+  each request so a watched plan shares its current state. Holds the `rehype-expressive-code` options,
   including two EC plugins: `pluginColorChips` (CSS color swatches) and our own
   `src/build/expressive-code-file-icons.ts` (a Material Icon Theme file-type icon in a titled
   block's header, given `iconClass: 'vp-file-icon'` so `theme.css` can size it). Both inline their
@@ -70,6 +73,13 @@ Do not remove them.
   `dependencies`. `tsup` bundles `@visualplan/core` (`noExternal`) into `dist` for the Node path.
 - The vendored `cli/runtime` and `cli/core` are **generated and git-ignored** (written by
   `vendor.mjs`, included in the tarball via `files`). Never edit them; edit the source packages.
+  **Gotcha:** if these dirs exist during local dev, `findRuntimePaths` prefers them over the
+  workspace source, so a stale copy silently shadows your runtime/core edits at render time. After
+  changing the runtime or core, re-vendor (`pnpm --filter vplan vendor`) or remove `cli/runtime` +
+  `cli/core` so renders pick up the workspace source again.
+- `tsup` `noExternal` is the regex `/^@visualplan\/core/` (not the bare string) so it also bundles
+  the `@visualplan/core/share` subpath that `compile.ts` imports; `fflate` (the codec's dep) is a
+  real CLI `dependency` so tsup leaves it external and it ships installed.
 - **Publish with `pnpm publish`** so the `workspace:*` protocol is rewritten. `prepack` runs
   `vendor.mjs` then `tsup`.
 - The icon/highlighting deps (`material-icon-theme`, `expressive-code-color-chips`,

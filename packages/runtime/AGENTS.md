@@ -12,7 +12,16 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   own first `# Heading`, rendered as normal markdown.
 - `index.tsx` defines `mount` and the `components` map auto-injected into MDX via `MDXProvider`.
   No plan ever writes an `import` — every component resolves through this map.
-- `Layout.tsx` is a single centered content column — no header and no sidebar.
+- `Layout.tsx` is a single centered content column — no header and no sidebar. It also mounts
+  `ShareButton`.
+- `components/ShareButton.tsx` is the fixed top-right "Share" button. It reads the plan's encoded
+  MDX off `globalThis.__VP_SHARE__` (`{ data, dev }`, injected by the CLI build's `planSharePlugin`)
+  and copies a `https://visualplan.dev/view?data=...` link. It renders nothing when that global is
+  absent (a unit test, or the runtime mounted without the build). `copyText` tries
+  `navigator.clipboard` then falls back to a hidden-textarea `execCommand` (the clipboard API is
+  blocked on `file://`, where rendered plans usually open); if both fail it reveals the link to copy
+  by hand. On the `--watch` dev server (`dev: true`) it refetches `/__vp_share` at click time so the
+  link reflects the current file, and shows a note that the link is a point-in-time snapshot.
 - `Phase` renders as a numbered vertical timeline. The step number comes from a CSS counter
   (`counter-reset: vp-phase` on `.vp-main`, `counter-increment` on `.vp-phase`, number drawn by
   `.vp-phase__node::before`), so phases self-number in document order with no index prop. The
