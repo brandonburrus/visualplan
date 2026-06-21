@@ -56,6 +56,16 @@ body {
   font-size: 16px;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
+  /* Sticky footer: a full-height flex column with the main region growing keeps the footer at the
+   * bottom of the viewport on short pages (e.g. the docs index or a single section) instead of
+   * floating up under the content. */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body > main {
+  flex: 1 0 auto;
 }
 
 a {

@@ -1,5 +1,3 @@
-import { IconCheck, IconShare3 } from '@tabler/icons-react'
-import { copyText } from '@visualplan/runtime/components/ShareButton'
 import { useEffect, useRef, useState } from 'react'
 
 /** The iframe starts at this height and grows to its content via postMessage from the frame. */
@@ -7,11 +5,18 @@ const MIN_HEIGHT = 640
 
 const RESIZE_MESSAGE = 'vp-plan-frame-resize'
 
+/** Where the consumed `?data=` is stashed so a reload still finds the plan after the URL is cleaned. */
+const STORAGE_KEY = 'vp-view-data'
+
 /**
- * The /view host page. It reads `?data=` and embeds the plan in a sandboxed `/plan-frame` iframe
+ * The /view host page. It reads `?data=`, then embeds the plan in a sandboxed `/plan-frame` iframe
  * (`allow-scripts`, no `allow-same-origin`, so the plan renders in an opaque origin that cannot
- * touch this page). The frame does all decoding, the safety gate, and compilation; this page only
- * hosts it, sizes it from the frame's height messages, and offers a button to re-share the link.
+ * touch this page). The frame does all decoding, the safety gate, compilation, AND its own share
+ * button (the runtime one, identical to every plan). This page only hosts and sizes the frame.
+ *
+ * The `?data=` payload is consumed on load: it is stashed in sessionStorage and stripped from the
+ * address bar (so a long share link does not linger there), while a reload still restores the plan
+ * from the stash. The shareable link itself is reproduced by the in-frame share button.
  */
 export function ViewPage() {
   // `undefined` until hydration reads the URL, so server and first client render agree (no flash).
@@ -20,7 +25,23 @@ export function ViewPage() {
   const frameRef = useRef<HTMLIFrameElement>(null)
 
   useEffect(() => {
-    setData(new URLSearchParams(window.location.search).get('data'))
+    const fromUrl = new URLSearchParams(window.location.search).get('data')
+    if (fromUrl) {
+      try {
+        sessionStorage.setItem(STORAGE_KEY, fromUrl)
+      } catch {
+        // Private mode or storage disabled: skip the stash; the in-frame link still works.
+      }
+      // Consume the param: clean the address bar without a navigation or history entry.
+      window.history.replaceState(null, '', window.location.pathname)
+      setData(fromUrl)
+      return
+    }
+    try {
+      setData(sessionStorage.getItem(STORAGE_KEY))
+    } catch {
+      setData(null)
+    }
   }, [])
 
   useEffect(() => {
@@ -44,34 +65,18 @@ export function ViewPage() {
 
   return (
     <div className='vp-view'>
-      <ReShareButton />
       <iframe
         ref={frameRef}
         className='vp-view__frame'
         src={frameSrc}
         title='Shared plan'
         sandbox='allow-scripts'
+        // The plan renders its own (runtime) share button inside the frame; grant it clipboard
+        // access so copying the link works despite the opaque-origin sandbox.
+        allow='clipboard-write'
         style={{ height }}
       />
     </div>
-  )
-}
-
-/** Copies the current `/view?data=...` URL so a viewed plan can be passed on. */
-function ReShareButton() {
-  const [copied, setCopied] = useState(false)
-  const onCopy = async () => {
-    const ok = await copyText(window.location.href)
-    if (ok) {
-      setCopied(true)
-      window.setTimeout(() => setCopied(false), 1600)
-    }
-  }
-  return (
-    <button type='button' className='vp-view__share' onClick={onCopy}>
-      {copied ? <IconCheck size={15} /> : <IconShare3 size={15} />}
-      {copied ? 'Link copied' : 'Copy link'}
-    </button>
   )
 }
 

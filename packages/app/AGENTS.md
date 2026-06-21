@@ -66,11 +66,16 @@ looks like a locally-built one. Untrusted source from a URL is the core risk, ha
 - `src/components/PlanFrameApp.tsx` is the contents of the sandboxed `/plan-frame` page: decode,
   512 KB cap, then lazy-compile and mount, with explicit states, a spinner, a calm error card for
   ordinary failures, and the bright `--malicious` card for a gate rejection. Posts its height to the
-  parent so the iframe has no inner scrollbar.
+  parent so the iframe has no inner scrollbar. It seeds `globalThis.__VP_SHARE__` from its own
+  `?data=`, so the **runtime** `ShareButton` (rendered by `Layout`) appears inside the frame, the
+  same faint top-right control every plan has, rebuilding the `visualplan.dev/view?data=` link.
 - `src/components/ViewPage.tsx` is the `/view` host: it embeds `/plan-frame/?data=...` in an
-  `<iframe sandbox="allow-scripts">` (NO `allow-same-origin`), sizes it from the height messages,
-  and offers a re-share button (reuses the runtime's `copyText`). All untrusted compilation happens
-  inside the frame, never on this page.
+  `<iframe sandbox="allow-scripts">` (NO `allow-same-origin`) and sizes it from the height messages.
+  The iframe also gets `allow="clipboard-write"` so the in-frame share button can copy despite the
+  opaque-origin sandbox (verified to work). The page has no share control of its own. It **consumes**
+  `?data=` on load: the value is stashed in `sessionStorage` and stripped from the address bar
+  (`history.replaceState`) so a long link does not linger, while a reload restores the plan from the
+  stash. All untrusted compilation happens inside the frame, never on this page.
 
 ### Critical constraint: the sandbox depends on GitHub Pages' CORS header
 

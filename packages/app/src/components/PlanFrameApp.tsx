@@ -35,6 +35,13 @@ export function PlanFrameApp() {
       })
       return
     }
+    // Seed the runtime share button (rendered by Layout) with this plan's data, so the frame shows
+    // the same faint top-right share control every plan has. It rebuilds the visualplan.dev/view
+    // link from this payload; `dev: false` keeps it from probing the CLI's watch endpoint.
+    ;(globalThis as { __VP_SHARE__?: { data: string; dev: boolean } }).__VP_SHARE__ = {
+      data,
+      dev: false,
+    }
 
     let source: string
     try {

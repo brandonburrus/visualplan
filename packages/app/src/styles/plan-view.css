@@ -106,31 +106,6 @@
   background: var(--vp-bg);
 }
 
-/* Bottom-right so it never collides with the site header, and stays reachable while scrolling
- * a long plan. A soft shadow keeps it legible over plan content. */
-.vp-view__share {
-  position: fixed;
-  bottom: 1rem;
-  right: 1rem;
-  z-index: 5;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.45rem 0.75rem;
-  font: inherit;
-  font-size: 0.82rem;
-  color: var(--vp-muted);
-  background: var(--vp-surface);
-  border: 1px solid var(--vp-border);
-  border-radius: 8px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
-  cursor: pointer;
-}
-
-.vp-view__share:hover {
-  color: var(--vp-ink);
-}
-
 .vp-noplan {
   max-width: 34rem;
   margin: 5rem auto;
