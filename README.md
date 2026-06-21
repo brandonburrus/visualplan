@@ -1,15 +1,17 @@
 # VisualPlan
 
-Render an AI agent's implementation and design plans as polished, visual web pages instead of
-walls of text. A plan is written as MDX and compiled to a single self-contained HTML page with
-architecture diagrams, charts, file-change trees, option comparisons, callouts, and a numbered
-phase timeline.
+Turn an AI agent's implementation and design plans into polished, visual web pages instead of
+walls of text. A plan is written as MDX and compiled to a single self-contained HTML page:
+architecture diagrams, charts, file-change trees, option comparisons, callouts, math, and a
+numbered phase timeline.
+
+**Documentation and live examples: [visualplan.dev](https://visualplan.dev)**
 
 It comes in two parts that work together:
 
-- **`vplan`** is a CLI that renders a plan `.mdx` file to HTML.
-- **`visual-plan`** is an agent skill that teaches any AI agent (Claude Code, Cursor, Codex,
-  and others) the plan vocabulary, so it writes visual plans instead of prose.
+- **`vplan`** is a CLI that renders a plan `.mdx` file to a single self-contained HTML page.
+- **`visual-plan`** is an agent skill that teaches any AI agent (Claude Code, Cursor, Codex, and
+  others) the plan vocabulary, so it writes visual plans instead of prose.
 
 ## Install
 
@@ -23,8 +25,8 @@ npx skills add brandonburrus/visualplan
 
 ### The CLI
 
-The skill renders plans with `vplan`, so install it too (the skill will prompt for this if it
-is missing):
+The skill renders plans with `vplan`, so install it too (the skill prompts for this if it is
+missing):
 
 ```bash
 npm i -g vplan
@@ -63,10 +65,27 @@ flowchart LR
 </Callout>
 ````
 
-The full vocabulary: `Phase` (timeline steps), ` ```mermaid ` (flowchart, sequence, state,
-class, ER, and XY diagrams), `FileTree` (file-change maps), `Chart` (bar/line/pie), `Compare`
-(option tradeoffs), `Callout` (note/decision/risk/warn), `Questions`, `Checklist`, and
-syntax-highlighted code blocks with file titles. Run `vplan components` for the exact props.
+The full vocabulary: `Phase` (timeline steps), ` ```mermaid ` (flowchart, sequence, state, class,
+ER, and XY diagrams), `FileTree` (file-change maps), `Chart` (bar/line/pie), `Compare` (option
+tradeoffs), `Matrix` (scorecards), `Callout` (note/tip/risk/decision/warn), `Questions`,
+`Checklist`, ` ```math ` (LaTeX, typeset as MathML), and syntax-highlighted code blocks with file
+titles. Run `vplan components`, or read the [authoring guide](https://visualplan.dev/docs/authoring/),
+for the exact props.
+
+## Share a plan
+
+Every rendered plan has a share button that copies a link encoding the entire plan. Open it at
+[visualplan.dev/view](https://visualplan.dev/view) to view the plan in any browser, no install
+required, with nothing stored on a server: the whole plan travels inside the link.
+
+## Documentation
+
+Full docs, guides, and rendered examples live at [visualplan.dev](https://visualplan.dev):
+
+- [Getting started](https://visualplan.dev/docs/)
+- [Installing](https://visualplan.dev/docs/install/)
+- [Authoring plans](https://visualplan.dev/docs/authoring/) — the component vocabulary, with live examples
+- [CLI reference](https://visualplan.dev/docs/cli/)
 
 ## License
 
