@@ -25,6 +25,9 @@
   --vp-note: #2f6fed;
   --vp-note-tint: #eef3fe;
   --vp-note-border: #d4e0fb;
+  --vp-tip: #15803d;
+  --vp-tip-tint: #ecf6ef;
+  --vp-tip-border: #cce8d6;
   --vp-decision: #7c3aed;
   --vp-decision-tint: #f6f2fe;
   --vp-decision-border: #e4d8fb;
@@ -61,6 +64,9 @@
     --vp-note: #7aa2ff;
     --vp-note-tint: #161d2e;
     --vp-note-border: #2b3a5e;
+    --vp-tip: #45c97a;
+    --vp-tip-tint: #13231a;
+    --vp-tip-border: #234a32;
     --vp-decision: #b794f6;
     --vp-decision-tint: #1d1830;
     --vp-decision-border: #362a52;
@@ -335,6 +341,11 @@ body {
   border-color: var(--vp-note-border);
 }
 
+.vp-callout[data-type="tip"] {
+  background: var(--vp-tip-tint);
+  border-color: var(--vp-tip-border);
+}
+
 .vp-callout[data-type="decision"] {
   background: var(--vp-decision-tint);
   border-color: var(--vp-decision-border);
@@ -364,6 +375,10 @@ body {
 
 .vp-callout[data-type="note"] .vp-callout__label {
   color: var(--vp-note);
+}
+
+.vp-callout[data-type="tip"] .vp-callout__label {
+  color: var(--vp-tip);
 }
 
 .vp-callout[data-type="decision"] .vp-callout__label {

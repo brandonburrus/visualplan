@@ -34,6 +34,12 @@ describe('Callout', () => {
     expect(html).toContain('Risk')
   })
 
+  it('renders a tip with its own label (golden)', () => {
+    const html = renderToStaticMarkup(<Callout type='tip'>advice</Callout>)
+    expect(html).toContain('data-type="tip"')
+    expect(html).toContain('Tip')
+  })
+
   it('throws on an unknown type (error)', () => {
     expect(() => renderToStaticMarkup(<Callout type='bogus'>x</Callout>)).toThrow(/invalid props/)
   })

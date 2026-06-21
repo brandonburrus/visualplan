@@ -1,4 +1,10 @@
-import { IconAlertTriangle, IconBulb, IconInfoCircle, type IconProps } from '@tabler/icons-react'
+import {
+  IconAlertTriangle,
+  IconBulb,
+  IconInfoCircle,
+  type IconProps,
+  IconSparkles,
+} from '@tabler/icons-react'
 import type { FC, ReactNode } from 'react'
 import { calloutSchema } from '@visualplan/core'
 import { validateProps } from './validate.js'
@@ -10,6 +16,7 @@ interface CalloutProps {
 
 const LABEL: Record<string, string> = {
   note: 'Note',
+  tip: 'Tip',
   risk: 'Risk',
   decision: 'Decision',
   warn: 'Warning',
@@ -17,12 +24,13 @@ const LABEL: Record<string, string> = {
 
 const ICON: Record<string, FC<IconProps>> = {
   note: IconInfoCircle,
+  tip: IconSparkles,
   decision: IconBulb,
   risk: IconAlertTriangle,
   warn: IconAlertTriangle,
 }
 
-/** A highlighted note/risk/decision/warning block. Wraps markdown children. */
+/** A highlighted note/tip/risk/decision/warning block. Wraps markdown children. */
 export function Callout(props: CalloutProps) {
   const { type } = validateProps('Callout', calloutSchema, props)
   const Icon = ICON[type] ?? IconInfoCircle

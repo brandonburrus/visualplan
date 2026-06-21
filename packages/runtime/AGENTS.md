@@ -94,9 +94,11 @@ page. The rules below are deliberate; changing them needs a reason.
   on both surfaces). The pie renders its labels as a custom HTML legend below the chart, not as
   recharts outside labels (those clip against the container). Axis ticks and tooltips are driven by
   CSS vars so dark mode is correct.
-- **Callout colors are semantic and distinct:** note (blue), decision (purple), risk (red), warn
-  (yellow). Each must stay visually different. `Questions` is a **neutral** card (surface tint) with
-  a blue accent on its icon and numbers only, so it stays distinct from the blue `note` callout.
+- **Callout colors are semantic and distinct:** note (blue), tip (green), decision (purple), risk
+  (red), warn (yellow). Each must stay visually different. `tip` green is its own `--vp-tip*` token
+  set, not the done/add status green, so the two can diverge. `Questions` is a **neutral** card
+  (surface tint) with a blue accent on its icon and numbers only, so it stays distinct from the
+  blue `note` callout.
 - **Visual verification:** `playwright-core` (devDep) drives the system Chrome to screenshot a
   rendered `.plan.html` in light and dark. Re-check both schemes after any theme change.
   Screenshot pages that contain a `<Chart>` at a **fixed tall viewport, not `fullPage`**:

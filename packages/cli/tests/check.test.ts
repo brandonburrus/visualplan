@@ -34,7 +34,7 @@ describe('checkPlan', () => {
     const issues = await checkPlan(path)
     expect(issues).toHaveLength(1)
     expect(issues[0]?.message).toMatch(/type="bogus" is invalid/)
-    expect(issues[0]?.message).toMatch(/note, risk, decision, warn/)
+    expect(issues[0]?.message).toMatch(/note, tip, risk, decision, warn/)
   })
 
   it('flags an unknown component (error)', async () => {

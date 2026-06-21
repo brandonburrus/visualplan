@@ -44,8 +44,8 @@ brace errors that break a render.
 - ` ```mermaid ` fenced block — diagrams: architecture (`flowchart`), `sequenceDiagram`,
   dependency graphs, `stateDiagram-v2`, `classDiagram`, ER, and XY charts. Reach for this first for
   anything structural. (gantt and pie are not supported; use `<Chart>` for quantitative data.)
-- `<Callout type="note|risk|decision|warn">` — highlight a risk, decision, or note; wraps markdown.
-  (`risk` is red, `warn` is yellow.)
+- `<Callout type="note|tip|risk|decision|warn">` — highlight a risk, decision, tip, or note; wraps
+  markdown. (`note` is blue, `tip` is green, `decision` is purple, `risk` is red, `warn` is yellow.)
 - `<FileTree>` — file-change map. One bullet per file, `- <change> <path>`, where `change` is
   `add|modify|delete|move`. A move reads `- move <from> -> <to>`. A path ending in `/` marks a
   whole directory (e.g. `- delete src/legacy/`).
@@ -125,6 +125,14 @@ brace errors that break a render.
 - Fenced code blocks are syntax-highlighted (Expressive Code): write ` ```ts ` (or js, json, bash,
   python, go, rust, sql, yaml, etc.) to show a key snippet. Add a file name with
   ` ```ts title="src/path/file.ts" ` to render a filename header on the block.
+- Mark lines and text inside a code block with Expressive Code props in the fence meta string
+  (no component needed). Three marker types: `mark` (neutral, the default), `ins` (green,
+  inserted), `del` (red, removed). Each takes line numbers, ranges, quoted strings, or a
+  `/regex/`. Use this to call attention to the lines a plan changes.
+  - Lines/ranges (neutral): ` ```ts {2} `, ` ```ts {2-4} `, ` ```ts {1, 3, 5-6} `
+  - Typed lines: ` ```ts ins={3-4} del={2} mark={6} ` (combine freely in one block)
+  - Inline text: ` ```ts "TokenBucket" `, a rename as ` ```ts del="oldName" ins="newName" `
+  - Regex (and capture group): ` ```ts /\bTODO\b/ `, ` ```ts ins=/const (\w+) =/ ` (marks the group)
 
 ## Guidance
 

@@ -12,7 +12,7 @@ import { z } from 'zod'
 export const STATUS_VALUES = ['planned', 'active', 'done'] as const
 export const CHANGE_VALUES = ['add', 'modify', 'delete', 'move'] as const
 export const CHART_TYPE_VALUES = ['bar', 'line', 'pie'] as const
-export const CALLOUT_TYPE_VALUES = ['note', 'risk', 'decision', 'warn'] as const
+export const CALLOUT_TYPE_VALUES = ['note', 'tip', 'risk', 'decision', 'warn'] as const
 
 export const phaseSchema = z.object({
   title: z.string().min(1, 'title is required'),
@@ -143,9 +143,9 @@ export const CATALOG: readonly CatalogEntry[] = [
   },
   {
     name: 'Callout',
-    summary: 'A highlighted note/risk/decision/warning block. Wraps markdown.',
+    summary: 'A highlighted note/tip/risk/decision/warning block. Wraps markdown.',
     staticEnums: { type: CALLOUT_TYPE_VALUES },
-    example: '<Callout type="risk">\n  Migration locks the table for ~2s.\n</Callout>',
+    example: '<Callout type="tip">\n  Use ins=/regex/ to mark code as inserted.\n</Callout>',
   },
   {
     name: 'Questions',
