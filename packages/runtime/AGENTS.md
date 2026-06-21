@@ -17,18 +17,24 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   (`counter-reset: vp-phase` on `.vp-main`, `counter-increment` on `.vp-phase`, number drawn by
   `.vp-phase__node::before`), so phases self-number in document order with no index prop. The
   connector line is a `.vp-phase__rail::after` pseudo-element omitted on the last step.
-- `components/` holds the components (Phase, FileTree, Chart, Compare, Callout, Questions,
+- `components/` holds the components (Phase, FileTree, Chart, Compare, Matrix, Callout, Questions,
   Checklist, Mermaid). `FileTree` builds a nested directory tree from flat `{path}` entries
   (collapsing single-child dir chains); `Checklist` renders done/todo acceptance criteria. Each
   validates its props through `validate.ts`
   against the matching zod schema in `@visualplan/core`, throwing a readable, component-named
   error on invalid input (this surfaces in the page and is the render-time half of validation).
-- **The list components (FileTree, Chart, Compare, Questions, Checklist) are authored as
+- **The data components (FileTree, Chart, Compare, Matrix, Questions, Checklist) are authored as
   markdown children, not props.** The CLI's `remark-plan-blocks` plugin parses those children
   into the structured data and passes it as a JSON string on the component's data prop
   (`files`/`data`/`options`/`items`); the component calls `decodeJson` (in `validate.ts`) to
   parse it before `validateProps`. `decodeJson` passes a non-string through unchanged, so the
-  component tests can still hand the array directly.
+  component tests can still hand the value directly.
+- **Matrix** is a comparison grid authored as a GFM table (`<table className="vp-matrix">` in a
+  horizontal-scroll wrapper); a column header ending in `(pick)` highlights that column. **Chart**
+  is single- or multi-series: its data is `{ series, data: [{ label, values[] }] }`; one
+  `<Bar>`/`<Line>` per series, a `<Legend>` only when there is more than one, and the per-point
+  `<Cell>` coloring only for a single series. **FileTree** supports a directory-level change: a
+  path ending in `/` sets `change` on the `DirNode` and renders the marker on the directory row.
 
 ## Gotchas
 

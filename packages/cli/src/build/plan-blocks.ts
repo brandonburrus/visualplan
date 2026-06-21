@@ -18,6 +18,7 @@ export const CHILD_BLOCK_COMPONENTS = [
   'Questions',
   'Chart',
   'Compare',
+  'Matrix',
 ] as const
 
 /** The prop each block component receives its parsed data on (a JSON string at render). */
@@ -27,6 +28,7 @@ export const BLOCK_DATA_ATTR: Record<string, string> = {
   Questions: 'items',
   Chart: 'data',
   Compare: 'options',
+  Matrix: 'data',
 }
 
 export interface BlockIssue {
@@ -40,12 +42,19 @@ export interface BlockResult {
   issues: BlockIssue[]
 }
 
+interface MdAttribute {
+  type: string
+  name?: string
+  value?: unknown
+}
+
 interface MdNode {
   type: string
   value?: string
   depth?: number
   checked?: boolean | null
   children?: MdNode[]
+  attributes?: MdAttribute[]
   position?: { start: { line: number; column: number } }
 }
 
@@ -63,6 +72,21 @@ function toText(node: MdNode): string {
 
 function firstList(node: MdNode): MdNode | undefined {
   return (node.children ?? []).find(child => child.type === 'list')
+}
+
+function firstTable(node: MdNode): MdNode | undefined {
+  return (node.children ?? []).find(child => child.type === 'table')
+}
+
+/** Read a string-literal JSX attribute (e.g. Chart's `type`) off the element node. */
+function attrValue(node: MdNode, name: string): string | undefined {
+  const found = (node.attributes ?? []).find(a => a.type === 'mdxJsxAttribute' && a.name === name)
+  return typeof found?.value === 'string' ? found.value : undefined
+}
+
+/** The cells of an mdast table row, as trimmed text. */
+function rowCells(row: MdNode): string[] {
+  return (row.children ?? []).map(cell => toText(cell).trim())
 }
 
 function parseFileTree(node: MdNode): BlockResult {
@@ -96,37 +120,96 @@ function parseFileTree(node: MdNode): BlockResult {
   return { value: files, issues }
 }
 
+/** Parse "label: value" / cell text into a number, recording an issue (and keeping the raw
+ * string so render-time zod also rejects it) when it is not numeric. */
+function toNumber(raw: string, label: string, at: MdNode, issues: BlockIssue[]): number | string {
+  const value = Number(raw)
+  if (raw === '' || Number.isNaN(value)) {
+    issues.push({ ...pos(at), message: `<Chart> value "${raw}" for "${label}" is not a number.` })
+    return raw
+  }
+  return value
+}
+
 function parseChart(node: MdNode): BlockResult {
   const issues: BlockIssue[] = []
-  const data: Array<{ label: string; value: unknown }> = []
+  const data: Array<{ label: string; values: unknown[] }> = []
+
+  // Table form = multiple series: header is "category | series1 | series2 ...".
+  const table = firstTable(node)
+  if (table) {
+    const rows = table.children ?? []
+    const series = rowCells(rows[0] ?? { type: 'tableRow' }).slice(1)
+    for (const row of rows.slice(1)) {
+      const cells = rowCells(row)
+      const label = cells[0] ?? ''
+      const values = series.map((_, i) => toNumber(cells[i + 1] ?? '', label, row, issues))
+      data.push({ label, values })
+    }
+    if (attrValue(node, 'type') === 'pie' && series.length > 1) {
+      issues.push({
+        ...pos(node),
+        message: '<Chart type="pie"> shows a single series; use a "- label: value" list.',
+      })
+    }
+    return { value: { series, data }, issues }
+  }
+
+  // List form = a single series of "- label: value".
   const list = firstList(node)
   if (!list) {
     issues.push({
       ...pos(node),
-      message: '<Chart> needs a markdown list of "- <label>: <value>" items.',
+      message: '<Chart> needs a markdown list ("- label: value") or a table for multiple series.',
     })
-    return { value: data, issues }
+    return { value: { series: ['value'], data }, issues }
   }
   for (const item of list.children ?? []) {
     const text = toText(item).trim()
     const colon = text.lastIndexOf(':')
     if (colon === -1) {
       issues.push({ ...pos(item), message: `<Chart> item "${text}" must be "label: number".` })
-      // Keep the raw text as the value so the render-time zod number check also fails.
-      data.push({ label: text, value: text })
+      data.push({ label: text, values: [text] })
       continue
     }
     const label = text.slice(0, colon).trim()
-    const raw = text.slice(colon + 1).trim()
-    const value = Number(raw)
-    if (raw === '' || Number.isNaN(value)) {
-      issues.push({ ...pos(item), message: `<Chart> item "${text}" has a non-numeric value.` })
-      data.push({ label, value: raw })
-      continue
-    }
-    data.push({ label, value })
+    data.push({ label, values: [toNumber(text.slice(colon + 1).trim(), label, item, issues)] })
   }
-  return { value: data, issues }
+  return { value: { series: ['value'], data }, issues }
+}
+
+function parseMatrix(node: MdNode): BlockResult {
+  const issues: BlockIssue[] = []
+  const table = firstTable(node)
+  if (!table) {
+    issues.push({
+      ...pos(node),
+      message: '<Matrix> needs a markdown table (a header row plus at least one row).',
+    })
+    return { value: { corner: '', columns: [], rows: [] }, issues }
+  }
+  const trows = table.children ?? []
+  const header = rowCells(trows[0] ?? { type: 'tableRow' })
+  const corner = header[0] ?? ''
+  const columns = header.slice(1).map(name => {
+    const pick = /\(pick\)\s*$/i.test(name)
+    const clean = pick ? name.replace(/\(pick\)\s*$/i, '').trim() : name
+    return pick ? { name: clean, pick: true } : { name: clean }
+  })
+  if (columns.length < 2) {
+    issues.push({
+      ...pos(node),
+      message: '<Matrix> needs at least two value columns after the row-label column.',
+    })
+  }
+  if (trows.length < 2) {
+    issues.push({ ...pos(node), message: '<Matrix> needs at least one row under the header.' })
+  }
+  const rows = trows.slice(1).map(row => {
+    const cells = rowCells(row)
+    return { label: cells[0] ?? '', cells: cells.slice(1) }
+  })
+  return { value: { corner, columns, rows }, issues }
 }
 
 function parseChecklist(node: MdNode): BlockResult {
@@ -207,6 +290,7 @@ const PARSERS: Record<string, (node: MdNode) => BlockResult> = {
   Questions: parseQuestions,
   Chart: parseChart,
   Compare: parseCompare,
+  Matrix: parseMatrix,
 }
 
 /**

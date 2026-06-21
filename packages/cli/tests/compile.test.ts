@@ -33,6 +33,7 @@ describe('renderToFile', () => {
       'vp-callout',
       'vp-filetree',
       'vp-compare',
+      'vp-matrix',
       'vp-chart',
       'vp-mermaid',
     ]) {

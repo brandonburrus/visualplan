@@ -11,12 +11,15 @@ renders a plan to a self-contained HTML page). Built with tsup to `dist/index.js
   `vite-plugin-singlefile`) and `--watch` (dev server). `src/build/check.ts` — the static
   AST validator. `src/build/remark-mermaid.ts` — rewrites ` ```mermaid ` fences to `<Mermaid>`
   BEFORE rehype-expressive-code runs.
-- `src/build/plan-blocks.ts` — `parseBlockChildren(name, node)`: turns the markdown-list
-  children of the list components (FileTree, Checklist, Questions, Chart, Compare) into the
-  structured props their zod schemas expect, plus positioned `issues`. **Shared by two callers**
-  so render and `check` agree: `remark-plan-blocks.ts` (the render remark plugin, uses `value`)
-  and `check.ts` (uses `issues`). The remark plugin must run AFTER `remark-gfm` (task-list
-  `checked` state) and emits the data as a JSON-string attribute the component decodes at render.
+- `src/build/plan-blocks.ts` — `parseBlockChildren(name, node)`: turns the markdown children of
+  the data components (FileTree, Checklist, Questions, Chart, Compare, Matrix) into the structured
+  props their zod schemas expect, plus positioned `issues`. Most parse a markdown list; `Matrix`
+  and a multi-series `Chart` parse a GFM `table` (one row per category/dimension), and `parseChart`
+  switches on list-vs-table. **Shared by two callers** so render and `check` agree:
+  `remark-plan-blocks.ts` (the render remark plugin, uses `value`) and `check.ts` (uses `issues`).
+  The remark plugin must run AFTER `remark-gfm` (task-list `checked` state AND tables) and emits the
+  data as a JSON-string attribute the component decodes at render. Add a component by appending to
+  `CHILD_BLOCK_COMPONENTS` + `BLOCK_DATA_ATTR` and adding a parser; `check` and the plugin pick it up.
 - `templates/example.mdx` — exercises every component; used by the integration tests.
 - `scripts/vendor.mjs` — the prepack vendoring step.
 - `tests/` — check + compile + render (all `// @vitest-environment node`).

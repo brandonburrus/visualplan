@@ -1,6 +1,6 @@
 ---
 name: visual-plan
-description: Always use when planning anything non-trivial (an implementation, design, refactor, or migration), as the default and better way to show your plan visually instead of as a wall of text, especially in plan mode. Authors the plan as an MDX file and renders it to a self-contained HTML page with the `vplan` CLI, using a fixed component vocabulary (Phase, FileTree, Chart, Compare, Callout, Questions, Checklist, and mermaid diagrams). Also use when the user says "make a visual plan", "render this plan", "show me the plan", or asks for a plan with diagrams/charts. Skip only for trivial one-step changes or prose-only notes.
+description: Always use when planning anything non-trivial (an implementation, design, refactor, or migration), as the default and better way to show your plan visually instead of as a wall of text, especially in plan mode. Authors the plan as an MDX file and renders it to a self-contained HTML page with the `vplan` CLI, using a fixed component vocabulary (Phase, FileTree, Chart, Compare, Matrix, Callout, Questions, Checklist, and mermaid diagrams). Also use when the user says "make a visual plan", "render this plan", "show me the plan", or asks for a plan with diagrams/charts. Skip only for trivial one-step changes or prose-only notes.
 ---
 
 # Visual Plan
@@ -16,8 +16,9 @@ Render a plan as a visual MDX page instead of a wall of text, using the `vplan` 
    the components below. You never write `import` statements; the components are always in scope.
 2. Validate before showing the user: `vplan check <file>.mdx`. Fix any reported
    `file:line:col` issues (it names the valid values for bad enums and flags unknown components).
-3. Render: `vplan <file>.mdx` opens a self-contained HTML page. Use
-   `vplan <file>.mdx --watch` to iterate live while you refine the plan.
+3. Render: `vplan <file>.mdx` writes a self-contained `<file>.plan.html` next to the source and
+   opens it. Pass `--no-open` to skip the browser, `--out <path>` to set the output location, or
+   `--watch` to start a live-reloading dev server while you refine the plan.
 
 Run `vplan components` anytime for the exact prop signatures.
 
@@ -31,51 +32,76 @@ Begin the file with a single `# Heading`; it becomes the plan title. There is no
 
 ## Components
 
-The list components (`FileTree`, `Chart`, `Compare`, `Questions`, `Checklist`) take their data
-as **markdown children**, not props: write a normal markdown list between the tags. Only the
-scalar settings (`title`, `type`, `status`) are attributes. This is fewer tokens and avoids the
-`{[{ ... }]}` brace errors that break a render.
+The data components (`FileTree`, `Chart`, `Compare`, `Matrix`, `Questions`, `Checklist`) take
+their data as **markdown children**, not props: write a normal markdown list (or, for `Matrix`
+and a multi-series `Chart`, a markdown table) between the tags. Only the scalar settings
+(`title`, `type`, `status`) are attributes. This is fewer tokens and avoids the `{[{ ... }]}`
+brace errors that break a render.
 
 - `<Phase title="..." status="planned|active|done">` — one step in a numbered vertical
   timeline; wraps markdown (ordered lists, prose, nested components). The steps auto-number in
   order. One per major step of the plan.
 - ` ```mermaid ` fenced block — diagrams: architecture (`flowchart`), `sequenceDiagram`,
-  dependency graphs, `stateDiagram`, `classDiagram`, ER, and XY charts. Reach for this first for
+  dependency graphs, `stateDiagram-v2`, `classDiagram`, ER, and XY charts. Reach for this first for
   anything structural. (gantt and pie are not supported; use `<Chart>` for quantitative data.)
 - `<Callout type="note|risk|decision|warn">` — highlight a risk, decision, or note; wraps markdown.
   (`risk` is red, `warn` is yellow.)
 - `<FileTree>` — file-change map. One bullet per file, `- <change> <path>`, where `change` is
-  `add|modify|delete|move`. A move reads `- move <from> -> <to>`.
+  `add|modify|delete|move`. A move reads `- move <from> -> <to>`. A path ending in `/` marks a
+  whole directory (e.g. `- delete src/legacy/`).
 
   ```mdx
   <FileTree>
   - add src/gateway/rate-limiter.ts
   - modify src/gateway/middleware.ts
-  - delete src/gateway/legacy-throttle.ts
+  - delete src/gateway/legacy/
   </FileTree>
   ```
-- `<Chart type="bar|line|pie" title="...">` — estimates/metrics. One bullet per point,
-  `- <label>: <value>` (value is a number).
+- `<Chart type="bar|line|pie" title="...">` — estimates/metrics. For a single series, one bullet
+  per point, `- <label>: <value>` (value is a number). For multiple series (bar/line only), write
+  a table whose header is `category | series1 | series2`.
 
   ```mdx
   <Chart type="bar" title="Effort (days)">
   - Limiter: 2
   - Dashboards: 1
   </Chart>
+
+  <Chart type="line" title="Latency by stage (ms)">
+  | Stage | p50 | p95 |
+  |-------|-----|-----|
+  | Auth  | 12  | 30  |
+  | DB    | 40  | 120 |
+  </Chart>
   ```
-- `<Compare>` — weigh approaches side by side. Each option is a `## Name` heading (append
-  `(pick)` to mark the recommended one) followed by `- pro:` / `- con:` bullets.
+- `<Compare>` — weigh approaches side by side as pros/cons cards. Each option is a `## Name`
+  heading (append `(pick)` to mark the recommended one) followed by as many `- pro:` / `- con:`
+  bullets as you need.
 
   ```mdx
   <Compare>
   ## Redis sliding window (pick)
   - pro: accurate
+  - pro: shared across nodes
   - con: network hop
 
   ## In-memory token bucket
   - pro: fast
   - con: per-node only
   </Compare>
+  ```
+- `<Matrix>` — a comparison grid (options across the columns, criteria down the rows) for scoring
+  several choices against several dimensions. Write a markdown table; the first column is the row
+  labels, and you append `(pick)` to one column header to highlight it. Use `<Compare>` for
+  pros/cons, `<Matrix>` for a scorecard.
+
+  ```mdx
+  <Matrix>
+  | Dimension | Postgres (pick) | ClickHouse | DynamoDB |
+  |-----------|-----------------|------------|----------|
+  | Writes    | medium          | high       | high     |
+  | Querying  | high            | medium     | low      |
+  </Matrix>
   ```
 - `<Questions>` — open questions you want the reader to resolve before building, one per bullet.
   Use this instead of burying uncertainties in prose. The title defaults to "Open questions";

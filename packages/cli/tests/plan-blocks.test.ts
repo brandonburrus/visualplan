@@ -51,32 +51,98 @@ describe('FileTree block', () => {
     expect(empty.issues).toHaveLength(1)
     expect(empty.issues[0]?.message).toMatch(/needs a markdown list/)
   })
+
+  it('keeps a trailing-slash directory path with no missing-path issue (edge)', () => {
+    const { value, issues } = parseBlock(
+      'FileTree',
+      '<FileTree>\n- delete src/legacy/\n</FileTree>\n',
+    )
+    expect(issues).toEqual([])
+    expect(value).toEqual([{ path: 'src/legacy/', change: 'delete' }])
+  })
 })
 
 describe('Chart block', () => {
-  it('parses "- <label>: <value>" bullets into numeric points (golden)', () => {
+  it('parses a "- <label>: <value>" list into one series (golden)', () => {
     const { value, issues } = parseBlock(
       'Chart',
       '<Chart type="bar">\n- API: 3\n- UI: 2\n</Chart>\n',
     )
     expect(issues).toEqual([])
-    expect(value).toEqual([
-      { label: 'API', value: 3 },
-      { label: 'UI', value: 2 },
-    ])
+    expect(value).toEqual({
+      series: ['value'],
+      data: [
+        { label: 'API', values: [3] },
+        { label: 'UI', values: [2] },
+      ],
+    })
   })
 
   it('flags a non-numeric value (error)', () => {
     const { value, issues } = parseBlock('Chart', '<Chart type="bar">\n- API: lots\n</Chart>\n')
     expect(issues).toHaveLength(1)
-    expect(issues[0]?.message).toMatch(/non-numeric value/)
+    expect(issues[0]?.message).toMatch(/is not a number/)
     // The raw value is kept (not a number) so render-time zod also rejects it.
-    expect(value).toEqual([{ label: 'API', value: 'lots' }])
+    expect(value).toEqual({ series: ['value'], data: [{ label: 'API', values: ['lots'] }] })
   })
 
   it('splits on the last colon so labels may contain one (edge)', () => {
     const { value } = parseBlock('Chart', '<Chart type="line">\n- p95: latency: 120\n</Chart>\n')
-    expect(value).toEqual([{ label: 'p95: latency', value: 120 }])
+    expect(value).toEqual({ series: ['value'], data: [{ label: 'p95: latency', values: [120] }] })
+  })
+
+  it('parses a table into multiple series (golden)', () => {
+    const { value, issues } = parseBlock(
+      'Chart',
+      '<Chart type="bar">\n| Stage | p50 | p95 |\n|---|---|---|\n| Auth | 12 | 30 |\n| DB | 40 | 120 |\n</Chart>\n',
+    )
+    expect(issues).toEqual([])
+    expect(value).toEqual({
+      series: ['p50', 'p95'],
+      data: [
+        { label: 'Auth', values: [12, 30] },
+        { label: 'DB', values: [40, 120] },
+      ],
+    })
+  })
+
+  it('rejects a multi-series pie (error)', () => {
+    const { issues } = parseBlock(
+      'Chart',
+      '<Chart type="pie">\n| Stage | p50 | p95 |\n|---|---|---|\n| Auth | 12 | 30 |\n</Chart>\n',
+    )
+    expect(issues.some(issue => /single series/.test(issue.message))).toBe(true)
+  })
+})
+
+describe('Matrix block', () => {
+  it('parses a table into corner/columns/rows and marks the pick (golden)', () => {
+    const { value, issues } = parseBlock(
+      'Matrix',
+      '<Matrix>\n| Dimension | Postgres (pick) | DynamoDB |\n|---|---|---|\n| Writes | medium | high |\n| Cost | low | low |\n</Matrix>\n',
+    )
+    expect(issues).toEqual([])
+    expect(value).toEqual({
+      corner: 'Dimension',
+      columns: [{ name: 'Postgres', pick: true }, { name: 'DynamoDB' }],
+      rows: [
+        { label: 'Writes', cells: ['medium', 'high'] },
+        { label: 'Cost', cells: ['low', 'low'] },
+      ],
+    })
+  })
+
+  it('flags a single-column matrix (error)', () => {
+    const { issues } = parseBlock(
+      'Matrix',
+      '<Matrix>\n| Dimension | Only |\n|---|---|\n| Writes | medium |\n</Matrix>\n',
+    )
+    expect(issues.some(issue => /at least two value columns/.test(issue.message))).toBe(true)
+  })
+
+  it('flags a non-table body (edge)', () => {
+    const { issues } = parseBlock('Matrix', '<Matrix>\njust prose, no table\n</Matrix>\n')
+    expect(issues.some(issue => /needs a markdown table/.test(issue.message))).toBe(true)
   })
 })
 

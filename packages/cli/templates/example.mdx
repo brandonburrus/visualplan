@@ -34,6 +34,15 @@ flowchart LR
 - con: lost on restart
 </Compare>
 
+<Matrix>
+| Criterion           | Redis window (pick) | In-memory bucket |
+|---------------------|---------------------|------------------|
+| Accuracy            | exact               | approximate      |
+| Shared across nodes | yes                 | no               |
+| Added latency       | ~1ms                | none             |
+| Ops burden          | a Redis dependency  | none             |
+</Matrix>
+
 <Questions>
 - What is the limit per token: a fixed number, or per-plan tier?
 - Should the limiter fail open or fail closed if Redis is unreachable?
@@ -48,6 +57,7 @@ flowchart LR
   - add src/gateway/rate-limiter.ts
   - modify src/gateway/middleware.ts
   - delete src/gateway/legacy-throttle.ts
+  - delete src/gateway/legacy/
   </FileTree>
 
   ```ts title="src/gateway/rate-limiter.ts"
@@ -68,6 +78,14 @@ flowchart LR
   - Limiter: 2
   - Flag + ramp: 1
   - Dashboards: 1
+  </Chart>
+
+  <Chart type='bar' title='Requests/s by ramp step'>
+  | Step | Allowed | Rejected |
+  |------|---------|----------|
+  | 1%   | 50      | 2        |
+  | 10%  | 480     | 15       |
+  | 100% | 4800    | 120      |
   </Chart>
 </Phase>
 

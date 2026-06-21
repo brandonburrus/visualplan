@@ -618,6 +618,81 @@ body {
   color: var(--vp-risk);
 }
 
+/* Matrix: a comparison grid (options x dimensions). A row-line table on the card surface,
+   with the recommended column highlighted. The wrapper scrolls horizontally on narrow screens. */
+.vp-matrix-wrap {
+  margin: 1.25rem 0;
+  overflow-x: auto;
+  border: 1px solid var(--vp-border);
+  border-radius: 10px;
+  background: var(--vp-surface);
+}
+
+.vp-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.vp-matrix th,
+.vp-matrix td {
+  padding: 0.5rem 0.85rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--vp-border);
+  white-space: nowrap;
+}
+
+.vp-matrix tbody tr:last-child th,
+.vp-matrix tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.vp-matrix__corner {
+  color: var(--vp-faint);
+  font-weight: 600;
+}
+
+.vp-matrix__col {
+  color: var(--vp-muted);
+  font-weight: 600;
+  border-bottom-color: var(--vp-border-strong);
+}
+
+/* The row label (first column) anchors each row, like a header running down the side. */
+.vp-matrix__rowlabel {
+  color: var(--vp-muted);
+  font-weight: 600;
+}
+
+.vp-matrix td {
+  color: var(--vp-text);
+}
+
+/* The recommended column: a subtle tint down the whole column plus a badge on its header. */
+.vp-matrix [data-pick="true"] {
+  background: var(--vp-surface-2);
+}
+
+.vp-matrix__col[data-pick="true"] {
+  color: var(--vp-text);
+}
+
+.vp-matrix__pick {
+  display: inline-block;
+  margin-left: 0.45rem;
+  font-size: 0.58rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--vp-muted);
+  background: var(--vp-bg);
+  border: 1px solid var(--vp-border);
+  border-radius: 5px;
+  padding: 0.1rem 0.4rem;
+  vertical-align: middle;
+}
+
 /* Checklist */
 .vp-checklist {
   margin: 1.25rem 0;

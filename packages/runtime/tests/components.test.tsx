@@ -4,6 +4,7 @@ import { Callout } from '../components/Callout.js'
 import { Checklist } from '../components/Checklist.js'
 import { Compare } from '../components/Compare.js'
 import { FileTree } from '../components/FileTree.js'
+import { Matrix } from '../components/Matrix.js'
 import { Phase } from '../components/Phase.js'
 import { Questions } from '../components/Questions.js'
 
@@ -70,6 +71,60 @@ describe('FileTree', () => {
     expect(() =>
       renderToStaticMarkup(<FileTree files={[{ path: 'x', change: 'rename' }]} />),
     ).toThrow(/invalid props/)
+  })
+
+  it('renders a trailing-slash path as a directory row with a change marker (edge)', () => {
+    const html = renderToStaticMarkup(
+      <FileTree files={[{ path: 'src/legacy/', change: 'delete' }]} />,
+    )
+    expect(html).toContain('vp-filetree__row--dir')
+    expect(html).toContain('src/legacy/')
+    expect(html).toContain('data-change="delete"')
+  })
+})
+
+describe('Matrix', () => {
+  const grid = {
+    corner: 'Dimension',
+    columns: [{ name: 'Postgres', pick: true }, { name: 'DynamoDB' }],
+    rows: [
+      { label: 'Writes', cells: ['medium', 'high'] },
+      { label: 'Cost', cells: ['low', 'low'] },
+    ],
+  }
+
+  it('renders the grid and highlights the pick column (golden)', () => {
+    const html = renderToStaticMarkup(<Matrix data={grid} />)
+    expect(html).toContain('Dimension')
+    expect(html).toContain('Postgres')
+    expect(html).toContain('Writes')
+    expect(html).toContain('medium')
+    expect(html).toContain('recommended')
+    expect(html).toContain('data-pick="true"')
+  })
+
+  it('throws when there are fewer than two columns (error)', () => {
+    expect(() =>
+      renderToStaticMarkup(
+        <Matrix
+          data={{ corner: '', columns: [{ name: 'A' }], rows: [{ label: 'r', cells: ['x'] }] }}
+        />,
+      ),
+    ).toThrow(/invalid props/)
+  })
+
+  it('renders empty for a row with fewer cells than columns (edge)', () => {
+    const html = renderToStaticMarkup(
+      <Matrix
+        data={{
+          corner: '',
+          columns: [{ name: 'A' }, { name: 'B' }],
+          rows: [{ label: 'r1', cells: ['only'] }],
+        }}
+      />,
+    )
+    expect(html).toContain('only')
+    expect(html).toContain('r1')
   })
 })
 

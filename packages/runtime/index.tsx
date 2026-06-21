@@ -6,6 +6,7 @@ import { Chart } from './components/Chart.js'
 import { Checklist } from './components/Checklist.js'
 import { Compare } from './components/Compare.js'
 import { FileTree } from './components/FileTree.js'
+import { Matrix } from './components/Matrix.js'
 import { Mermaid } from './components/Mermaid.js'
 import { Phase } from './components/Phase.js'
 import { Questions } from './components/Questions.js'
@@ -22,6 +23,7 @@ export const components = {
   FileTree,
   Chart,
   Compare,
+  Matrix,
   Callout,
   Questions,
   Checklist,

@@ -3,6 +3,7 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Legend,
   Line,
   LineChart,
   Pie,
@@ -50,20 +51,39 @@ const TOOLTIP_STYLE = {
   color: 'var(--vp-text)',
 }
 
-/** A bar/line/pie chart for estimates or metrics, backed by recharts. */
+const LEGEND_STYLE = { fontSize: 12, color: 'var(--vp-muted)' }
+const MARGIN = { top: 4, right: 8, bottom: 0, left: -16 }
+
+/** A bar/line/pie chart for estimates or metrics, backed by recharts. Single series comes from a
+ * `- label: value` list; multiple series from a table with one column per series. */
 export function Chart(props: ChartProps) {
-  const { type, title, data } = validateProps('Chart', chartSchema, {
-    ...props,
-    data: decodeJson(props.data),
+  const decoded = (decodeJson(props.data) ?? {}) as { series?: unknown; data?: unknown }
+  const { type, title, series, data } = validateProps('Chart', chartSchema, {
+    type: props.type,
+    title: props.title,
+    series: decoded.series,
+    data: decoded.data,
   })
-  const total = data.reduce((sum, point) => sum + point.value, 0)
+  const multi = series.length > 1
+  // recharts wants one object per category with a key per series. Single-series charts use the
+  // synthetic key "value" so the existing per-point coloring (a Cell per bar/slice) still applies.
+  const keys = multi ? series : ['value']
+  const rows = data.map(point => {
+    const row: Record<string, string | number> = { label: point.label }
+    keys.forEach((key, index) => {
+      row[key] = point.values[index] ?? 0
+    })
+    return row
+  })
+  const pieData = data.map(point => ({ label: point.label, value: point.values[0] ?? 0 }))
+  const pieTotal = pieData.reduce((sum, point) => sum + point.value, 0)
   return (
     <figure className='vp-chart vp-expandable'>
       {title ? <figcaption className='vp-chart__title'>{title}</figcaption> : null}
       <div className='vp-chart__canvas' data-type={type}>
         <ResponsiveContainer width='100%' height='100%'>
           {type === 'bar' ? (
-            <BarChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
+            <BarChart data={rows} margin={MARGIN}>
               <CartesianGrid strokeDasharray='3 3' stroke='var(--vp-border)' vertical={false} />
               <XAxis dataKey='label' tick={AXIS_TICK} stroke='var(--vp-border)' />
               <YAxis
@@ -73,14 +93,26 @@ export function Chart(props: ChartProps) {
                 tickFormatter={formatTick}
               />
               <Tooltip cursor={{ fill: 'var(--vp-surface-2)' }} contentStyle={TOOLTIP_STYLE} />
-              <Bar dataKey='value' radius={[4, 4, 0, 0]} maxBarSize={64} isAnimationActive={false}>
-                {data.map((point, index) => (
-                  <Cell key={point.label} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Bar>
+              {multi ? <Legend wrapperStyle={LEGEND_STYLE} /> : null}
+              {keys.map((key, seriesIndex) => (
+                <Bar
+                  key={key}
+                  dataKey={key}
+                  radius={[4, 4, 0, 0]}
+                  maxBarSize={64}
+                  fill={COLORS[seriesIndex % COLORS.length]}
+                  isAnimationActive={false}
+                >
+                  {multi
+                    ? null
+                    : rows.map((row, index) => (
+                        <Cell key={String(row.label)} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                </Bar>
+              ))}
             </BarChart>
           ) : type === 'line' ? (
-            <LineChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -16 }}>
+            <LineChart data={rows} margin={MARGIN}>
               <CartesianGrid strokeDasharray='3 3' stroke='var(--vp-border)' vertical={false} />
               <XAxis dataKey='label' tick={AXIS_TICK} stroke='var(--vp-border)' />
               <YAxis
@@ -90,27 +122,31 @@ export function Chart(props: ChartProps) {
                 tickFormatter={formatTick}
               />
               <Tooltip contentStyle={TOOLTIP_STYLE} />
-              <Line
-                type='monotone'
-                dataKey='value'
-                stroke={COLORS[0]}
-                strokeWidth={2.5}
-                dot={{ fill: COLORS[0], r: 3 }}
-                isAnimationActive={false}
-              />
+              {multi ? <Legend wrapperStyle={LEGEND_STYLE} /> : null}
+              {keys.map((key, seriesIndex) => (
+                <Line
+                  key={key}
+                  type='monotone'
+                  dataKey={key}
+                  stroke={COLORS[seriesIndex % COLORS.length]}
+                  strokeWidth={2.5}
+                  dot={{ fill: COLORS[seriesIndex % COLORS.length], r: 3 }}
+                  isAnimationActive={false}
+                />
+              ))}
             </LineChart>
           ) : (
             <PieChart>
               <Tooltip contentStyle={TOOLTIP_STYLE} />
               <Pie
-                data={data}
+                data={pieData}
                 dataKey='value'
                 nameKey='label'
                 outerRadius={88}
                 stroke='none'
                 isAnimationActive={false}
               >
-                {data.map((point, index) => (
+                {pieData.map((point, index) => (
                   <Cell key={point.label} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
@@ -120,7 +156,7 @@ export function Chart(props: ChartProps) {
       </div>
       {type === 'pie' ? (
         <ul className='vp-chart__legend'>
-          {data.map((point, index) => (
+          {pieData.map((point, index) => (
             <li key={point.label} className='vp-chart__legend-item'>
               <span
                 className='vp-chart__swatch'
@@ -129,7 +165,7 @@ export function Chart(props: ChartProps) {
               />
               <span className='vp-chart__legend-label'>{point.label}</span>
               <span className='vp-chart__legend-value'>
-                {total > 0 ? `${Math.round((point.value / total) * 100)}%` : point.value}
+                {pieTotal > 0 ? `${Math.round((point.value / pieTotal) * 100)}%` : point.value}
               </span>
             </li>
           ))}

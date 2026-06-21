@@ -13,13 +13,14 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
   loop): MDX compile errors plus static component checks, printed as `file:line:col`.
 - `vplan components` prints the component vocabulary cheat-sheet.
 
-Plans use a fixed, tiny component vocabulary (`Phase`, `FileTree`, `Chart`, `Compare`,
+Plans use a fixed, tiny component vocabulary (`Phase`, `FileTree`, `Chart`, `Compare`, `Matrix`,
 `Callout`, `Questions`, `Checklist`, and ` ```mermaid ` fences) with no imports — the
 components are auto-injected into MDX scope. A plan starts with a `# Title` heading; there
 is no frontmatter. `Phase` sections render as a numbered vertical timeline; no sidebar. The
-list components (`FileTree`, `Chart`, `Compare`, `Questions`, `Checklist`) are authored as
-**markdown children** (a bullet/task list, or headings for `Compare`), not inline object-array
-props; only scalar settings (`title`, `type`, `status`) are attributes.
+data components (`FileTree`, `Chart`, `Compare`, `Matrix`, `Questions`, `Checklist`) are authored
+as **markdown children** (a bullet/task list, `Compare` headings, or a GFM table for `Matrix` and
+a multi-series `Chart`), not inline object-array props; only scalar settings (`title`, `type`,
+`status`) are attributes.
 
 ## Workspace layout
 

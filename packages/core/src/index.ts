@@ -33,9 +33,30 @@ export const fileTreeSchema = z.object({
 export const chartSchema = z.object({
   type: z.enum(CHART_TYPE_VALUES),
   title: z.string().optional(),
+  // One or more series. A single-series chart (the `- label: value` list form) has one
+  // synthetic series; a multi-series chart (the table form) names a series per column.
+  series: z.array(z.string().min(1)).min(1, 'chart needs at least one series'),
   data: z
-    .array(z.object({ label: z.string(), value: z.number() }))
+    .array(z.object({ label: z.string(), values: z.array(z.number()) }))
     .min(1, 'data must have at least one point'),
+})
+
+export const matrixSchema = z.object({
+  // The top-left header cell: the name of the row axis (e.g. "Dimension"). May be blank.
+  corner: z.string().default(''),
+  columns: z
+    .array(
+      z.object({
+        name: z.string().min(1, 'each column needs a name'),
+        pick: z.boolean().optional(),
+      }),
+    )
+    .min(2, 'matrix needs at least two columns'),
+  rows: z
+    .array(
+      z.object({ label: z.string().min(1, 'each row needs a label'), cells: z.array(z.string()) }),
+    )
+    .min(1, 'matrix needs at least one row'),
 })
 
 export const compareSchema = z.object({
@@ -99,17 +120,26 @@ export const CATALOG: readonly CatalogEntry[] = [
   {
     name: 'Chart',
     summary:
-      'A bar/line/pie chart for estimates or metrics. Write a markdown list, one "- <label>: <value>" per point.',
+      'A bar/line/pie chart for estimates or metrics. Single series: a markdown list of "- <label>: <value>". Multiple series (bar/line): a markdown table with a "category | series1 | series2" header.',
     staticEnums: { type: CHART_TYPE_VALUES },
-    example: '<Chart type="bar" title="Effort (days)">\n- API: 3\n- UI: 2\n</Chart>',
+    example:
+      '<Chart type="bar" title="Effort (days)">\n- API: 3\n- UI: 2\n</Chart>\n\n<Chart type="line" title="Latency by stage (ms)">\n| Stage | p50 | p95 |\n|-------|-----|-----|\n| Auth  | 12  | 30  |\n| DB    | 40  | 120 |\n</Chart>',
   },
   {
     name: 'Compare',
     summary:
-      'Side-by-side option cards for weighing approaches. Each option is a "## Name" heading (add "(pick)" to recommend one) with "- pro:" / "- con:" bullets.',
+      'Side-by-side option cards for weighing approaches. Each option is a "## Name" heading (add "(pick)" to recommend one) with as many "- pro:" / "- con:" bullets as you need.',
     staticEnums: {},
     example:
-      '<Compare>\n## Postgres (pick)\n- pro: ACID\n- con: ops\n\n## SQLite\n- pro: simple\n- con: scale\n</Compare>',
+      '<Compare>\n## Postgres (pick)\n- pro: ACID\n- pro: mature tooling\n- con: vertical scaling\n\n## SQLite\n- pro: simple\n- con: single-writer\n</Compare>',
+  },
+  {
+    name: 'Matrix',
+    summary:
+      'A comparison grid (options x dimensions) for weighing several choices across several criteria. Write a markdown table; the first column is the row labels, append "(pick)" to one column header to highlight it. Use Compare for pros/cons, Matrix for a scorecard.',
+    staticEnums: {},
+    example:
+      '<Matrix>\n| Dimension | Postgres (pick) | ClickHouse | DynamoDB |\n|-----------|-----------------|------------|----------|\n| Writes    | medium          | high       | high     |\n| Querying  | high            | medium     | low      |\n| Ops cost  | low             | medium     | low      |\n</Matrix>',
   },
   {
     name: 'Callout',

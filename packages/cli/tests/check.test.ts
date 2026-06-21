@@ -68,7 +68,7 @@ describe('checkPlan', () => {
     )
     const issues = await checkPlan(path)
     expect(issues).toHaveLength(1)
-    expect(issues[0]?.message).toMatch(/non-numeric value/)
+    expect(issues[0]?.message).toMatch(/is not a number/)
   })
 
   it('accepts valid markdown-children blocks (golden)', async () => {
@@ -77,6 +77,32 @@ describe('checkPlan', () => {
       '# T\n\n<Checklist title="Done when">\n- [x] one\n- [ ] two\n</Checklist>\n\n<Compare>\n## A (pick)\n- pro: fast\n\n## B\n- con: slow\n</Compare>\n',
     )
     expect(await checkPlan(path)).toEqual([])
+  })
+
+  it('accepts a valid Matrix and multi-series Chart (golden)', async () => {
+    const path = await writePlan(
+      'good-table-blocks.mdx',
+      '# T\n\n<Matrix>\n| Dim | A (pick) | B |\n|---|---|---|\n| Writes | high | low |\n</Matrix>\n\n<Chart type="bar">\n| Stage | p50 | p95 |\n|---|---|---|\n| Auth | 12 | 30 |\n</Chart>\n',
+    )
+    expect(await checkPlan(path)).toEqual([])
+  })
+
+  it('flags a single-column Matrix (error)', async () => {
+    const path = await writePlan(
+      'bad-matrix.mdx',
+      '# T\n\n<Matrix>\n| Dim | Only |\n|---|---|\n| Writes | high |\n</Matrix>\n',
+    )
+    const issues = await checkPlan(path)
+    expect(issues.some(issue => /at least two value columns/.test(issue.message))).toBe(true)
+  })
+
+  it('flags a multi-series pie Chart (error)', async () => {
+    const path = await writePlan(
+      'bad-pie.mdx',
+      '# T\n\n<Chart type="pie">\n| Stage | p50 | p95 |\n|---|---|---|\n| Auth | 12 | 30 |\n</Chart>\n',
+    )
+    const issues = await checkPlan(path)
+    expect(issues.some(issue => /single series/.test(issue.message))).toBe(true)
   })
 
   it('points to the real line for an unclosed tag with no structured position (edge)', async () => {
