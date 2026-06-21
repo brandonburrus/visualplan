@@ -53,8 +53,9 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   (`diagramLabel`) for an accessible name. **beautiful-mermaid injects an
   `@import url('https://fonts.googleapis.com/...')` into the SVG `<style>` per themed font**, which
   would make the self-contained page fetch Google Fonts at view time; `Mermaid.tsx`
-  (`stripExternalFontImports`) removes those imports after rendering, leaving the system-font
-  fallback. Do not reintroduce them; the single-file invariant has no external requests.
+  (`stripExternalImports`) removes any external-URL `@import` after rendering (host-agnostic, so a
+  dependency CDN change cannot reintroduce one), leaving the system-font fallback. Do not
+  reintroduce them; the single-file invariant has no external requests.
 - **Fenced code is handled at build time, not in a `pre` override.** Two plugins in
   `src/build/compile.ts` cooperate, and ORDER matters: `remarkMermaid` (remark, mdast stage)
   rewrites ` ```mermaid ` fences into `<Mermaid>` JSX FIRST, then `rehype-expressive-code` (rehype

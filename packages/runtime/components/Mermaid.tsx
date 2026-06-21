@@ -25,12 +25,14 @@ const THEME: RenderOptions = {
 
 /** beautiful-mermaid injects `@import url('https://fonts.googleapis.com/...')` into the SVG's
  * inline <style> (one per font it themes with). That would make the supposedly self-contained page
- * fetch Google Fonts at view time, breaking the single-file invariant, so strip those imports. The
- * SVG's font-family keeps its system-stack fallback, which matches our page font anyway. The quoted
- * capture survives URLs that contain parens (e.g. a `var(--vp-font)` family). */
-function stripExternalFontImports(svg: string): string {
+ * fetch Google Fonts at view time, breaking the single-file invariant, so strip them. The SVG's
+ * font-family keeps its system-stack fallback, which matches our page font anyway. We strip ANY
+ * external-URL import (not just the current Google Fonts host) so a future dependency change to a
+ * different CDN cannot silently reintroduce an external request; a themed SVG never needs one. The
+ * quoted capture survives URLs that contain parens (e.g. a `var(--vp-font)` family). */
+function stripExternalImports(svg: string): string {
   return svg.replace(/@import\s+url\(\s*(['"])(.*?)\1\s*\)\s*;/g, (full, _quote, url) =>
-    typeof url === 'string' && url.includes('fonts.googleapis.com') ? '' : full,
+    typeof url === 'string' && /^\s*https?:\/\//i.test(url) ? '' : full,
   )
 }
 
@@ -56,7 +58,7 @@ function diagramLabel(chart: string): string {
 export function Mermaid({ chart }: MermaidProps) {
   let svg: string
   try {
-    svg = stripExternalFontImports(renderMermaidSVG(chart, THEME))
+    svg = stripExternalImports(renderMermaidSVG(chart, THEME))
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     return (
