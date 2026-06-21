@@ -706,9 +706,14 @@ body {
   color: var(--vp-text);
 }
 
+.vp-matrix__colhead {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
 .vp-matrix__pick {
-  margin-left: 0.3rem;
-  vertical-align: middle;
+  flex: none;
   color: var(--vp-text);
   cursor: help;
 }

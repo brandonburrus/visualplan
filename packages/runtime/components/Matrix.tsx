@@ -1,4 +1,4 @@
-import { IconStarFilled } from '@tabler/icons-react'
+import { IconStar } from '@tabler/icons-react'
 import { matrixSchema } from '@visualplan/core'
 import { decodeJson, validateProps } from './validate.js'
 
@@ -27,12 +27,16 @@ export function Matrix(props: MatrixProps) {
                 className='vp-matrix__col'
                 data-pick={column.pick ? 'true' : 'false'}
               >
-                {column.name}
-                {column.pick ? (
-                  // A compact star instead of a full-width chip; the native SVG <title>
-                  // surfaces "Recommended" on hover and survives the wrapper's overflow clip.
-                  <IconStarFilled size={13} className='vp-matrix__pick' title='Recommended' />
-                ) : null}
+                {/* An inline-flex wrapper vertically centers the star with the column name; a
+                    bare SVG with vertical-align sits slightly high relative to the text. */}
+                <span className='vp-matrix__colhead'>
+                  {column.name}
+                  {column.pick ? (
+                    // A compact star instead of a full-width chip; the native SVG <title>
+                    // surfaces "Recommended" on hover and survives the wrapper's overflow clip.
+                    <IconStar size={13} className='vp-matrix__pick' title='Recommended' />
+                  ) : null}
+                </span>
               </th>
             ))}
           </tr>
