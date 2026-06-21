@@ -57,6 +57,12 @@ describe('renderToFile', () => {
     expect(html).toContain('src/gateway/rate-limiter.ts')
   })
 
+  it('adds a file-type icon to a titled code block via the file-icons plugin (golden)', () => {
+    // pluginFileIcons inlines a VS Code file-type SVG into the title bar (no external asset),
+    // tagged with our iconClass so theme.css can size it. The ```ts block carries a title.
+    expect(html).toContain('vp-file-icon')
+  })
+
   it('inlines the script and styles directly into the page (edge)', () => {
     // A text scan for external tags false-positives on JS string literals in the
     // bundle, so assert the positive instead: singlefile emits the JS as an inline
@@ -67,6 +73,22 @@ describe('renderToFile', () => {
     expect(html).toMatch(/<script type="module"[^>]*>\s*\S/)
     expect(html).toMatch(/<style[^>]*>\s*\S/)
   })
+
+  it('renders a CSS color swatch via the color-chips plugin (golden)', async () => {
+    // pluginColorChips inlines a preview swatch (class ec-css-color-chip) next to each CSS
+    // color value. The example plan has no colors, so render a focused fixture.
+    const colorDir = await mkdtemp(join(tmpdir(), 'visualplan-colorchips-'))
+    try {
+      const planPath = join(colorDir, 'colors.mdx')
+      await writeFile(planPath, '# Colors\n\n```css\na { color: #ff0000; }\n```\n')
+      const out = join(colorDir, 'colors.plan.html')
+      await renderToFile(planPath, out)
+      const colorHtml = await readFile(out, 'utf8')
+      expect(colorHtml).toContain('ec-css-color-chip')
+    } finally {
+      await rm(colorDir, { recursive: true, force: true })
+    }
+  }, 60_000)
 
   it('renders a plan that lives outside any node project (edge)', async () => {
     // The plan .mdx is an external absolute path, so @mdx-js/rollup's emitted

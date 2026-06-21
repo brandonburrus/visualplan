@@ -205,6 +205,9 @@ body {
 
 .vp-main .expressive-code .frame.has-title .header .title {
   position: static;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   margin: 0;
   padding: 0.5rem 1rem;
   border: none;
@@ -219,6 +222,13 @@ body {
 .vp-main .expressive-code .frame.has-title .header .title::before,
 .vp-main .expressive-code .frame.has-title .header .title::after {
   display: none;
+}
+
+/* The VS Code file-type icon the file-icons plugin prepends inside the title; size it to the text. */
+.vp-main .expressive-code .frame.has-title .header .title .vp-file-icon {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: none;
 }
 
 /* Phase: a numbered vertical-timeline step */

@@ -8,9 +8,12 @@ renders a plan to a self-contained HTML page). Built with tsup to `dist/index.js
 - `src/index.ts` — commander dispatch. `src/commands/` — one file per command (render, check,
   components).
 - `src/build/compile.ts` — Vite orchestration for `render` (single-file build via
-  `vite-plugin-singlefile`) and `--watch` (dev server). `src/build/check.ts` — the static
-  AST validator. `src/build/remark-mermaid.ts` — rewrites ` ```mermaid ` fences to `<Mermaid>`
-  BEFORE rehype-expressive-code runs.
+  `vite-plugin-singlefile`) and `--watch` (dev server). Holds the `rehype-expressive-code` options,
+  including two EC plugins: `pluginColorChips` (CSS color swatches) and `pluginFileIcons`
+  (VS Code file-type icon in a titled block's header, given `iconClass: 'vp-file-icon'` so
+  `theme.css` can size it). Both inline their output at build time, so the single-file invariant
+  holds. `src/build/check.ts` — the static AST validator. `src/build/remark-mermaid.ts` — rewrites
+  ` ```mermaid ` fences to `<Mermaid>` BEFORE rehype-expressive-code runs.
 - `src/build/plan-blocks.ts` — `parseBlockChildren(name, node)`: turns the markdown children of
   the data components (FileTree, Checklist, Questions, Chart, Compare, Matrix) into the structured
   props their zod schemas expect, plus positioned `issues`. Most parse a markdown list; `Matrix`
@@ -56,3 +59,9 @@ Do not remove them.
   `vendor.mjs`, included in the tarball via `files`). Never edit them; edit the source packages.
 - **Publish with `pnpm publish`** so the `workspace:*` protocol is rewritten. `prepack` runs
   `vendor.mjs` then `tsup`.
+- The EC plugins (`@xt0rted/expressive-code-file-icons`, `expressive-code-color-chips`) are real
+  prod `dependencies`; file-icons ships its `dist/icons/*.svg` and reads them at build time via
+  `import.meta.url`, so they resolve wherever the package is installed. file-icons declares an older
+  `@expressive-code/core`/`plugin-frames` range, so the **root `pnpm.overrides` pins both to the
+  version `rehype-expressive-code` uses** — without it the tree duplicates core and the plugin's
+  return type no longer matches the `plugins` array (typecheck fails). Keep the override.

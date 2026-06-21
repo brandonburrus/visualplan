@@ -55,7 +55,10 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
 - **Icons are Tabler (`@tabler/icons-react`), one family, stroke ~2.** Components render icon
   elements (FileTree change markers + folder, Compare check/x/star, Callout type icon, Questions
   help icon); never hand-roll SVG paths or text glyphs. Icons inherit `currentColor`, so the
-  semantic color CSS still drives them.
+  semantic color CSS still drives them. The one sanctioned exception is the colored VS Code
+  file-type icon in code-block title bars: that comes from the build-time `expressive-code-file-icons`
+  plugin (configured in the CLI's `compile.ts`), not from a runtime component, and is intentionally
+  colored. theme.css sizes it via the `.vp-file-icon` class.
 - **Fullscreen applies to diagrams and charts only (not code).** React surfaces (Mermaid, Chart)
   render `<ExpandButton>` and get the `.vp-expandable` class; `Layout`'s `useEffect` calls
   `initFullscreenControls()`. Code blocks deliberately have no fullscreen.
@@ -66,7 +69,10 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   so zoom-to-cursor math is exact; the zoom % is shown relative to the fit scale (fit = 100%).
 - **Expressive Code header is flattened** to a plain filename bar via `.vp-main .expressive-code
   .frame.has-title .header` overrides (the `.vp-main` prefix is required because EC injects its
-  `<style>` in the body, after our head styles). Do not remove the prefix.
+  `<style>` in the body, after our head styles). Do not remove the prefix. The `.title` is an
+  `inline-flex` row so the file-icons plugin's prepended `<svg class="vp-file-icon">` sits inline
+  with the filename; `.vp-file-icon` sizes it. Color chips (`ec-css-color-chip`) are styled by the
+  plugin itself (border defaults to `theme.fg`), so they need no CSS here.
 - **Recharts `Cell` is deprecation-flagged** in recharts 3 but still functional; it is how
   per-bar/slice colors are set. The hint does not fail typecheck.
 - **`@visualplan/core` must stay isomorphic** (no React/recharts/mermaid) — the Node CLI

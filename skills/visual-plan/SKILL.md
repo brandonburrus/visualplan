@@ -124,7 +124,9 @@ brace errors that break a render.
   ```
 - Fenced code blocks are syntax-highlighted (Expressive Code): write ` ```ts ` (or js, json, bash,
   python, go, rust, sql, yaml, etc.) to show a key snippet. Add a file name with
-  ` ```ts title="src/path/file.ts" ` to render a filename header on the block.
+  ` ```ts title="src/path/file.ts" ` to render a filename header on the block; a titled block also
+  gets a VS Code file-type icon automatically. CSS color values in any block (`#1e1e21`, `rgb(...)`,
+  `hsl(...)`) render a small color swatch next to them. Both are automatic, no syntax needed.
 - Mark lines and text inside a code block with Expressive Code props in the fence meta string
   (no component needed). Three marker types: `mark` (neutral, the default), `ins` (green,
   inserted), `del` (red, removed). Each takes line numbers, ranges, quoted strings, or a

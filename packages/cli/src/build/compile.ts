@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import mdx from '@mdx-js/rollup'
+import { pluginFileIcons } from '@xt0rted/expressive-code-file-icons'
+import { pluginColorChips } from 'expressive-code-color-chips'
 import rehypeExpressiveCode, { type RehypeExpressiveCodeOptions } from 'rehype-expressive-code'
 import remarkFrontmatter from 'remark-frontmatter'
 import remarkGfm from 'remark-gfm'
@@ -17,6 +19,10 @@ import { remarkPlanBlocks } from './remark-plan-blocks.js'
 const expressiveCodeOptions: RehypeExpressiveCodeOptions = {
   themes: ['github-dark', 'github-light'],
   useDarkModeMediaQuery: true,
+  // Color chips render a swatch next to CSS color values; file icons add a VS Code file-type
+  // icon to a block's title bar. Both inline their markup/SVG at build time (no external asset),
+  // so the single-file output stays self-contained. iconClass lets theme.css size the icon.
+  plugins: [pluginColorChips(), pluginFileIcons({ iconClass: 'vp-file-icon' })],
   // The copy-button script does not execute reliably in our client-rendered SPA;
   // frames (titles) are CSS-only, so keep those and drop the interactive button.
   frames: { showCopyToClipboardButton: false },

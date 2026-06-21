@@ -112,6 +112,11 @@ A release is cut by creating a GitHub release; the tag is the published version 
 - 2026-06-20: Fenced code highlighted by `rehype-expressive-code` (build-time), with a
   `remarkMermaid` plugin extracting mermaid fences BEFORE it. Why: file-title frames + dual
   light/dark; the remark step keeps mermaid out of the highlighter. Replaced highlight.js.
+- 2026-06-20: Expressive Code runs two extra plugins, `expressive-code-color-chips` and
+  `@xt0rted/expressive-code-file-icons`. Why: color swatches and VS Code file-type icons aid code
+  scanning; both inline their markup at build time so the single-file output holds. The file icons
+  are intentionally colored (a scoped exception to the monochrome-chrome rule), so do not strip them
+  as off-palette. A pnpm override pins `@expressive-code/core`/`plugin-frames` so the tree dedupes.
 - 2026-06-20: Icons use `@tabler/icons-react` project-wide. Why: design standard forbids
   hand-rolled icon paths / text glyphs.
 - 2026-06-20: Monorepo with one published package (`vplan`); `core` and `runtime` are

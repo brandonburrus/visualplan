@@ -13,7 +13,11 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "esbuild"
-    ]
+    ],
+    "overrides": {
+      "@expressive-code/core": "0.43.1",
+      "@expressive-code/plugin-frames": "0.43.1"
+    }
   },
   "scripts": {
     "build": "pnpm --filter vplan build",
