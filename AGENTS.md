@@ -46,8 +46,27 @@ tarball, because the runtime is compiled from source at render time and must phy
   `@visualplan/core` to the core source in the Vite build either way.
 - `prepack` runs `scripts/vendor.mjs` (copies `packages/runtime` -> `cli/runtime` and the core
   entry -> `cli/core/index.ts`, both git-ignored) then `tsup`. `files` ships `dist`, `runtime`,
-  `core`. **Publish with `pnpm publish` (from `packages/cli`)** so the `workspace:*` protocol is
-  rewritten; plain `npm publish` would leave it literal.
+  `core`. The CI publish (below) uses `npm pkg delete devDependencies` + `npm publish` instead,
+  which sidesteps the `workspace:*` protocol entirely.
+
+## Releasing
+
+A release is cut by creating a GitHub release; the tag is the published version and triggers
+`.github/workflows/publish.yml`, which publishes `vplan` to npm via OIDC trusted publishing
+(no token). Creating the release IS the publish, so confirm before cutting it.
+
+- **Tags and versions are bare semver, no leading `v`** (`0.2.0`, never `v0.2.0`). The workflow
+  derives the version from the tag (`npm version ${GITHUB_REF_NAME#v}`); do not bump
+  `package.json` in the repo, its version field stays at a baseline.
+- Pick the next version from the conventional commits since the last tag: `feat` is a minor
+  bump, `fix`/`perf`/`refactor`/`docs` a patch, a `feat!`/`BREAKING CHANGE` a major. In `0.x`,
+  treat breaking as a minor bump unless intentionally going to `1.0.0`; confirm the version.
+- Write notes grouped by change type (Features / Fixes / Other), conventional prefixes stripped.
+- Cut and verify it:
+  ```bash
+  gh release create <X.Y.Z> --target main --title "<X.Y.Z>" --notes "..."
+  gh run list --workflow=publish.yml --limit 1   # then: npm view vplan version
+  ```
 
 ## Conventions
 
