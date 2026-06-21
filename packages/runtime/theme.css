@@ -628,9 +628,12 @@ body {
   background: var(--vp-surface);
 }
 
-.vp-matrix {
+/* Scoped under the wrapper so it outranks the global `.vp-main table` rule (0,1,1), which
+   otherwise leaks a 1.25rem margin inside the bordered box and bumps the font size. */
+.vp-matrix-wrap .vp-matrix {
   width: 100%;
   border-collapse: collapse;
+  margin: 0;
   font-size: 0.84rem;
 }
 
