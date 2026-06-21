@@ -118,9 +118,11 @@ function mdxPlugin(): Plugin {
 }
 
 /** The plan's title is its first `# ` heading (plans have no frontmatter). */
-function planTitle(mdxPath: string): string {
+export function planTitle(mdxPath: string): string {
   try {
-    return readFileSync(mdxPath, 'utf8').match(/^# (.+?)\s*$/m)?.[1] ?? 'Plan'
+    // Strip a leading UTF-8 BOM first, or a BOM-prefixed "# Title" first line never matches `^# `.
+    const source = readFileSync(mdxPath, 'utf8').replace(/^\ufeff/, '')
+    return source.match(/^# (.+?)\s*$/m)?.[1] ?? 'Plan'
   } catch {
     return 'Plan'
   }

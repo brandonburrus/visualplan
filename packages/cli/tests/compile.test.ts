@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { renderToFile } from '../src/build/compile.js'
+import { planTitle, renderToFile } from '../src/build/compile.js'
 
 const examplePath = fileURLToPath(new URL('../templates/example.mdx', import.meta.url))
 let workDir: string
@@ -113,4 +113,25 @@ describe('renderToFile', () => {
       await rm(bareDir, { recursive: true, force: true })
     }
   }, 60_000)
+})
+
+describe('planTitle', () => {
+  it('reads the first H1 as the title (golden)', async () => {
+    const path = join(workDir, 'titled.mdx')
+    await writeFile(path, '# My Plan\n\nbody\n')
+    expect(planTitle(path)).toBe('My Plan')
+  })
+
+  it('falls back to "Plan" when there is no H1 (edge)', async () => {
+    const path = join(workDir, 'untitled.mdx')
+    await writeFile(path, 'just prose, no heading\n')
+    expect(planTitle(path)).toBe('Plan')
+  })
+
+  it('reads the title past a leading UTF-8 BOM (edge)', async () => {
+    // A BOM before the "# " would defeat the ^#  match and silently fall back to "Plan".
+    const path = join(workDir, 'bom.mdx')
+    await writeFile(path, '\ufeff# BOM Plan\n\nbody\n')
+    expect(planTitle(path)).toBe('BOM Plan')
+  })
 })

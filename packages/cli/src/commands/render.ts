@@ -2,7 +2,7 @@ import { basename, dirname, extname, join, resolve } from 'node:path'
 import open from 'open'
 import { checkPlan } from '../build/check.js'
 import { renderToFile, startDevServer } from '../build/compile.js'
-import { printIssues } from './check.js'
+import { printIssues, resolvePlanFile } from './check.js'
 
 export interface RenderOptions {
   watch?: boolean
@@ -17,7 +17,7 @@ function defaultOutPath(absMdx: string): string {
 
 /** `vplan render <file>` — validate, then build a static page or start a watch server. */
 export async function runRender(file: string, options: RenderOptions): Promise<void> {
-  const absMdx = resolve(file)
+  const absMdx = resolvePlanFile(file)
 
   const issues = await checkPlan(absMdx)
   if (issues.length > 0) {

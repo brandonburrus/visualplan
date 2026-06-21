@@ -5,6 +5,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { checkPlan } from '../src/build/check.js'
+import { resolvePlanFile } from '../src/commands/check.js'
 
 const examplePath = fileURLToPath(new URL('../templates/example.mdx', import.meta.url))
 let workDir: string
@@ -145,5 +146,20 @@ describe('checkPlan', () => {
     const issues = await checkPlan(path)
     expect(issues.length).toBeGreaterThan(0)
     expect(issues[0]?.line).toBe(3)
+  })
+})
+
+describe('resolvePlanFile', () => {
+  it('returns the absolute path for a real file (golden)', async () => {
+    const path = await writePlan('real.mdx', '# T\n')
+    expect(resolvePlanFile(path)).toBe(path)
+  })
+
+  it('throws a friendly message for a missing file (error)', () => {
+    expect(() => resolvePlanFile(join(workDir, 'nope.mdx'))).toThrow(/^File not found:/)
+  })
+
+  it('throws "Not a file" for a directory (edge)', () => {
+    expect(() => resolvePlanFile(workDir)).toThrow(/^Not a file:/)
   })
 })
