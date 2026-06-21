@@ -2,7 +2,7 @@ import { decodePlan } from '@visualplan/core/share'
 import { type ReactElement, useEffect, useState } from 'react'
 import { PlanErrorCard, PlanSpinner } from './PlanStatus'
 
-/** Soft cap on decoded plan source. A real plan is a few KB; this rejects absurd payloads. */
+/** Hard cap on decoded plan source, enforced during decompression. A real plan is a few KB. */
 const MAX_SOURCE_BYTES = 512 * 1024
 
 /** Message posted to the parent /view page so it can size the iframe to the rendered plan. */
@@ -38,25 +38,25 @@ export function PlanFrameApp() {
 
     let source: string
     try {
-      source = decodePlan(data)
-    } catch {
-      setState({
-        kind: 'error',
-        tone: 'calm',
-        title: 'This link could not be read',
-        message:
-          'The plan data is corrupt or incomplete. It may have been cut off when the link was copied.',
-      })
-      return
-    }
-
-    if (new TextEncoder().encode(source).length > MAX_SOURCE_BYTES) {
-      setState({
-        kind: 'error',
-        tone: 'calm',
-        title: 'This plan is too big',
-        message: `Shared plans are limited to ${Math.round(MAX_SOURCE_BYTES / 1024)} KB of source.`,
-      })
+      // Bounded decode: aborts a decompression bomb before it can exhaust memory.
+      source = decodePlan(data, MAX_SOURCE_BYTES)
+    } catch (error) {
+      if (error instanceof Error && error.name === 'PlanTooLargeError') {
+        setState({
+          kind: 'error',
+          tone: 'calm',
+          title: 'This plan is too big',
+          message: `Shared plans are limited to ${Math.round(MAX_SOURCE_BYTES / 1024)} KB of source.`,
+        })
+      } else {
+        setState({
+          kind: 'error',
+          tone: 'calm',
+          title: 'This link could not be read',
+          message:
+            'The plan data is corrupt or incomplete. It may have been cut off when the link was copied.',
+        })
+      }
       return
     }
 

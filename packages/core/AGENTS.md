@@ -15,7 +15,10 @@ CLI's `check` and `components` commands. One file: `src/index.ts`.
   and is deliberately NOT re-exported from `index.ts`, so the vendored render path (only `index.ts`
   is vendored) and the runtime's import of `@visualplan/core` stay free of `fflate`. The CLI encodes
   at render time, `/view` decodes in the browser; keep it isomorphic (no Node `Buffer`, no DOM
-  `btoa`) so one format serves both.
+  `btoa`) so one format serves both. `decodePlan(data, maxBytes?)` takes an optional output cap:
+  `/view` passes it because the payload is untrusted, and the decode is then a BOUNDED streaming
+  inflate that aborts with `PlanTooLargeError` rather than letting a decompression bomb (DEFLATE can
+  expand ~1000x) exhaust memory. The CLI never decodes, so the trusted round-trip omits the cap.
 - **The `exports` map MUST keep `"./package.json": "./package.json"`.** Once a package has an
   `exports` map, Node blocks every subpath not listed, including `package.json`. `compile.ts`'s
   `findRuntimePaths` resolves `@visualplan/core/package.json` to locate the core dir in the

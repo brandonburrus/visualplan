@@ -1,4 +1,4 @@
-import { deflateSync, inflateSync, strFromU8, strToU8 } from 'fflate'
+import { deflateSync, Inflate, inflateSync, strFromU8, strToU8 } from 'fflate'
 
 /**
  * Codec for the stateless plan-share URL (`?data=`). A plan's MDX source is
@@ -93,11 +93,57 @@ export function encodePlan(mdx: string): string {
   return bytesToBase64Url(deflateSync(strToU8(mdx), { level: 9 }))
 }
 
+/** Thrown by `decodePlan` when a payload decompresses past `maxBytes`. Distinct from a corrupt
+ * payload so `/view` can tell "this plan is too big" apart from "this link could not be read". */
+export class PlanTooLargeError extends Error {
+  constructor() {
+    super('plan exceeds the maximum decoded size')
+    this.name = 'PlanTooLargeError'
+  }
+}
+
+/** Compressed input is fed to the bounded inflater in slices so output stays incremental. */
+const INFLATE_CHUNK_BYTES = 8192
+
+/**
+ * Inflate with an output ceiling. The `?data=` payload is untrusted, and DEFLATE can expand a tiny
+ * input by ~1000x, so a naive `inflateSync` could let a crafted link allocate gigabytes before any
+ * length check. Feeding the input in slices keeps each emitted chunk small, and the first chunk that
+ * pushes the running total past `maxBytes` aborts the decode (throwing `PlanTooLargeError`), so a
+ * bomb never fully materializes. Throws on invalid deflate data as well.
+ */
+function inflateBounded(bytes: Uint8Array, maxBytes: number): Uint8Array {
+  const chunks: Uint8Array[] = []
+  let total = 0
+  const inflater = new Inflate(chunk => {
+    total += chunk.length
+    if (total > maxBytes) throw new PlanTooLargeError()
+    chunks.push(chunk)
+  })
+  for (let offset = 0; offset < bytes.length; offset += INFLATE_CHUNK_BYTES) {
+    const end = Math.min(offset + INFLATE_CHUNK_BYTES, bytes.length)
+    inflater.push(bytes.subarray(offset, end), end === bytes.length)
+  }
+  const out = new Uint8Array(total)
+  let written = 0
+  for (const chunk of chunks) {
+    out.set(chunk, written)
+    written += chunk.length
+  }
+  return out
+}
+
 /**
  * Decode a `?data=` payload back to the plan's MDX source. Throws if the payload
  * is not valid base64url or not valid deflate data, so callers can show a
  * friendly error for a corrupted or truncated link.
+ *
+ * Pass `maxBytes` for untrusted input (the `/view` page): the decode is then bounded and aborts
+ * with `PlanTooLargeError` rather than letting a decompression bomb exhaust memory. Omit it for the
+ * trusted round-trip, where the unbounded `inflateSync` is simplest.
  */
-export function decodePlan(data: string): string {
-  return strFromU8(inflateSync(base64UrlToBytes(data)))
+export function decodePlan(data: string, maxBytes?: number): string {
+  const bytes = base64UrlToBytes(data)
+  if (maxBytes === undefined) return strFromU8(inflateSync(bytes))
+  return strFromU8(inflateBounded(bytes, maxBytes))
 }
