@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 const MIN_HEIGHT = 640
 
 const RESIZE_MESSAGE = 'vp-plan-frame-resize'
+const TITLE_MESSAGE = 'vp-plan-frame-title'
 
 /** Where the consumed `?data=` is stashed so a reload still finds the plan after the URL is cleaned. */
 const STORAGE_KEY = 'vp-view-data'
@@ -48,9 +49,13 @@ export function ViewPage() {
     const onMessage = (event: MessageEvent) => {
       // Trust only the message from our own frame; its opaque-origin events have origin "null".
       if (!frameRef.current || event.source !== frameRef.current.contentWindow) return
-      const message = event.data as { type?: string; height?: number }
+      const message = event.data as { type?: string; height?: number; title?: string | null }
       if (message?.type === RESIZE_MESSAGE && typeof message.height === 'number') {
         setHeight(Math.max(MIN_HEIGHT, Math.ceil(message.height)))
+      }
+      if (message?.type === TITLE_MESSAGE) {
+        const name = typeof message.title === 'string' ? message.title.trim() : ''
+        document.title = name ? `Shared Plan: ${name}` : 'Shared Plan'
       }
     }
     window.addEventListener('message', onMessage)

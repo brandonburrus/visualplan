@@ -8,6 +8,15 @@ const MAX_SOURCE_BYTES = 512 * 1024
 /** Message posted to the parent /view page so it can size the iframe to the rendered plan. */
 const RESIZE_MESSAGE = 'vp-plan-frame-resize'
 
+/** Message posted to the parent with the plan's name, so it can title the browser tab. */
+const TITLE_MESSAGE = 'vp-plan-frame-title'
+
+/** A plan's title is its first `# ` heading (BOM-stripped), mirroring the CLI's planTitle. */
+function planTitle(source: string): string | null {
+  const text = source.charCodeAt(0) === 0xfeff ? source.slice(1) : source
+  return text.match(/^# (.+?)\s*$/m)?.[1]?.trim() || null
+}
+
 type State =
   | { kind: 'loading'; label: string }
   | { kind: 'ready'; element: ReactElement }
@@ -66,6 +75,10 @@ export function PlanFrameApp() {
       }
       return
     }
+
+    // Tell the parent the plan's name so it can title the browser tab; the parent owns the visible
+    // title (this frame's own document title is not shown).
+    window.parent.postMessage({ type: TITLE_MESSAGE, title: planTitle(source) }, '*')
 
     setState({ kind: 'loading', label: 'Rendering plan...' })
     import('../lib/render-plan')
