@@ -16,6 +16,7 @@ coverage
 # Vendored workspace source copied into the publishable CLI package at pack time
 /packages/cli/runtime/
 /packages/cli/core/
+/packages/cli/README.md
 
 # TypeScript cache
 *.tsbuildinfo

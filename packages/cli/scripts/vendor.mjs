@@ -15,11 +15,14 @@ import { fileURLToPath } from 'node:url'
  */
 const cliDir = dirname(dirname(fileURLToPath(import.meta.url)))
 const packagesDir = dirname(cliDir)
+const repoRoot = dirname(packagesDir)
 const runtimeSrc = join(packagesDir, 'runtime')
 const coreSrc = join(packagesDir, 'core', 'src', 'index.ts')
+const readmeSrc = join(repoRoot, 'README.md')
 
 const runtimeDest = join(cliDir, 'runtime')
 const coreDest = join(cliDir, 'core', 'index.ts')
+const readmeDest = join(cliDir, 'README.md')
 
 await rm(runtimeDest, { recursive: true, force: true })
 await rm(join(cliDir, 'core'), { recursive: true, force: true })
@@ -36,4 +39,7 @@ await cp(runtimeSrc, runtimeDest, {
 await mkdir(dirname(coreDest), { recursive: true })
 await cp(coreSrc, coreDest)
 
-process.stdout.write(`vendored runtime + core into ${cliDir}\n`)
+// npm renders the README from the published package's own dir, so copy the root one in.
+await cp(readmeSrc, readmeDest)
+
+process.stdout.write(`vendored runtime + core + README into ${cliDir}\n`)
