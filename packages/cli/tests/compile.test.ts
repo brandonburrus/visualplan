@@ -27,6 +27,12 @@ describe('renderToFile', () => {
     expect(html).toContain('<!doctype html>')
   })
 
+  it('embeds the inline SVG favicon, surviving the single-file build (edge)', () => {
+    // The favicon is a data: URI in the runtime index.html so the page stays self-contained
+    // (no external asset request). transformIndexHtml must not drop it.
+    expect(html).toMatch(/rel="icon"[^>]*data:image\/svg\+xml/)
+  })
+
   it('bundles every component into the output (golden)', () => {
     for (const marker of [
       'vp-phase',
