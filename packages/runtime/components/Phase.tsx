@@ -23,9 +23,12 @@ export function Phase(props: PhaseProps) {
       <div className='vp-phase__content'>
         <div className='vp-phase__head'>
           <h3 className='vp-phase__title'>{title}</h3>
-          <span className='vp-phase__badge' data-status={status}>
-            {status}
-          </span>
+          {/* Planned is the default/resting state, so it gets no chip; only active and done do. */}
+          {status === 'planned' ? null : (
+            <span className='vp-phase__badge' data-status={status}>
+              {status}
+            </span>
+          )}
         </div>
         <div className='vp-phase__body'>{props.children}</div>
       </div>

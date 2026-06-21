@@ -9,19 +9,21 @@ import { Phase } from '../components/Phase.js'
 import { Questions } from '../components/Questions.js'
 
 describe('Phase', () => {
-  it('renders the title and status badge (golden)', () => {
+  it('renders the title and a status badge for active/done (golden)', () => {
     const html = renderToStaticMarkup(<Phase title='Build the API' status='active' />)
     expect(html).toContain('Build the API')
     expect(html).toContain('data-status="active"')
+    expect(html).toContain('vp-phase__badge')
   })
 
   it('throws on an invalid status (error)', () => {
     expect(() => renderToStaticMarkup(<Phase title='x' status='nope' />)).toThrow(/invalid props/)
   })
 
-  it('defaults status to planned when omitted (edge)', () => {
+  it('defaults to planned and renders no badge for the planned state (edge)', () => {
     const html = renderToStaticMarkup(<Phase title='x' />)
     expect(html).toContain('data-status="planned"')
+    expect(html).not.toContain('vp-phase__badge')
   })
 })
 
