@@ -707,18 +707,10 @@ body {
 }
 
 .vp-matrix__pick {
-  display: inline-block;
-  margin-left: 0.45rem;
-  font-size: 0.58rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--vp-muted);
-  background: var(--vp-bg);
-  border: 1px solid var(--vp-border);
-  border-radius: 5px;
-  padding: 0.1rem 0.4rem;
+  margin-left: 0.3rem;
   vertical-align: middle;
+  color: var(--vp-text);
+  cursor: help;
 }
 
 /* Checklist */

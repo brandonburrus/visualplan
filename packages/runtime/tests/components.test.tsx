@@ -107,7 +107,9 @@ describe('Matrix', () => {
     expect(html).toContain('Postgres')
     expect(html).toContain('Writes')
     expect(html).toContain('medium')
-    expect(html).toContain('recommended')
+    // the pick marker is a star icon whose <title> reads "Recommended" on hover
+    expect(html).toContain('Recommended')
+    expect(html).toContain('vp-matrix__pick')
     expect(html).toContain('data-pick="true"')
   })
 
