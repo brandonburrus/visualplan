@@ -9,7 +9,7 @@
     "node": ">=20.0.0"
   },
   "bin": {
-    "vplan": "./dist/index.js"
+    "vplan": "dist/index.js"
   },
   "files": [
     "dist",
