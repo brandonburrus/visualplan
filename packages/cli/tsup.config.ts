@@ -8,9 +8,11 @@ export default defineConfig({
   clean: true,
   outDir: 'dist',
   banner: { js: '#!/usr/bin/env node' },
-  // @visualplan/core is a private workspace package (a devDependency), so bundle
-  // it into dist for the Node check/components path (and its `/share` subpath used
-  // by compile.ts). The regex covers the subpath, which a bare string would miss.
+  // @visualplan/core and @visualplan/compile are private workspace packages
+  // (devDependencies), so bundle them into dist for the Node check/render path (including
+  // core's `/share` subpath and compile's `/file-icons` subpath). The regex covers the
+  // subpaths, which a bare string would miss. Their third-party deps (rehype-expressive-code,
+  // material-icon-theme, remark-*, ...) stay external and ship as the CLI's own dependencies.
   // Vite resolves core separately at render time via the vendored alias in compile.ts.
-  noExternal: [/^@visualplan\/core/],
+  noExternal: [/^@visualplan\/(core|compile)/],
 })

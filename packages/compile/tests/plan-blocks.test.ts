@@ -5,7 +5,7 @@ import remarkParse from 'remark-parse'
 import { unified } from 'unified'
 import { visit } from 'unist-util-visit'
 import { describe, expect, it } from 'vitest'
-import { type BlockResult, parseBlockChildren } from '../src/build/plan-blocks.js'
+import { type BlockResult, parseBlockChildren } from '../src/plan-blocks.js'
 
 /** Parse a plan block authored as markdown children and return its parsed result. */
 function parseBlock(name: string, source: string): BlockResult {

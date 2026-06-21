@@ -24,7 +24,7 @@ a multi-series `Chart`), not inline object-array props; only scalar settings (`t
 
 ## Workspace layout
 
-`pnpm-workspace.yaml` globs `packages/*`. Four packages, one published:
+`pnpm-workspace.yaml` globs `packages/*`. Five packages, one published:
 
 - `packages/cli` — **the only published package** (`vplan`). The Node CLI (commander
   dispatch + Vite/MDX build), built with tsup to `dist/index.js` (the `bin`). Holds
@@ -33,7 +33,12 @@ a multi-series `Chart`), not inline object-array props; only scalar settings (`t
   **source** and compiled at render time by Vite. Components, `Layout.tsx`, `main.tsx`,
   `index.tsx` (MDX scope + `mount`), `theme.css`, `fullscreen.ts`.
 - `packages/core` — `@visualplan/core` (private). The isomorphic component vocabulary
-  (zod schemas + `CATALOG`); imported by both the runtime and the CLI.
+  (zod schemas + `CATALOG`); imported by the runtime, the CLI, and `compile`.
+- `packages/compile` — `@visualplan/compile` (private). The shared MDX compile pipeline (remark
+  plugins, the `plan-blocks` parser, Expressive Code options, the untrusted-input safety gate)
+  imported by BOTH the CLI render path and the `/view` browser compiler, so a plan renders
+  identically either way. Bundled into the CLI's `dist` (tsup `noExternal`); the Node-only
+  file-icons plugin is a `/file-icons` subpath the browser never imports.
 - `packages/app` — `@visualplan/app` (private, never published). The visualplan.dev docs site:
   a plain Astro static site, deployed to GitHub Pages on release by `.github/workflows/docs.yml`.
   Unrelated to the CLI render pipeline; it duplicates the runtime's ink design tokens by design.

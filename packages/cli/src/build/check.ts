@@ -9,8 +9,8 @@ import remarkMdx from 'remark-mdx'
 import remarkParse from 'remark-parse'
 import { unified } from 'unified'
 import { visit } from 'unist-util-visit'
+import { CHILD_BLOCK_COMPONENTS, parseBlockChildren } from '@visualplan/compile'
 import { CATALOG } from '@visualplan/core'
-import { CHILD_BLOCK_COMPONENTS, parseBlockChildren } from './plan-blocks.js'
 
 export interface CheckIssue {
   line: number

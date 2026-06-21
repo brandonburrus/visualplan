@@ -3,8 +3,8 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { remarkMath } from '@visualplan/compile'
 import { checkPlan } from '../src/build/check.js'
-import { remarkMath } from '../src/build/remark-math.js'
 
 interface JsxNode {
   type: string

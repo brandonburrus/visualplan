@@ -172,12 +172,64 @@ importers:
       '@types/hast':
         specifier: ^3.0.4
         version: 3.0.4
+      '@visualplan/compile':
+        specifier: workspace:*
+        version: link:../compile
       '@visualplan/core':
         specifier: workspace:*
         version: link:../core
       '@visualplan/runtime':
         specifier: workspace:*
         version: link:../runtime
+
+  packages/compile:
+    dependencies:
+      '@expressive-code/core':
+        specifier: 0.43.1
+        version: 0.43.1
+      '@visualplan/core':
+        specifier: workspace:*
+        version: link:../core
+      expressive-code-color-chips:
+        specifier: ^0.1.4
+        version: 0.1.4(@expressive-code/core@0.43.1)
+      hast-util-from-html:
+        specifier: ^2.0.3
+        version: 2.0.3
+      material-icon-theme:
+        specifier: ^5.35.0
+        version: 5.35.0
+      rehype-expressive-code:
+        specifier: ^0.43.1
+        version: 0.43.1
+      remark-frontmatter:
+        specifier: ^5.0.0
+        version: 5.0.0
+      remark-gfm:
+        specifier: ^4.0.1
+        version: 4.0.1
+      remark-mdx:
+        specifier: ^3.1.1
+        version: 3.1.1
+      remark-mdx-frontmatter:
+        specifier: ^5.2.0
+        version: 5.2.0
+      remark-parse:
+        specifier: ^11.0.0
+        version: 11.0.0
+      temml:
+        specifier: ^0.13.3
+        version: 0.13.3
+      unified:
+        specifier: ^11.0.5
+        version: 11.0.5
+      unist-util-visit:
+        specifier: ^5.1.0
+        version: 5.1.0
+    devDependencies:
+      '@types/hast':
+        specifier: ^3.0.4
+        version: 3.0.4
 
   packages/core:
     dependencies:

@@ -2,10 +2,10 @@ import { defineConfig } from 'vitest/config'
 
 /**
  * One workspace config with a project per package. `pnpm test` at the root runs
- * all three. Each project sets its own root so cross-package imports
- * (`@visualplan/core`, `@visualplan/runtime`) resolve through the pnpm workspace
- * symlinks, and its own environment: node for the CLI build tests, jsdom for the
- * React component and render tests.
+ * all of them. Each project sets its own root so cross-package imports
+ * (`@visualplan/core`, `@visualplan/compile`, `@visualplan/runtime`) resolve through the
+ * pnpm workspace symlinks, and its own environment: node for the CLI/compile build tests,
+ * jsdom for the React component and render tests.
  */
 export default defineConfig({
   test: {
@@ -14,6 +14,14 @@ export default defineConfig({
         test: {
           name: 'core',
           root: './packages/core',
+          environment: 'node',
+          include: ['tests/**/*.test.ts'],
+        },
+      },
+      {
+        test: {
+          name: 'compile',
+          root: './packages/compile',
           environment: 'node',
           include: ['tests/**/*.test.ts'],
         },

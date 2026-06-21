@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { evaluate } from '@mdx-js/mdx'
 import { MDXProvider, useMDXComponents } from '@mdx-js/react'
+import { remarkMermaid, remarkPlanBlocks } from '@visualplan/compile'
 import { components } from '@visualplan/runtime'
 import * as runtime from 'react/jsx-runtime'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -10,8 +11,6 @@ import remarkFrontmatter from 'remark-frontmatter'
 import remarkGfm from 'remark-gfm'
 import remarkMdxFrontmatter from 'remark-mdx-frontmatter'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { remarkMermaid } from '../src/build/remark-mermaid.js'
-import { remarkPlanBlocks } from '../src/build/remark-plan-blocks.js'
 
 const examplePath = fileURLToPath(new URL('../templates/example.mdx', import.meta.url))
 let html: string

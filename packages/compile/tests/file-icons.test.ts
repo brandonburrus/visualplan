@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { iconNameForFile } from '../src/build/expressive-code-file-icons.js'
+import { iconNameForFile } from '../src/file-icons.js'
 
 // iconNameForFile resolves a title's filename to a Material Icon Theme icon name through the
 // package's published manifest, so these assertions pin the resolution order against real data.

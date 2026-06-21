@@ -5,62 +5,23 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import mdx from '@mdx-js/rollup'
+import { baseExpressiveCodeOptions, remarkPlugins } from '@visualplan/compile'
+import { pluginFileIcons } from '@visualplan/compile/file-icons'
 import { encodePlan } from '@visualplan/core/share'
-import { pluginColorChips } from 'expressive-code-color-chips'
 import rehypeExpressiveCode, { type RehypeExpressiveCodeOptions } from 'rehype-expressive-code'
-import remarkFrontmatter from 'remark-frontmatter'
-import remarkGfm from 'remark-gfm'
-import remarkMdxFrontmatter from 'remark-mdx-frontmatter'
 import { build, createServer, type InlineConfig, type Plugin } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
-import { pluginFileIcons } from './expressive-code-file-icons.js'
-import { remarkMath } from './remark-math.js'
-import { remarkMermaid } from './remark-mermaid.js'
-import { remarkPlanBlocks } from './remark-plan-blocks.js'
 
+// The shared base options (themes, frames, color chips, ink styling) come from
+// `@visualplan/compile` so the CLI and the /view page highlight code identically; the CLI
+// appends the Node-only Material file-icons plugin, which reads SVGs from disk and so cannot
+// ship to the browser. iconClass lets theme.css size the injected icon.
 const expressiveCodeOptions: RehypeExpressiveCodeOptions = {
-  themes: ['github-dark', 'github-light'],
-  useDarkModeMediaQuery: true,
-  // Color chips render a swatch next to CSS color values; our file-icons plugin adds a Material
-  // Icon Theme file-type icon to a block's title bar. Both inline their markup/SVG at build time
-  // (no external asset), so the single-file output stays self-contained. iconClass lets theme.css
-  // size the icon.
-  plugins: [pluginColorChips(), pluginFileIcons({ iconClass: 'vp-file-icon' })],
-  // The copy-button script does not execute reliably in our client-rendered SPA;
-  // frames (titles) are CSS-only, so keep those and drop the interactive button.
-  frames: { showCopyToClipboardButton: false },
-  // Match the flat ink design: our borders/radius/surfaces/fonts, no shadow, no
-  // colored tab accent. Values are CSS vars so the frame chrome tracks light/dark too.
-  styleOverrides: {
-    borderRadius: '10px',
-    borderColor: 'var(--vp-border)',
-    codeBackground: 'var(--vp-surface)',
-    codeFontFamily: 'var(--vp-mono)',
-    codeFontSize: '0.8rem',
-    codeLineHeight: '1.6',
-    codePaddingBlock: '0.9rem',
-    codePaddingInline: '1rem',
-    uiFontFamily: 'var(--vp-font)',
-    uiFontSize: '0.78rem',
-    frames: {
-      frameBoxShadowCssValue: 'none',
-      // A flat filename header on the same surface as the code, separated by one
-      // border. No editor-tab metaphor, no colored indicator line.
-      editorBackground: 'var(--vp-surface)',
-      editorTabBarBackground: 'var(--vp-surface)',
-      editorTabBarBorderBottomColor: 'var(--vp-border)',
-      editorActiveTabBackground: 'var(--vp-surface)',
-      editorActiveTabForeground: 'var(--vp-muted)',
-      editorActiveTabBorderColor: 'transparent',
-      editorActiveTabIndicatorTopColor: 'transparent',
-      editorActiveTabIndicatorBottomColor: 'transparent',
-      editorTabsMarginInlineStart: '0',
-      terminalBackground: 'var(--vp-surface)',
-      terminalTitlebarBackground: 'var(--vp-surface)',
-      terminalTitlebarForeground: 'var(--vp-muted)',
-      terminalTitlebarBorderBottomColor: 'var(--vp-border)',
-    },
-  },
+  ...baseExpressiveCodeOptions,
+  plugins: [
+    ...(baseExpressiveCodeOptions.plugins ?? []),
+    pluginFileIcons({ iconClass: 'vp-file-icon' }),
+  ],
 }
 
 const require = createRequire(import.meta.url)
@@ -102,17 +63,9 @@ function mdxPlugin(): Plugin {
     enforce: 'pre',
     ...mdx({
       providerImportSource: '@mdx-js/react',
-      remarkPlugins: [
-        remarkFrontmatter,
-        [remarkMdxFrontmatter, { name: 'frontmatter' }],
-        remarkGfm,
-        // Parse markdown-list children of the list components into data props. Must run
-        // after remark-gfm (for task-list checked state) and before the JSX is compiled.
-        remarkPlanBlocks,
-        // Both must run before rehype-expressive-code so mermaid/math never reach the highlighter.
-        remarkMermaid,
-        remarkMath,
-      ],
+      // The ordered list (frontmatter, gfm, plan-blocks, mermaid, math) is shared with the
+      // /view browser compiler via @visualplan/compile so both render plans identically.
+      remarkPlugins,
       rehypePlugins: [[rehypeExpressiveCode, expressiveCodeOptions]],
     }),
   }
