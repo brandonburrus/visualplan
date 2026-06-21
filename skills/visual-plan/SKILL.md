@@ -5,7 +5,10 @@ description: Always use when planning anything non-trivial (an implementation, d
 
 # Visual Plan
 
-Render a plan as a visual MDX page instead of a wall of text, using the `vplan` CLI.
+Render a plan as a visual MDX page instead of a wall of text, using the `vplan` CLI. The component
+vocabulary is general: although the examples below are code-flavored, it fits any structured plan
+(a product launch, a research agenda, an incident response), not just software changes. Use the
+components that fit the plan and skip the ones that do not.
 
 > **If the `vplan` command is not found**, install it globally first: `npm i -g vplan@latest`
 > (published on npm). Re-run the failed command afterward.
@@ -42,8 +45,10 @@ brace errors that break a render.
   timeline; wraps markdown (ordered lists, prose, nested components). The steps auto-number in
   order. One per major step of the plan.
 - ` ```mermaid ` fenced block — diagrams: architecture (`flowchart`), `sequenceDiagram`,
-  dependency graphs, `stateDiagram-v2`, `classDiagram`, and ER charts. Reach for this first for
-  anything structural. (gantt and pie are not supported; use `<Chart>` for quantitative data.)
+  dependency graphs, `stateDiagram-v2`, `classDiagram`, `erDiagram`, and `xychart-beta`. Reach for
+  this first for anything structural. (gantt and pie are not supported; use `<Chart>` for
+  quantitative data. `check` now validates each diagram, so an unsupported type fails check with a
+  `file:line:col` instead of rendering an error box.)
 - ` ```math ` fenced block — a display formula written in LaTeX, typeset as math (complexity
   bounds, probabilities, linear algebra). Example: ` ```math ` then `T(n) = O(n \log n)`.
 - `<Callout type="note|tip|risk|decision|warn">` — highlight a risk, decision, tip, or note; wraps
@@ -153,6 +158,9 @@ brace errors that break a render.
   or a code fence, where every character is safe and literal.
 - Keep `<Chart>` labels short (a word or two). Long bar/line x-axis labels get dropped or
   crowded; put the detail in the title or the surrounding prose, not the label.
+- Keep `<Matrix>` cells short (a word or a short score). Cells do not wrap, so a long sentence in
+  one cell forces a horizontal scrollbar and pushes the other columns off-screen. Put rationale in
+  prose or a `<Callout>`, not in a cell.
 - Do not put series of wildly different magnitudes on one `<Chart>` (e.g. a value near 50 beside
   one near 2,000,000). They share a single y-axis, so the small series flattens to the zero line
   and reads as nothing. Split them into separate charts or normalize to the same unit.
