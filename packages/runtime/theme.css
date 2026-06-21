@@ -226,8 +226,8 @@ body {
 
 /* The Material file-type icon the file-icons plugin prepends inside the title; size it to the text. */
 .vp-main .expressive-code .frame.has-title .header .title .vp-file-icon {
-  width: 0.925rem;
-  height: 0.925rem;
+  width: 1.05rem;
+  height: 1.05rem;
   flex: none;
 }
 
