@@ -1,4 +1,11 @@
-import { IconArrowRight, IconFolder, IconMinus, IconPencil, IconPlus } from '@tabler/icons-react'
+import {
+  IconArrowLeft,
+  IconArrowRight,
+  IconFolder,
+  IconMinus,
+  IconPencil,
+  IconPlus,
+} from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { fileTreeSchema } from '@visualplan/core'
 import { decodeJson, validateProps } from './validate.js'
@@ -16,9 +23,21 @@ const MARKER: Record<string, ReactNode> = {
 
 interface DirNode {
   dirs: Map<string, DirNode>
-  files: Array<{ name: string; change: string }>
+  files: Array<{ name: string; change: string; from?: string }>
   /** A change applied to the directory itself, from a path written with a trailing slash. */
   change?: string
+  /** For a directory move, the origin path. */
+  from?: string
+}
+
+/** The muted "moved from <origin>" annotation shown on a move row. */
+function MovedFrom({ from }: { from: string }) {
+  return (
+    <span className='vp-filetree__from'>
+      <IconArrowLeft size={12} stroke={2} aria-hidden='true' />
+      {from}
+    </span>
+  )
 }
 
 function emptyDir(): DirNode {
@@ -27,9 +46,9 @@ function emptyDir(): DirNode {
 
 /** Group flat `{path}` entries into a nested directory tree. A path ending in `/` marks a
  * change on the directory itself rather than adding a file leaf. */
-function buildTree(files: Array<{ path: string; change: string }>): DirNode {
+function buildTree(files: Array<{ path: string; change: string; from?: string }>): DirNode {
   const root = emptyDir()
-  for (const { path, change } of files) {
+  for (const { path, change, from } of files) {
     const isDir = path.endsWith('/')
     const segments = path.split('/').filter(Boolean)
     // A directory entry consumes every segment; a file entry leaves the last as the file name.
@@ -45,8 +64,10 @@ function buildTree(files: Array<{ path: string; change: string }>): DirNode {
       }
       node = next
     }
-    if (isDir) node.change = change
-    else node.files.push({ name: segments[segments.length - 1] ?? path, change })
+    if (isDir) {
+      node.change = change
+      node.from = from
+    } else node.files.push({ name: segments[segments.length - 1] ?? path, change, from })
   }
   return root
 }
@@ -72,6 +93,7 @@ function renderDir(node: DirNode, depth: number): ReactNode[] {
     if (!child) continue
     const collapsed = collapse(name, child)
     const change = collapsed.node.change
+    const from = collapsed.node.from
     rows.push(
       <li
         key={`dir:${depth}:${collapsed.label}`}
@@ -87,6 +109,7 @@ function renderDir(node: DirNode, depth: number): ReactNode[] {
           <IconFolder size={15} stroke={2} className='vp-filetree__folder' aria-hidden='true' />
         )}
         <span className='vp-filetree__dir'>{collapsed.label}/</span>
+        {from ? <MovedFrom from={from} /> : null}
         {change ? <span className='vp-filetree__change'>{change}</span> : null}
       </li>,
     )
@@ -104,6 +127,7 @@ function renderDir(node: DirNode, depth: number): ReactNode[] {
           {MARKER[file.change]}
         </span>
         <span className='vp-filetree__name'>{file.name}</span>
+        {file.from ? <MovedFrom from={file.from} /> : null}
         <span className='vp-filetree__change'>{file.change}</span>
       </li>,
     )

@@ -468,6 +468,14 @@ body {
   color: var(--vp-text);
 }
 
+.vp-filetree__from {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  color: var(--vp-faint);
+  font-size: 0.78rem;
+}
+
 .vp-filetree__change {
   margin-left: auto;
   font-size: 0.68rem;

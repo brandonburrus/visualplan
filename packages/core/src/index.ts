@@ -25,6 +25,8 @@ export const fileTreeSchema = z.object({
       z.object({
         path: z.string().min(1, 'each file needs a path'),
         change: z.enum(CHANGE_VALUES),
+        // For a move, the origin path; the entry is placed at `path` (its destination).
+        from: z.string().optional(),
       }),
     )
     .min(1, 'files must list at least one entry'),

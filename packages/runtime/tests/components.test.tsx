@@ -104,6 +104,19 @@ describe('FileTree', () => {
     expect(html).toContain('src/legacy/')
     expect(html).toContain('data-change="delete"')
   })
+
+  it('renders a move at its destination, showing the origin path (golden)', () => {
+    const html = renderToStaticMarkup(
+      <FileTree
+        files={[{ path: 'src/billing/invoice.ts', change: 'move', from: 'src/billing.ts' }]}
+      />,
+    )
+    // The file lives at its destination, with the origin shown as a "moved from" annotation.
+    expect(html).toContain('invoice.ts')
+    expect(html).toContain('vp-filetree__from')
+    expect(html).toContain('src/billing.ts')
+    expect(html).toContain('data-change="move"')
+  })
 })
 
 describe('Matrix', () => {

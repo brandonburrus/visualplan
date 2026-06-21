@@ -39,14 +39,25 @@ describe('FileTree block', () => {
     expect(issues[0]?.line).toBe(2)
   })
 
-  it('renders a move at its destination and flags an empty tree (edge)', () => {
+  it('renders a move at its destination, keeping the origin (golden)', () => {
     const move = parseBlock(
       'FileTree',
       '<FileTree>\n- move src/old.ts -> src/new.ts\n</FileTree>\n',
     )
-    expect(move.value).toEqual([{ path: 'src/new.ts', change: 'move' }])
+    expect(move.value).toEqual([{ path: 'src/new.ts', change: 'move', from: 'src/old.ts' }])
     expect(move.issues).toEqual([])
+  })
 
+  it('flags a move with no "->" destination (error)', () => {
+    const { value, issues } = parseBlock('FileTree', '<FileTree>\n- move src/old.ts\n</FileTree>\n')
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.message).toMatch(/needs a destination: "- move <from> -> <to>"/)
+    expect(issues[0]?.line).toBe(2)
+    // No origin is captured, and the bare path is kept so the entry still renders.
+    expect(value).toEqual([{ path: 'src/old.ts', change: 'move' }])
+  })
+
+  it('flags an empty tree with no list (edge)', () => {
     const empty = parseBlock('FileTree', '<FileTree>\nno list here\n</FileTree>\n')
     expect(empty.issues).toHaveLength(1)
     expect(empty.issues[0]?.message).toMatch(/needs a markdown list/)

@@ -36,7 +36,10 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   is single- or multi-series: its data is `{ series, data: [{ label, values[] }] }`; one
   `<Bar>`/`<Line>` per series, a `<Legend>` only when there is more than one, and the per-point
   `<Cell>` coloring only for a single series. **FileTree** supports a directory-level change: a
-  path ending in `/` sets `change` on the `DirNode` and renders the marker on the directory row.
+  path ending in `/` sets `change` on the `DirNode` and renders the marker on the directory row. A
+  `move` carries an optional `from` (origin) on the entry; the file renders at its destination with
+  a muted `MovedFrom` annotation (`← <from>`) so the rename is visible (the CLI parser requires the
+  `-> <to>` arrow and keeps `from`, rather than discarding the origin).
 
 ## Gotchas
 

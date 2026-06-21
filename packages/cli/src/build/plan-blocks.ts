@@ -91,7 +91,7 @@ function rowCells(row: MdNode): string[] {
 
 function parseFileTree(node: MdNode): BlockResult {
   const issues: BlockIssue[] = []
-  const files: Array<{ path: string; change: string }> = []
+  const files: Array<{ path: string; change: string; from?: string }> = []
   const list = firstList(node)
   if (!list) {
     issues.push({
@@ -105,8 +105,22 @@ function parseFileTree(node: MdNode): BlockResult {
     const space = text.indexOf(' ')
     const change = space === -1 ? text : text.slice(0, space)
     let path = space === -1 ? '' : text.slice(space + 1).trim()
-    // A move reads "move <from> -> <to>"; render the destination, where the file now lives.
-    if (change === 'move' && path.includes('->')) path = (path.split('->').pop() ?? '').trim()
+    let from: string | undefined
+    // A move reads "move <from> -> <to>": keep the origin so the reader sees the rename, and
+    // place the entry at its destination, where the file now lives. A move with no "->" arrow
+    // would silently lose its destination, so flag it rather than render a meaningless marker.
+    if (change === 'move') {
+      if (path.includes('->')) {
+        const [source, destination] = path.split('->')
+        from = (source ?? '').trim()
+        path = (destination ?? '').trim()
+      } else if (path) {
+        issues.push({
+          ...pos(item),
+          message: `<FileTree> move "${text}" needs a destination: "- move <from> -> <to>".`,
+        })
+      }
+    }
     if (!CHANGES.includes(change)) {
       issues.push({
         ...pos(item),
@@ -115,7 +129,7 @@ function parseFileTree(node: MdNode): BlockResult {
     } else if (!path) {
       issues.push({ ...pos(item), message: `<FileTree> item "${text}" is missing a file path.` })
     }
-    files.push({ path, change })
+    files.push(from ? { path, change, from } : { path, change })
   }
   return { value: files, issues }
 }
