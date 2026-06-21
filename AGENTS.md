@@ -16,7 +16,10 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
 Plans use a fixed, tiny component vocabulary (`Phase`, `FileTree`, `Chart`, `Compare`,
 `Callout`, `Questions`, `Checklist`, and ` ```mermaid ` fences) with no imports — the
 components are auto-injected into MDX scope. A plan starts with a `# Title` heading; there
-is no frontmatter. `Phase` sections render as a numbered vertical timeline; no sidebar.
+is no frontmatter. `Phase` sections render as a numbered vertical timeline; no sidebar. The
+list components (`FileTree`, `Chart`, `Compare`, `Questions`, `Checklist`) are authored as
+**markdown children** (a bullet/task list, or headings for `Compare`), not inline object-array
+props; only scalar settings (`title`, `type`, `status`) are attributes.
 
 ## Workspace layout
 
@@ -85,8 +88,10 @@ A release is cut by creating a GitHub release; the tag is the published version 
   the user's MDX is injected via the `virtual:plan` resolve alias. Do not add plugin-react.
 - **`@visualplan/core` is imported by both the runtime and the Node CLI.** Keep it isomorphic:
   no React, recharts, or mermaid imports. It is the only place the vocabulary is defined.
-- **`check` is static (AST-based).** It validates string-literal enum props and flags unknown
-  components; complex array props are validated at render time by zod. Do not overclaim it.
+- **`check` is static (AST-based).** It validates string-literal enum props, flags unknown
+  components, and validates the markdown-children of the list components (via the shared
+  `plan-blocks.ts` parser: bad change verb, non-numeric chart value, missing `pro:`/`con:`).
+  Remaining shape validation happens at render time by zod. Do not overclaim it.
 - **Single-file output cannot be verified by scanning for external `<script src>`/`<link>`
   tags** — the bundles contain those as JS string literals. Assert the positive (inline
   `<script type="module">` and `<style>` with content) instead.

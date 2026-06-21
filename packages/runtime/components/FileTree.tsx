@@ -1,10 +1,10 @@
 import { IconArrowRight, IconFolder, IconMinus, IconPencil, IconPlus } from '@tabler/icons-react'
 import type { ReactNode } from 'react'
 import { fileTreeSchema } from '@visualplan/core'
-import { validateProps } from './validate.js'
+import { decodeJson, validateProps } from './validate.js'
 
 interface FileTreeProps {
-  files: Array<{ path: string; change: string }>
+  files: unknown
 }
 
 const MARKER: Record<string, ReactNode> = {
@@ -96,6 +96,6 @@ function renderDir(node: DirNode, depth: number): ReactNode[] {
 
 /** A nested directory tree of file changes with add/modify/delete/move markers. */
 export function FileTree(props: FileTreeProps) {
-  const { files } = validateProps('FileTree', fileTreeSchema, props)
+  const { files } = validateProps('FileTree', fileTreeSchema, { files: decodeJson(props.files) })
   return <ul className='vp-filetree'>{renderDir(buildTree(files), 0)}</ul>
 }

@@ -1,15 +1,18 @@
 import { IconSquare, IconSquareCheckFilled } from '@tabler/icons-react'
 import { checklistSchema } from '@visualplan/core'
-import { validateProps } from './validate.js'
+import { decodeJson, validateProps } from './validate.js'
 
 interface ChecklistProps {
-  title?: string
-  items: Array<{ text: string; done?: boolean }>
+  title?: unknown
+  items: unknown
 }
 
 /** Acceptance criteria / definition of done, with done and todo states. */
 export function Checklist(props: ChecklistProps) {
-  const { title, items } = validateProps('Checklist', checklistSchema, props)
+  const { title, items } = validateProps('Checklist', checklistSchema, {
+    ...props,
+    items: decodeJson(props.items),
+  })
   return (
     <section className='vp-checklist'>
       {title ? <div className='vp-checklist__title'>{title}</div> : null}

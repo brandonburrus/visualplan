@@ -50,6 +50,35 @@ describe('checkPlan', () => {
     expect(issues[0]?.line).toBeGreaterThanOrEqual(1)
   })
 
+  it('flags a bad change verb in a FileTree block with its line (error)', async () => {
+    const path = await writePlan(
+      'bad-filetree.mdx',
+      '# T\n\n<FileTree>\n- frobnicate src/a.ts\n</FileTree>\n',
+    )
+    const issues = await checkPlan(path)
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.message).toMatch(/must start with a change: add, modify, delete, move/)
+    expect(issues[0]?.line).toBe(4)
+  })
+
+  it('flags a non-numeric Chart value (error)', async () => {
+    const path = await writePlan(
+      'bad-chart.mdx',
+      '# T\n\n<Chart type="bar">\n- API: lots\n</Chart>\n',
+    )
+    const issues = await checkPlan(path)
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.message).toMatch(/non-numeric value/)
+  })
+
+  it('accepts valid markdown-children blocks (golden)', async () => {
+    const path = await writePlan(
+      'good-blocks.mdx',
+      '# T\n\n<Checklist title="Done when">\n- [x] one\n- [ ] two\n</Checklist>\n\n<Compare>\n## A (pick)\n- pro: fast\n\n## B\n- con: slow\n</Compare>\n',
+    )
+    expect(await checkPlan(path)).toEqual([])
+  })
+
   it('points to the real line for an unclosed tag with no structured position (edge)', async () => {
     // MDX gives this error no line/column/place; the position is only in the message
     // ("(3:1-3:41)"). The checker must recover it so the prefix is not a misleading 1:1.

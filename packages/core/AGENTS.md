@@ -17,5 +17,8 @@ CLI's `check` and `components` commands. One file: `src/index.ts`.
 ## Adding to the vocabulary
 
 A new component needs a schema, its enum constants, and a `CATALOG` entry (with `staticEnums`
-and a one-line `example`) here, plus a component in `@visualplan/runtime`. `staticEnums` is what
+and an `example`) here, plus a component in `@visualplan/runtime`. `staticEnums` is what
 the CLI's AST checker validates statically; everything else is validated at render time by zod.
+The schemas describe the **decoded** shape; for the list components the `example` shows the
+markdown-children authoring (a bullet/task list, or `Compare` headings), and the CLI's
+`plan-blocks.ts` parser is what turns that markdown into the shape the schema validates.

@@ -8,6 +8,7 @@ import remarkParse from 'remark-parse'
 import { unified } from 'unified'
 import { visit } from 'unist-util-visit'
 import { CATALOG } from '@visualplan/core'
+import { CHILD_BLOCK_COMPONENTS, parseBlockChildren } from './plan-blocks.js'
 
 export interface CheckIssue {
   line: number
@@ -33,6 +34,8 @@ const COMPONENT_NAMES = CATALOG.filter(entry => /^[A-Z][A-Za-z0-9]*$/.test(entry
 )
 
 const ENUMS_BY_COMPONENT = new Map(CATALOG.map(entry => [entry.name, entry.staticEnums]))
+
+const BLOCK_COMPONENTS: readonly string[] = CHILD_BLOCK_COMPONENTS
 
 /** Validate a plan's MDX: real compile errors plus static enum / unknown-component checks. */
 export async function checkPlan(mdxPath: string): Promise<CheckIssue[]> {
@@ -71,7 +74,12 @@ export async function checkPlan(mdxPath: string): Promise<CheckIssue[]> {
     ]
   }
 
-  const tree = unified().use(remarkParse).use(remarkFrontmatter).use(remarkMdx).parse(source)
+  const tree = unified()
+    .use(remarkParse)
+    .use(remarkFrontmatter)
+    .use(remarkGfm)
+    .use(remarkMdx)
+    .parse(source)
 
   visit(tree, node => {
     const element = node as unknown as JsxNode
@@ -100,6 +108,14 @@ export async function checkPlan(mdxPath: string): Promise<CheckIssue[]> {
           column: at.column,
           message: `<${name}> prop ${prop}="${attribute.value}" is invalid. Valid: ${allowed.join(', ')}.`,
         })
+      }
+    }
+
+    // The list components author their data as markdown children; validate that the
+    // children parse into well-formed items (bad change verb, non-numeric chart value).
+    if (BLOCK_COMPONENTS.includes(name)) {
+      for (const issue of parseBlockChildren(name, node).issues) {
+        issues.push(issue)
       }
     }
   })

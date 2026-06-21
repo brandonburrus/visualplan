@@ -14,12 +14,12 @@ import {
 } from 'recharts'
 import { chartSchema } from '@visualplan/core'
 import { ExpandButton } from './ExpandButton.js'
-import { validateProps } from './validate.js'
+import { decodeJson, validateProps } from './validate.js'
 
 interface ChartProps {
-  type: string
-  title?: string
-  data: Array<{ label: string; value: number }>
+  type?: unknown
+  title?: unknown
+  data: unknown
 }
 
 // Vibrant but balanced palette, readable on both the light and dark card surface.
@@ -52,7 +52,10 @@ const TOOLTIP_STYLE = {
 
 /** A bar/line/pie chart for estimates or metrics, backed by recharts. */
 export function Chart(props: ChartProps) {
-  const { type, title, data } = validateProps('Chart', chartSchema, props)
+  const { type, title, data } = validateProps('Chart', chartSchema, {
+    ...props,
+    data: decodeJson(props.data),
+  })
   const total = data.reduce((sum, point) => sum + point.value, 0)
   return (
     <figure className='vp-chart vp-expandable'>

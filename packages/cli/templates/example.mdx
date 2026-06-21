@@ -21,32 +21,34 @@ flowchart LR
 
 ## Approach
 
-<Compare
-  options={[
-    { name: 'Redis sliding window', pros: ['accurate', 'shared across nodes'], cons: ['network hop'], pick: true },
-    { name: 'In-memory token bucket', pros: ['fast', 'no deps'], cons: ['per-node only', 'lost on restart'] },
-  ]}
-/>
+<Compare>
+## Redis sliding window (pick)
+- pro: accurate
+- pro: shared across nodes
+- con: network hop
 
-<Questions
-  items={[
-    'What is the limit per token: a fixed number, or per-plan tier?',
-    'Should the limiter fail open or fail closed if Redis is unreachable?',
-    'Do internal service-to-service calls get exempted from limiting?',
-  ]}
-/>
+## In-memory token bucket
+- pro: fast
+- pro: no deps
+- con: per-node only
+- con: lost on restart
+</Compare>
+
+<Questions>
+- What is the limit per token: a fixed number, or per-plan tier?
+- Should the limiter fail open or fail closed if Redis is unreachable?
+- Do internal service-to-service calls get exempted from limiting?
+</Questions>
 
 <Phase title='Build the limiter' status='active'>
   1. Add a `RateLimiter` backed by Redis `INCR` + `EXPIRE`.
   2. Return `429` with a `Retry-After` header when the window is exceeded.
 
-  <FileTree
-    files={[
-      { path: 'src/gateway/rate-limiter.ts', change: 'add' },
-      { path: 'src/gateway/middleware.ts', change: 'modify' },
-      { path: 'src/gateway/legacy-throttle.ts', change: 'delete' },
-    ]}
-  />
+  <FileTree>
+  - add src/gateway/rate-limiter.ts
+  - modify src/gateway/middleware.ts
+  - delete src/gateway/legacy-throttle.ts
+  </FileTree>
 
   ```ts title="src/gateway/rate-limiter.ts"
   // sliding-window check against Redis, returns false when over the limit
@@ -62,15 +64,11 @@ flowchart LR
 <Phase title='Roll out behind a flag' status='planned'>
   Ship dark, then ramp the flag from 1% to 100% while watching reject rates.
 
-  <Chart
-    type='bar'
-    title='Estimated effort (days)'
-    data={[
-      { label: 'Limiter', value: 2 },
-      { label: 'Flag + ramp', value: 1 },
-      { label: 'Dashboards', value: 1 },
-    ]}
-  />
+  <Chart type='bar' title='Estimated effort (days)'>
+  - Limiter: 2
+  - Flag + ramp: 1
+  - Dashboards: 1
+  </Chart>
 </Phase>
 
 <Callout type='risk'>

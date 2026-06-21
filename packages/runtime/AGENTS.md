@@ -23,6 +23,12 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   validates its props through `validate.ts`
   against the matching zod schema in `@visualplan/core`, throwing a readable, component-named
   error on invalid input (this surfaces in the page and is the render-time half of validation).
+- **The list components (FileTree, Chart, Compare, Questions, Checklist) are authored as
+  markdown children, not props.** The CLI's `remark-plan-blocks` plugin parses those children
+  into the structured data and passes it as a JSON string on the component's data prop
+  (`files`/`data`/`options`/`items`); the component calls `decodeJson` (in `validate.ts`) to
+  parse it before `validateProps`. `decodeJson` passes a non-string through unchanged, so the
+  component tests can still hand the array directly.
 
 ## Gotchas
 
@@ -99,3 +105,7 @@ page. The rules below are deliberate; changing them needs a reason.
 2. Create `components/<Name>.tsx` validating props via `validateProps`.
 3. Register it in the `components` map in `index.tsx`.
 4. Add it to `packages/cli/templates/example.mdx` and cover it in `tests/components.test.tsx`.
+
+If the component takes list/tabular data, author it as markdown children instead of an
+object-array prop: add a parser branch + `BLOCK_DATA_ATTR` entry in the CLI's `plan-blocks.ts`
+(this also gives `check` validation for free), and `decodeJson` the data prop in the component.

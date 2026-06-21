@@ -11,6 +11,12 @@ renders a plan to a self-contained HTML page). Built with tsup to `dist/index.js
   `vite-plugin-singlefile`) and `--watch` (dev server). `src/build/check.ts` — the static
   AST validator. `src/build/remark-mermaid.ts` — rewrites ` ```mermaid ` fences to `<Mermaid>`
   BEFORE rehype-expressive-code runs.
+- `src/build/plan-blocks.ts` — `parseBlockChildren(name, node)`: turns the markdown-list
+  children of the list components (FileTree, Checklist, Questions, Chart, Compare) into the
+  structured props their zod schemas expect, plus positioned `issues`. **Shared by two callers**
+  so render and `check` agree: `remark-plan-blocks.ts` (the render remark plugin, uses `value`)
+  and `check.ts` (uses `issues`). The remark plugin must run AFTER `remark-gfm` (task-list
+  `checked` state) and emits the data as a JSON-string attribute the component decodes at render.
 - `templates/example.mdx` — exercises every component; used by the integration tests.
 - `scripts/vendor.mjs` — the prepack vendoring step.
 - `tests/` — check + compile + render (all `// @vitest-environment node`).

@@ -31,22 +31,71 @@ Begin the file with a single `# Heading`; it becomes the plan title. There is no
 
 ## Components
 
+The list components (`FileTree`, `Chart`, `Compare`, `Questions`, `Checklist`) take their data
+as **markdown children**, not props: write a normal markdown list between the tags. Only the
+scalar settings (`title`, `type`, `status`) are attributes. This is fewer tokens and avoids the
+`{[{ ... }]}` brace errors that break a render.
+
 - `<Phase title="..." status="planned|active|done">` — one step in a numbered vertical
   timeline; wraps markdown (ordered lists, prose, nested components). The steps auto-number in
   order. One per major step of the plan.
 - ` ```mermaid ` fenced block — diagrams: architecture (`flowchart`), `sequenceDiagram`,
   dependency graphs, `stateDiagram`, `classDiagram`, ER, and XY charts. Reach for this first for
   anything structural. (gantt and pie are not supported; use `<Chart>` for quantitative data.)
-- `<FileTree files={[{ path, change }]} />` — file-change map; `change` is `add|modify|delete|move`.
-- `<Chart type="bar|line|pie" title="..." data={[{ label, value }]} />` — estimates/metrics.
-- `<Compare options={[{ name, pros: [], cons: [], pick: true }]} />` — weigh approaches side by side.
 - `<Callout type="note|risk|decision|warn">` — highlight a risk, decision, or note; wraps markdown.
   (`risk` is red, `warn` is yellow.)
-- `<Questions items={["...", "..."]} />` — open questions you want the reader to resolve before
-  building. Use this instead of burying uncertainties in prose. The title defaults to "Open
-  questions"; override with `title="..."`.
-- `<Checklist title="Done when" items={[{ text: "...", done: true }]} />` — acceptance criteria /
-  definition of done, with done and todo states.
+- `<FileTree>` — file-change map. One bullet per file, `- <change> <path>`, where `change` is
+  `add|modify|delete|move`. A move reads `- move <from> -> <to>`.
+
+  ```mdx
+  <FileTree>
+  - add src/gateway/rate-limiter.ts
+  - modify src/gateway/middleware.ts
+  - delete src/gateway/legacy-throttle.ts
+  </FileTree>
+  ```
+- `<Chart type="bar|line|pie" title="...">` — estimates/metrics. One bullet per point,
+  `- <label>: <value>` (value is a number).
+
+  ```mdx
+  <Chart type="bar" title="Effort (days)">
+  - Limiter: 2
+  - Dashboards: 1
+  </Chart>
+  ```
+- `<Compare>` — weigh approaches side by side. Each option is a `## Name` heading (append
+  `(pick)` to mark the recommended one) followed by `- pro:` / `- con:` bullets.
+
+  ```mdx
+  <Compare>
+  ## Redis sliding window (pick)
+  - pro: accurate
+  - con: network hop
+
+  ## In-memory token bucket
+  - pro: fast
+  - con: per-node only
+  </Compare>
+  ```
+- `<Questions>` — open questions you want the reader to resolve before building, one per bullet.
+  Use this instead of burying uncertainties in prose. The title defaults to "Open questions";
+  override with `title="..."`.
+
+  ```mdx
+  <Questions>
+  - Should the limiter fail open or fail closed if Redis is unreachable?
+  - Is a 15-minute access-token TTL acceptable?
+  </Questions>
+  ```
+- `<Checklist title="Done when">` — acceptance criteria / definition of done, as a markdown task
+  list: `- [x]` for done, `- [ ]` for todo.
+
+  ```mdx
+  <Checklist title="Done when">
+  - [x] Returns 429 over the limit
+  - [ ] Dashboards live
+  </Checklist>
+  ```
 - Fenced code blocks are syntax-highlighted (Expressive Code): write ` ```ts ` (or js, json, bash,
   python, go, rust, sql, yaml, etc.) to show a key snippet. Add a file name with
   ` ```ts title="src/path/file.ts" ` to render a filename header on the block.

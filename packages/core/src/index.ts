@@ -91,24 +91,25 @@ export const CATALOG: readonly CatalogEntry[] = [
   {
     name: 'FileTree',
     summary:
-      'A nested directory tree of file changes, built from the paths, with add/modify/delete/move markers.',
+      'A nested directory tree of file changes. Write a markdown list, one "- <change> <path>" per file; change is add/modify/delete/move.',
     staticEnums: {},
     example:
-      '<FileTree files={[{ path: "src/api/routes.ts", change: "add" }, { path: "src/api/db.ts", change: "modify" }, { path: "src/legacy.ts", change: "delete" }]} />',
+      '<FileTree>\n- add src/api/routes.ts\n- modify src/api/db.ts\n- delete src/legacy.ts\n</FileTree>',
   },
   {
     name: 'Chart',
-    summary: 'A bar/line/pie chart for estimates or metrics.',
+    summary:
+      'A bar/line/pie chart for estimates or metrics. Write a markdown list, one "- <label>: <value>" per point.',
     staticEnums: { type: CHART_TYPE_VALUES },
-    example:
-      '<Chart type="bar" title="Effort (days)" data={[{ label: "API", value: 3 }, { label: "UI", value: 2 }]} />',
+    example: '<Chart type="bar" title="Effort (days)">\n- API: 3\n- UI: 2\n</Chart>',
   },
   {
     name: 'Compare',
-    summary: 'Side-by-side option cards for weighing approaches.',
+    summary:
+      'Side-by-side option cards for weighing approaches. Each option is a "## Name" heading (add "(pick)" to recommend one) with "- pro:" / "- con:" bullets.',
     staticEnums: {},
     example:
-      '<Compare options={[{ name: "Postgres", pros: ["ACID"], cons: ["ops"], pick: true }, { name: "SQLite", pros: ["simple"], cons: ["scale"] }]} />',
+      '<Compare>\n## Postgres (pick)\n- pro: ACID\n- con: ops\n\n## SQLite\n- pro: simple\n- con: scale\n</Compare>',
   },
   {
     name: 'Callout',
@@ -119,17 +120,18 @@ export const CATALOG: readonly CatalogEntry[] = [
   {
     name: 'Questions',
     summary:
-      'Open questions you want the reader to weigh in on before building, as a highlighted panel. Title defaults to "Open questions"; override with title.',
+      'Open questions you want the reader to weigh in on before building, as a highlighted panel. Write a markdown list. Title defaults to "Open questions"; override with title.',
     staticEnums: {},
     example:
-      '<Questions items={["Should refresh tokens rotate on every use?", "Is a 15-minute access-token TTL acceptable?"]} />',
+      '<Questions>\n- Should refresh tokens rotate on every use?\n- Is a 15-minute access-token TTL acceptable?\n</Questions>',
   },
   {
     name: 'Checklist',
-    summary: 'Acceptance criteria / definition of done, with done and todo states.',
+    summary:
+      'Acceptance criteria / definition of done. Write a markdown task list ("- [x]" done, "- [ ]" todo).',
     staticEnums: {},
     example:
-      '<Checklist title="Done when" items={[{ text: "Returns 429 over the limit", done: true }, { text: "Dashboards live" }]} />',
+      '<Checklist title="Done when">\n- [x] Returns 429 over the limit\n- [ ] Dashboards live\n</Checklist>',
   },
   {
     name: 'mermaid (code fence)',

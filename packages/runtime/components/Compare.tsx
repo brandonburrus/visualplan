@@ -1,14 +1,16 @@
 import { IconCheck, IconX } from '@tabler/icons-react'
 import { compareSchema } from '@visualplan/core'
-import { validateProps } from './validate.js'
+import { decodeJson, validateProps } from './validate.js'
 
 interface CompareProps {
-  options: Array<{ name: string; pros?: string[]; cons?: string[]; pick?: boolean }>
+  options: unknown
 }
 
 /** Side-by-side option cards for weighing approaches. */
 export function Compare(props: CompareProps) {
-  const { options } = validateProps('Compare', compareSchema, props)
+  const { options } = validateProps('Compare', compareSchema, {
+    options: decodeJson(props.options),
+  })
   return (
     <div className='vp-compare'>
       {options.map(option => (

@@ -128,6 +128,39 @@ describe('Questions', () => {
   })
 })
 
+describe('JSON-string data prop (the remark-plan-blocks decode path)', () => {
+  // At render the list components receive their data as a JSON string (the markdown
+  // children, parsed by the CLI's remark plugin), not an array. Each must decode it.
+  it('FileTree decodes a JSON string of file entries', () => {
+    const files = JSON.stringify([{ path: 'src/a.ts', change: 'add' }])
+    const html = renderToStaticMarkup(<FileTree files={files} />)
+    expect(html).toContain('a.ts')
+    expect(html).toContain('data-change="add"')
+  })
+
+  it('Checklist decodes a JSON string of items', () => {
+    const items = JSON.stringify([{ text: 'done item', done: true }])
+    const html = renderToStaticMarkup(<Checklist items={items} />)
+    expect(html).toContain('done item')
+    expect(html).toContain('data-done="true"')
+  })
+
+  it('Compare decodes a JSON string of options', () => {
+    const options = JSON.stringify([
+      { name: 'A', pros: [], cons: [] },
+      { name: 'B', pros: [], cons: [] },
+    ])
+    const html = renderToStaticMarkup(<Compare options={options} />)
+    expect(html).toContain('A')
+    expect(html).toContain('B')
+  })
+
+  it('Questions decodes a JSON string of question strings', () => {
+    const html = renderToStaticMarkup(<Questions items={JSON.stringify(['Why?'])} />)
+    expect(html).toContain('Why?')
+  })
+})
+
 describe('Checklist', () => {
   it('renders done and todo items with a title (golden)', () => {
     const html = renderToStaticMarkup(
