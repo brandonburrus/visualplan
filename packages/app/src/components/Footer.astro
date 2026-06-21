@@ -1,12 +1,26 @@
 ---
+import { buildInfo } from '../build-info'
+
 const year = new Date().getFullYear()
+const repo = 'https://github.com/brandonburrus/visualplan'
+const commitUrl = buildInfo.sha ? `${repo}/commit/${buildInfo.sha}` : repo
 ---
 
 <footer class="vp-footer">
   <div class="vp-footer__inner">
     <span>Visual Plan &middot; MIT licensed &middot; &copy; {year}</span>
+    {
+      buildInfo.shortSha && (
+        <span class="vp-footer__build">
+          {buildInfo.version && <span>{buildInfo.version} &middot; </span>}
+          <a href={commitUrl} title="The commit these docs were built from">
+            <code>{buildInfo.shortSha}</code>
+          </a>
+        </span>
+      )
+    }
     <span>
-      <a href="https://github.com/brandonburrus/visualplan">GitHub</a>
+      <a href={repo}>GitHub</a>
       &nbsp;&nbsp;
       <a href="https://www.npmjs.com/package/vplan">npm</a>
     </span>
