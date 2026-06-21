@@ -1,0 +1,26 @@
+---
+import { PlanFrameApp } from '../components/PlanFrameApp'
+import '@visualplan/runtime/theme.css'
+import '../styles/plan-view.css'
+
+// This page is loaded only inside the /view sandboxed iframe (allow-scripts, no allow-same-origin),
+// where it renders an untrusted shared plan in an opaque origin. Because the origin is opaque, a
+// `script-src 'self'` CSP would block this page's own assets, so only origin-independent directives
+// are set here; the sandbox is the real containment boundary, this is a backstop.
+const csp = ["object-src 'none'", "base-uri 'none'", "form-action 'none'"].join('; ')
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content={csp} />
+    <meta name="robots" content="noindex" />
+    <title>Shared plan</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body class="vp-frame-body">
+    <PlanFrameApp client:only="react" />
+  </body>
+</html>

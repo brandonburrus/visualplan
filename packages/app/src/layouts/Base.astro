@@ -6,9 +6,11 @@ import '../styles/global.css'
 interface Props {
   title: string
   description?: string
+  /** Optional Content-Security-Policy, emitted as a meta tag (GitHub Pages cannot set headers). */
+  csp?: string
 }
 
-const { title, description } = Astro.props
+const { title, description, csp } = Astro.props
 const fullTitle = title === 'Visual Plan' ? title : `${title} · Visual Plan`
 const desc =
   description ??
@@ -21,6 +23,7 @@ const canonical = new URL(Astro.url.pathname, Astro.site)
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    {csp && <meta http-equiv="Content-Security-Policy" content={csp} />}
     <meta name="generator" content={Astro.generator} />
     <title>{fullTitle}</title>
     <meta name="description" content={desc} />

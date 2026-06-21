@@ -47,6 +47,51 @@ CSS counter numbers correctly.
   `temml`, `@visualplan/{runtime,core}`) are the runtime's own deps, pulled in because the app
   bundles the runtime source; the charts ship recharts (~460 KB) only on pages that use `<Chart>`.
 
+## Shared-plan viewer (`/view` + `/plan-frame`)
+
+`/view?data=...` renders a plan shared as a link (the `?data=` the CLI's share button produces).
+It compiles the plan's MDX IN THE BROWSER with the same pipeline the CLI uses, so a shared plan
+looks like a locally-built one. Untrusted source from a URL is the core risk, handled in layers:
+
+- `src/lib/compile-browser.ts` (`compilePlan`) is the in-browser compiler: it runs the
+  `@visualplan/compile` safety gate FIRST (refuses anything but pure plan vocabulary, throwing
+  `UnsafePlanError`), then `@mdx-js/mdx` `evaluate` with the shared `remarkPlugins` +
+  `rehype-expressive-code`. Heavy, so it is imported lazily (a code-split chunk behind a spinner).
+  It sets shiki's `engine: 'javascript'` (no WebAssembly in the browser); this is set ONLY here, not
+  in the shared `baseExpressiveCodeOptions`, so the CLI keeps oniguruma and its output stays
+  byte-stable. File-type icons are omitted in the browser (the plugin is disk-based and Node-only).
+- `src/lib/render-plan.tsx` wraps the compiled component in the runtime shell (`MDXProvider` +
+  `Layout` + `components` + `theme.css`), identical to the CLI's `mount`. The runtime `ShareButton`
+  self-hides here (no `__VP_SHARE__`).
+- `src/components/PlanFrameApp.tsx` is the contents of the sandboxed `/plan-frame` page: decode,
+  512 KB cap, then lazy-compile and mount, with explicit states, a spinner, a calm error card for
+  ordinary failures, and the bright `--malicious` card for a gate rejection. Posts its height to the
+  parent so the iframe has no inner scrollbar.
+- `src/components/ViewPage.tsx` is the `/view` host: it embeds `/plan-frame/?data=...` in an
+  `<iframe sandbox="allow-scripts">` (NO `allow-same-origin`), sizes it from the height messages,
+  and offers a re-share button (reuses the runtime's `copyText`). All untrusted compilation happens
+  inside the frame, never on this page.
+
+### Critical constraint: the sandbox depends on GitHub Pages' CORS header
+
+The `/plan-frame` iframe is sandboxed WITHOUT `allow-same-origin`, so it runs in an **opaque origin**
+(`origin "null"`). ES module scripts are always fetched in CORS mode, so the frame can only load its
+own `_astro/*.js` bundle because **GitHub Pages serves assets with `Access-Control-Allow-Origin: *`**.
+This is load-bearing: do not assume same-origin asset loading in the frame, and do not add
+`allow-same-origin` to "fix" loading (that would defeat the isolation, since the frame is same-origin
+to `/view`). `astro preview` does NOT send that header, so `/view` looks broken there; test the
+sandboxed render against `astro build` output served by a static server that sends `ACAO: *` (a
+plain Node static server works), not via `astro preview`.
+
+### Why a separate `/plan-frame` page instead of rendering into the iframe
+
+A parent cannot inject React into an opaque-origin iframe (it cannot reach `contentDocument`), so the
+frame must be a self-contained page that compiles and mounts itself. That is also what gives the plan
+full interactivity (recharts `<Chart>`) inside the sandbox. `/plan-frame` is `noindex`; only `/view`
+is a real page (uses `Base`, with a restrictive CSP via its `csp` prop; `Base` gained an opt-in
+`csp` prop). `/plan-frame` gets only origin-independent CSP directives, because a `script-src 'self'`
+would resolve `'self'` to the opaque origin and block its own assets.
+
 ## Example plans
 
 `examples/*.mdx` are full plans authored in the vocabulary. `scripts/build-examples.mjs` renders

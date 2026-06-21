@@ -1,0 +1,23 @@
+---
+import Base from '../layouts/Base.astro'
+import { ViewPage } from '../components/ViewPage'
+import '../styles/plan-view.css'
+
+// The shared plan renders in a separate sandboxed origin (the /plan-frame iframe), so this host
+// page never compiles untrusted content itself. The CSP is defense in depth: 'self' is meaningful
+// here (a normal origin, unlike the opaque-origin frame), so lock down script/object/base sources.
+const csp = [
+  "default-src 'self'",
+  "script-src 'self' 'unsafe-inline'",
+  "style-src 'self' 'unsafe-inline'",
+  "img-src 'self' data:",
+  "frame-src 'self'",
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'none'",
+].join('; ')
+---
+
+<Base title="View a shared plan" csp={csp}>
+  <ViewPage client:only="react" />
+</Base>

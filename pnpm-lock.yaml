@@ -50,9 +50,18 @@ importers:
       '@astrojs/react':
         specifier: ^4.4.2
         version: 4.4.2(@types/node@25.9.4)(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(lightningcss@1.32.0)(react-dom@19.2.7(react@19.2.7))(react@19.2.7)(tsx@4.22.4)(yaml@2.9.0)
+      '@mdx-js/mdx':
+        specifier: ^3.1.1
+        version: 3.1.1
+      '@mdx-js/react':
+        specifier: ^3.1.1
+        version: 3.1.1(@types/react@19.2.17)(react@19.2.7)
       '@tabler/icons-react':
         specifier: ^3.44.0
         version: 3.44.0(react@19.2.7)
+      '@visualplan/compile':
+        specifier: workspace:*
+        version: link:../compile
       '@visualplan/core':
         specifier: workspace:*
         version: link:../core
@@ -74,6 +83,9 @@ importers:
       recharts:
         specifier: ^3.8.1
         version: 3.8.1(@types/react@19.2.17)(react-dom@19.2.7(react@19.2.7))(react-is@19.2.7)(react@19.2.7)(redux@5.0.1)
+      rehype-expressive-code:
+        specifier: ^0.43.1
+        version: 0.43.1
       temml:
         specifier: ^0.13.3
         version: 0.13.3

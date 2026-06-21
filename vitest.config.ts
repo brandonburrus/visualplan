@@ -42,6 +42,14 @@ export default defineConfig({
           include: ['tests/**/*.test.{ts,tsx}'],
         },
       },
+      {
+        test: {
+          name: 'app',
+          root: './packages/app',
+          environment: 'jsdom',
+          include: ['tests/**/*.test.{ts,tsx}'],
+        },
+      },
     ],
   },
 })
