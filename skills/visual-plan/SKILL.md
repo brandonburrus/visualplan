@@ -161,6 +161,13 @@ brace errors that break a render.
 - In prose, `<`, `{`, and `}` are MDX syntax, so a bare `<Thing>` or `{value}` can break the
   render. Wrap literal angle brackets, braces, generics (`List<T>`), or tag-like text in backticks
   or a code fence, where every character is safe and literal.
+- No images or external assets. The page is a single self-contained file, so a markdown image
+  (`![](url)`) or any external asset cannot be embedded; `check` rejects markdown images. Use a
+  ` ```mermaid ` diagram for anything visual, or describe it in text.
+- Plain markdown works alongside the components: GFM tables (outside `<Matrix>`/`<Chart>`),
+  blockquotes, footnotes, `~~strikethrough~~`, autolinks, `- [ ]` task lists, and custom-start
+  ordered lists all render. Raw inline HTML tags (`<kbd>`, `<sub>`, `<sup>`, `<details>`) do NOT,
+  they are read as unknown components and fail `check`; use backticks or plain text instead.
 - Keep `<Chart>` labels short (a word or two). Long bar/line x-axis labels get dropped or
   crowded; put the detail in the title or the surrounding prose, not the label. Charts show the
   shape of the data, not exact figures (there are no on-bar value labels), so any number the reader

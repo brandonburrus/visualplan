@@ -106,6 +106,17 @@ describe('checkPlan', () => {
     expect(issues.some(issue => /single series/.test(issue.message))).toBe(true)
   })
 
+  it('flags a markdown image that would break self-containment (error)', async () => {
+    const path = await writePlan(
+      'image.mdx',
+      '# T\n\nintro\n\n![architecture](https://example.com/diagram.png)\n',
+    )
+    const issues = await checkPlan(path)
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.message).toMatch(/Images are not supported/)
+    expect(issues[0]?.line).toBe(5)
+  })
+
   it('accepts a valid mermaid diagram (golden)', async () => {
     const path = await writePlan(
       'good-mermaid.mdx',

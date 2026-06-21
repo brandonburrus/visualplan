@@ -50,7 +50,11 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   types: flowchart, sequence, state, class, ER, XY chart. gantt/pie are not supported and throw,
   which the component catches and shows as an inline error. The injected SVG has no `<title>`, so
   the container gets `role="img"` plus an `aria-label` derived from the diagram's first keyword
-  (`diagramLabel`) for an accessible name.
+  (`diagramLabel`) for an accessible name. **beautiful-mermaid injects an
+  `@import url('https://fonts.googleapis.com/...')` into the SVG `<style>` per themed font**, which
+  would make the self-contained page fetch Google Fonts at view time; `Mermaid.tsx`
+  (`stripExternalFontImports`) removes those imports after rendering, leaving the system-font
+  fallback. Do not reintroduce them; the single-file invariant has no external requests.
 - **Fenced code is handled at build time, not in a `pre` override.** Two plugins in
   `src/build/compile.ts` cooperate, and ORDER matters: `remarkMermaid` (remark, mdast stage)
   rewrites ` ```mermaid ` fences into `<Mermaid>` JSX FIRST, then `rehype-expressive-code` (rehype

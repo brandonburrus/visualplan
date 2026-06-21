@@ -126,6 +126,24 @@ export async function checkPlan(mdxPath: string): Promise<CheckIssue[]> {
       return
     }
 
+    // A markdown image (`![alt](url)`) compiles to a live <img>, which fetches an external URL (or
+    // dangles a local path) at view time and breaks the self-contained output. Raw HTML <img> is
+    // already rejected as an unknown component, but the markdown form slips through, so flag it.
+    const imageNode = node as {
+      type: string
+      position?: { start: { line: number; column: number } }
+    }
+    if (imageNode.type === 'image' || imageNode.type === 'imageReference') {
+      const at = imageNode.position?.start ?? { line: 1, column: 1 }
+      issues.push({
+        line: at.line,
+        column: at.column,
+        message:
+          'Images are not supported: the page must stay self-contained. Use a ```mermaid diagram or describe it in text instead.',
+      })
+      return
+    }
+
     const element = node as unknown as JsxNode
     if (element.type !== 'mdxJsxFlowElement' && element.type !== 'mdxJsxTextElement') return
     const name = element.name
