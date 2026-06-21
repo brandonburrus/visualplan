@@ -16,6 +16,11 @@ CLI's `check` and `components` commands. One file: `src/index.ts`.
   is vendored) and the runtime's import of `@visualplan/core` stay free of `fflate`. The CLI encodes
   at render time, `/view` decodes in the browser; keep it isomorphic (no Node `Buffer`, no DOM
   `btoa`) so one format serves both.
+- **The `exports` map MUST keep `"./package.json": "./package.json"`.** Once a package has an
+  `exports` map, Node blocks every subpath not listed, including `package.json`. `compile.ts`'s
+  `findRuntimePaths` resolves `@visualplan/core/package.json` to locate the core dir in the
+  non-vendored (dev/CI) layout, so dropping that entry breaks every render outside the vendored
+  tarball, a failure local runs hide whenever stale vendored `cli/core` copies exist.
 - The package is private and never published on its own. The CLI bundles it into `dist` (tsup
   `noExternal`) for the Node path, and vendors its source (`-> cli/core/index.ts`) for the Vite
   render path, where it is aliased to `@visualplan/core`. `main`/`types` point at the raw `.ts`
