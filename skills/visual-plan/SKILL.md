@@ -21,7 +21,9 @@ components that fit the plan and skip the ones that do not.
    `file:line:col` issues (it names the valid values for bad enums and flags unknown components).
 3. Render: `vplan <file>.mdx` writes a self-contained `<file>.plan.html` next to the source and
    opens it. Pass `--no-open` to skip the browser, `--out <path>` to set the output location, or
-   `--watch` to start a live-reloading dev server while you refine the plan.
+   `--watch` to start a live-reloading dev server while you refine the plan. `--watch` is a
+   long-running foreground server (it serves a local URL, writes no file, and only stops on
+   Ctrl+C), so for a one-shot HTML output use the plain render, not `--watch`.
 
 Run `vplan components` anytime for the exact prop signatures.
 
@@ -153,11 +155,16 @@ brace errors that break a render.
   diagram or phases that carry no information, an empty 2-node flowchart is worse than no diagram.
 - Prefer a diagram or a `<FileTree>` over describing structure in sentences.
 - Keep prose tight inside phases; the visual is the point.
+- `<Phase>` and `<Callout>` wrap arbitrary markdown and components: a `<FileTree>`, `<Chart>`,
+  `<Matrix>`, a ` ```mermaid ` diagram, a code block, or a `- [ ]` task list all nest inside them.
+  Nest freely to group related content under a step or a highlight.
 - In prose, `<`, `{`, and `}` are MDX syntax, so a bare `<Thing>` or `{value}` can break the
   render. Wrap literal angle brackets, braces, generics (`List<T>`), or tag-like text in backticks
   or a code fence, where every character is safe and literal.
 - Keep `<Chart>` labels short (a word or two). Long bar/line x-axis labels get dropped or
-  crowded; put the detail in the title or the surrounding prose, not the label.
+  crowded; put the detail in the title or the surrounding prose, not the label. Charts show the
+  shape of the data, not exact figures (there are no on-bar value labels), so any number the reader
+  must know precisely belongs in prose too, not the chart alone.
 - Keep `<Matrix>` cells short (a word or a short score). Cells do not wrap, so a long sentence in
   one cell forces a horizontal scrollbar and pushes the other columns off-screen. Put rationale in
   prose or a `<Callout>`, not in a cell.
@@ -165,6 +172,10 @@ brace errors that break a render.
   one near 2,000,000). They share a single y-axis, so the small series flattens to the zero line
   and reads as nothing. Split them into separate charts or normalize to the same unit.
 - For mermaid, prefer top-down (`flowchart TD`) once a diagram has many nodes. A very wide
-  left-to-right (`LR`) chain shrinks to fit the page and becomes hard to read; split large
-  flows into a few smaller diagrams instead of one sprawling one.
+  left-to-right (`LR`) chain shrinks to fit the page (a long single-row chain becomes effectively
+  illegible inline); split large flows into a few smaller diagrams instead of one sprawling one.
+- Diagrams and charts each render a hover "expand" button that opens a zoomable, pannable
+  fullscreen viewer, so a dense diagram stays legible even when shrunk inline. (Code blocks do
+  not.) You can lean on it for a necessarily-large diagram, but splitting is still better when the
+  inline view must read on its own.
 - Always `check` before presenting, so the user never sees a broken render.
