@@ -23,6 +23,20 @@ const THEME: RenderOptions = {
   transparent: true,
 }
 
+/** Map the diagram's first keyword to a human label so the rendered SVG has an accessible name
+ * (the injected SVG itself carries no title), rather than being announced as nothing or as a jumble
+ * of its node text. */
+function diagramLabel(chart: string): string {
+  const first = chart.trim().split(/\s|\n/, 1)[0]?.toLowerCase() ?? ''
+  if (first === 'flowchart' || first === 'graph') return 'Flowchart diagram'
+  if (first === 'sequencediagram') return 'Sequence diagram'
+  if (first.startsWith('statediagram')) return 'State diagram'
+  if (first === 'classdiagram') return 'Class diagram'
+  if (first === 'erdiagram') return 'Entity-relationship diagram'
+  if (first.startsWith('xychart')) return 'XY chart'
+  return 'Diagram'
+}
+
 /**
  * Renders a mermaid diagram from the text of a ```mermaid code fence. Rendering is
  * synchronous and DOM-free, so the SVG is present in the static HTML output (not
@@ -44,8 +58,15 @@ export function Mermaid({ chart }: MermaidProps) {
   }
   return (
     <div className='vp-mermaid vp-expandable'>
-      {/* biome-ignore lint/security/noDangerouslySetInnerHtml: trusted SVG from our own synchronous renderer over author-provided diagram text, not untrusted HTML */}
-      <div className='vp-mermaid__svg' dangerouslySetInnerHTML={{ __html: svg }} />
+      {/* role=img + a derived label give the diagram an accessible name; without it a screen
+          reader gets nothing (the injected SVG has no <title>). */}
+      <div
+        className='vp-mermaid__svg'
+        role='img'
+        aria-label={diagramLabel(chart)}
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted SVG from our own synchronous renderer over author-provided diagram text, not untrusted HTML
+        dangerouslySetInnerHTML={{ __html: svg }}
+      />
       <ExpandButton />
     </div>
   )

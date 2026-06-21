@@ -48,7 +48,9 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   effect, no async) and the diagram appears in the static HTML and SSR output. It is themed via
   our CSS vars, so one SVG adapts to light and dark with no theme detection. Supported diagram
   types: flowchart, sequence, state, class, ER, XY chart. gantt/pie are not supported and throw,
-  which the component catches and shows as an inline error.
+  which the component catches and shows as an inline error. The injected SVG has no `<title>`, so
+  the container gets `role="img"` plus an `aria-label` derived from the diagram's first keyword
+  (`diagramLabel`) for an accessible name.
 - **Fenced code is handled at build time, not in a `pre` override.** Two plugins in
   `src/build/compile.ts` cooperate, and ORDER matters: `remarkMermaid` (remark, mdast stage)
   rewrites ` ```mermaid ` fences into `<Mermaid>` JSX FIRST, then `rehype-expressive-code` (rehype

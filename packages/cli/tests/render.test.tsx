@@ -52,6 +52,13 @@ describe('full plan render (MDX -> component DOM)', () => {
     expect(html).toContain('<svg')
   })
 
+  it('gives the mermaid diagram an accessible name (golden)', () => {
+    // The injected SVG has no <title>, so the container carries role=img + a derived
+    // label; the example's diagram is a flowchart.
+    expect(html).toContain('role="img"')
+    expect(html).toContain('aria-label="Flowchart diagram"')
+  })
+
   it('mounts the chart container for the estimate chart (edge)', () => {
     expect(html).toContain('vp-chart')
   })

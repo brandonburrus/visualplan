@@ -107,7 +107,7 @@ export interface CatalogEntry {
 export const CATALOG: readonly CatalogEntry[] = [
   {
     name: 'Phase',
-    summary: 'A collapsible plan stage with a status badge. Wraps markdown.',
+    summary: 'A numbered vertical-timeline step with a status badge. Wraps markdown.',
     staticEnums: { status: STATUS_VALUES },
     example: '<Phase title="Build the API" status="active">\n  1. Define routes\n</Phase>',
   },
