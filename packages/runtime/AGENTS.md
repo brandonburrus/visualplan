@@ -89,8 +89,9 @@ page. The rules below are deliberate; changing them needs a reason.
 
 - **Near-monochrome ink accent.** `--vp-accent` is ink (near-black light / near-white dark), not
   a colored brand hue. Chroma is reserved for *semantic* meaning only: done/add green, risk/delete
-  red, modify amber, move cyan. The one chromatic UI affordance is links (`--vp-link`, blue), which
-  follow the universal convention. Do not make `--vp-accent` itself a colored hue.
+  red, modify amber, move cyan, and the Matrix recommended-pick star gold (`--vp-gold`). The one
+  chromatic UI affordance is links (`--vp-link`, blue), which follow the universal convention. Do
+  not make `--vp-accent` itself a colored hue.
 - **No side-stripe accents.** Callouts use a flat tint plus a full 1px border and a colored label,
   never a `border-left` color stripe (a hard ban).
 - **Off-white / off-black only**, never pure `#fff` / `#000`. All colors are CSS vars with a

@@ -14,6 +14,7 @@
   --vp-modify: #b45309;
   --vp-risk: #b91c1c;
   --vp-move: #0e7490;
+  --vp-gold: #c79100;
   --vp-risk-tint: #fbf1f1;
   --vp-risk-border: #eed3d3;
   --vp-warn: #92660b;
@@ -53,6 +54,7 @@
     --vp-modify: #d99a3a;
     --vp-risk: #ef8f8f;
     --vp-move: #38b6cf;
+    --vp-gold: #e8c14f;
     --vp-risk-tint: #241a1c;
     --vp-risk-border: #43292c;
     --vp-warn: #e3b54f;
@@ -714,7 +716,7 @@ body {
 
 .vp-matrix__pick {
   flex: none;
-  color: var(--vp-text);
+  color: var(--vp-gold);
   cursor: help;
 }
 
