@@ -1,0 +1,13 @@
+---
+// Wraps a live runtime component so it reads as "this is what the MDX above renders to".
+// The stage carries `.vp-main` so the runtime's CSS counter numbers any <Phase> inside it,
+// and importing theme.css here loads the plan component styles on demo pages only.
+import '@visualplan/runtime/theme.css'
+---
+
+<div class="vp-demo">
+  <span class="vp-demo__label">Renders to</span>
+  <div class="vp-demo__stage vp-main">
+    <slot />
+  </div>
+</div>

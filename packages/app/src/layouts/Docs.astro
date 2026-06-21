@@ -1,6 +1,6 @@
 ---
 import Base from './Base.astro'
-import { docLinks } from '../nav'
+import { docLinks, exampleLinks } from '../nav'
 
 // Markdown docs pages set `layout: ../../layouts/Docs.astro` and supply `title`
 // (and optional `description`) via frontmatter. Astro nests a markdown file's
@@ -23,6 +23,24 @@ const path = Astro.url.pathname
             docLinks.map(link => (
               <li>
                 <a href={link.href} aria-current={path === link.href ? 'page' : undefined}>
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+        <p class="vp-sidebar__group">Examples</p>
+        <ul class="vp-sidebar__list">
+          {
+            exampleLinks.map(link => (
+              <li>
+                <a
+                  href={link.href}
+                  title={link.title}
+                  target="_blank"
+                  rel="noopener"
+                  class="vp-sidebar__external"
+                >
                   {link.label}
                 </a>
               </li>

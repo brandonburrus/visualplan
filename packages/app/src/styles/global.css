@@ -421,6 +421,62 @@ a {
   }
 }
 
+/* Live component demo: a labeled stage on the docs pages that renders real runtime
+   components beside their MDX source. theme.css (loaded by Demo.astro) styles the
+   components; the rules here frame the stage and counteract the few docs-prose rules
+   (e.g. `.vp-prose h3`) that outweigh the plan component classes by specificity. */
+.vp-demo {
+  margin: 0.85rem 0 1.85rem;
+  border: 1px solid var(--vp-border);
+  border-radius: 12px;
+  background: var(--vp-bg);
+  overflow: hidden;
+}
+
+.vp-demo__label {
+  display: block;
+  padding: 0.45rem 0.9rem;
+  border-bottom: 1px solid var(--vp-border);
+  background: var(--vp-surface);
+  font-size: 0.64rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--vp-faint);
+}
+
+.vp-demo__stage {
+  padding: 1.35rem 1.5rem;
+}
+
+.vp-demo__stage > :first-child {
+  margin-top: 0;
+}
+
+.vp-demo__stage > :last-child {
+  margin-bottom: 0;
+}
+
+/* `.vp-prose h3` (specificity 0,1,1) would otherwise override the plan's `.vp-phase__title`. */
+.vp-demo .vp-phase__title {
+  margin: 0;
+  font-size: 1.12rem;
+}
+
+/* The fullscreen controller only runs inside a real rendered plan (Layout's effect), so the
+   expand affordance would be dead here; hide it in demos. */
+.vp-demo .vp-expand-btn {
+  display: none;
+}
+
+/* The Examples sidebar links open standalone rendered plans in a new tab; mark them. */
+.vp-sidebar__external::after {
+  content: "\2197";
+  margin-left: 0.3rem;
+  font-size: 0.82em;
+  color: var(--vp-faint);
+}
+
 /* Page footer */
 .vp-footer {
   border-top: 1px solid var(--vp-border);

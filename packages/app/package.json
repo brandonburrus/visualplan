@@ -7,12 +7,24 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build:examples": "node scripts/build-examples.mjs",
+    "build": "node scripts/build-examples.mjs && astro build",
     "preview": "astro preview",
     "typecheck": "astro check"
   },
   "dependencies": {
-    "astro": "^5.16.2"
+    "@astrojs/mdx": "^4.3.14",
+    "@astrojs/react": "^4.4.2",
+    "@tabler/icons-react": "^3.44.0",
+    "@visualplan/core": "workspace:*",
+    "@visualplan/runtime": "workspace:*",
+    "astro": "^5.16.2",
+    "beautiful-mermaid": "^1.1.3",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "recharts": "^3.8.1",
+    "temml": "^0.13.3",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.4"

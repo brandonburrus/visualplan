@@ -25,6 +25,9 @@ coverage
 # Astro types/cache (generated)
 .astro/
 
+# Example plans rendered by the CLI at build time (generated)
+/packages/app/public/examples/
+
 # Rendered plan output
 *.plan.html
 
