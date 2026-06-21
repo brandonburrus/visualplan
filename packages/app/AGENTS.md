@@ -9,8 +9,8 @@ package that is a web app rather than part of the CLI's render pipeline.
 - `astro.config.mjs` — `site: https://visualplan.dev` (custom apex domain, so no `base`). Dual-theme
   Shiki (`github-light`/`github-dark`) with `defaultColor: false` for the code blocks.
 - `src/layouts/Base.astro` — the HTML document shell (head, meta/OG tags, header, footer). Takes a
-  `title` prop; the landing page passes `"VisualPlan"` (no suffix), everything else gets
-  `"<title> · VisualPlan"`.
+  `title` prop; the landing page passes `"Visual Plan"` (no suffix), everything else gets
+  `"<title> · Visual Plan"`.
 - `src/layouts/Docs.astro` — wraps `Base` with the docs two-column shell (sticky sidebar + prose).
   Markdown docs pages set `layout: ../../layouts/Docs.astro`; their frontmatter arrives under
   `Astro.props.frontmatter` (NOT spread to the top level), so read `title`/`description` from there.

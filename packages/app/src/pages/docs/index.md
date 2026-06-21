@@ -1,12 +1,12 @@
 ---
 layout: ../../layouts/Docs.astro
 title: Introduction
-description: What VisualPlan is and why it exists.
+description: What Visual Plan is and why it exists.
 ---
 
 # Introduction
 
-VisualPlan renders an AI agent's implementation and design plans as polished, visual web pages
+Visual Plan renders an AI agent's implementation and design plans as polished, visual web pages
 instead of walls of text. A plan is written as MDX and compiled to a single self-contained HTML
 page with architecture diagrams, charts, file-change trees, option comparisons, callouts, and a
 numbered phase timeline.
@@ -20,7 +20,7 @@ It comes in two parts that work together:
 ## Why
 
 A good plan is structural: phases, dependencies, file changes, tradeoffs. Terminal text flattens
-all of that into prose that is slow to scan and easy to skim past. VisualPlan keeps the structure
+all of that into prose that is slow to scan and easy to skim past. Visual Plan keeps the structure
 visible, the agent writes a plan in a fixed, tiny component vocabulary and gets back a page a human
 can actually read at a glance.
 

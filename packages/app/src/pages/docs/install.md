@@ -6,7 +6,7 @@ description: Install the visual-plan agent skill and the vplan CLI.
 
 # Installation
 
-VisualPlan has two pieces: the **skill** that teaches your agent to author plans, and the **CLI**
+Visual Plan has two pieces: the **skill** that teaches your agent to author plans, and the **CLI**
 that renders them. Install both.
 
 ## The agent skill
