@@ -1,10 +1,11 @@
 import { execSync } from 'node:child_process'
 
 /**
- * Build-time provenance shown in the footer: the exact source the docs were generated from.
- * Prefers the values GitHub Actions injects (so the deployed site is stamped correctly even on a
- * shallow checkout) and falls back to local git for dev builds. Evaluated once at build, server
- * side only, because only Footer.astro (static) imports it, so no git call ships to the browser.
+ * The released semver version shown in the footer. Resolved once at build (server side; only the
+ * static Footer imports it, so no git call ships to the browser). A release build has
+ * GITHUB_REF_NAME set to the version tag; a branch deploy or local build falls back to the most
+ * recent version tag via `git describe`. The docs workflow checks out with tags (`fetch-depth: 0`)
+ * so this resolves in CI; tags in this repo are bare semver, no leading `v`.
  */
 function git(args: string): string | null {
   try {
@@ -18,18 +19,12 @@ function git(args: string): string | null {
   }
 }
 
-const sha = process.env.GITHUB_SHA ?? git('rev-parse HEAD')
-const refName = process.env.GITHUB_REF_NAME
-// A release build is tagged with a bare-semver version; take it from an exact tag at HEAD, or from
-// the CI ref name when it looks like a version (a release event sets it to the tag).
-const version =
-  git('describe --tags --exact-match') ?? (refName && /^\d/.test(refName) ? refName : null)
+/** Keep a value only if it looks like a semver version (e.g. "0.8.1"). */
+function asVersion(value: string | null | undefined): string | null {
+  return value && /^\d+\.\d+\.\d+/.test(value) ? value : null
+}
 
 export const buildInfo = {
-  /** Short commit hash, or null outside a git checkout. */
-  shortSha: sha ? sha.slice(0, 7) : null,
-  /** Full commit hash, for linking to the commit on GitHub. */
-  sha,
-  /** The release version, when built from a release tag; otherwise null. */
-  version,
+  /** The released semver version: the CI tag on a release, else the most recent version tag. */
+  version: asVersion(process.env.GITHUB_REF_NAME) ?? asVersion(git('describe --tags --abbrev=0')),
 }

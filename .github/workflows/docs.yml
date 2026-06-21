@@ -24,6 +24,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        # Full history + tags so build-info can resolve the released version from `git describe`
+        # on a branch deploy (workflow_dispatch); a release build reads it from GITHUB_REF_NAME.
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 
