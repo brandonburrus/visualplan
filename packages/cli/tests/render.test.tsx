@@ -59,6 +59,13 @@ describe('full plan render (MDX -> component DOM)', () => {
     expect(html).toContain('aria-label="Flowchart diagram"')
   })
 
+  it('strips the mermaid Google Fonts @import to keep the page self-contained (edge)', () => {
+    // beautiful-mermaid injects @import url('https://fonts.googleapis.com/...') into the SVG;
+    // leaving it makes the "self-contained" page fetch an external font at view time.
+    expect(html).toContain('vp-mermaid')
+    expect(html).not.toContain('fonts.googleapis.com')
+  })
+
   it('mounts the chart container for the estimate chart (edge)', () => {
     expect(html).toContain('vp-chart')
   })

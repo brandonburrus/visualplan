@@ -23,6 +23,17 @@ const THEME: RenderOptions = {
   transparent: true,
 }
 
+/** beautiful-mermaid injects `@import url('https://fonts.googleapis.com/...')` into the SVG's
+ * inline <style> (one per font it themes with). That would make the supposedly self-contained page
+ * fetch Google Fonts at view time, breaking the single-file invariant, so strip those imports. The
+ * SVG's font-family keeps its system-stack fallback, which matches our page font anyway. The quoted
+ * capture survives URLs that contain parens (e.g. a `var(--vp-font)` family). */
+function stripExternalFontImports(svg: string): string {
+  return svg.replace(/@import\s+url\(\s*(['"])(.*?)\1\s*\)\s*;/g, (full, _quote, url) =>
+    typeof url === 'string' && url.includes('fonts.googleapis.com') ? '' : full,
+  )
+}
+
 /** Map the diagram's first keyword to a human label so the rendered SVG has an accessible name
  * (the injected SVG itself carries no title), rather than being announced as nothing or as a jumble
  * of its node text. */
@@ -45,7 +56,7 @@ function diagramLabel(chart: string): string {
 export function Mermaid({ chart }: MermaidProps) {
   let svg: string
   try {
-    svg = renderMermaidSVG(chart, THEME)
+    svg = stripExternalFontImports(renderMermaidSVG(chart, THEME))
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     return (
