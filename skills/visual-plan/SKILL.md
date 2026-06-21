@@ -1,13 +1,13 @@
 ---
 name: visual-plan
-description: Always use when planning anything non-trivial (an implementation, design, refactor, or migration), as the default and better way to show your plan visually instead of as a wall of text, especially in plan mode. Authors the plan as an MDX file and renders it to a self-contained HTML page with the `vplan` CLI, using a fixed component vocabulary (Phase, FileTree, Chart, Compare, Matrix, Callout, Questions, Checklist, and mermaid diagrams). Also use when the user says "make a visual plan", "render this plan", "show me the plan", or asks for a plan with diagrams/charts. Skip only for trivial one-step changes or prose-only notes.
+description: Always use when planning anything non-trivial (an implementation, design, refactor, or migration), as the default and better way to show your plan visually instead of as a wall of text, especially in plan mode. Authors the plan as an MDX file and renders it to a self-contained HTML page with the `vplan` CLI, using a fixed component vocabulary. Also use when the user says "make a visual plan", "render this plan", "show me the plan", or asks for a plan with diagrams/charts. Skip only for trivial one-step changes or prose-only notes.
 ---
 
 # Visual Plan
 
 Render a plan as a visual MDX page instead of a wall of text, using the `vplan` CLI.
 
-> **If the `vplan` command is not found**, install it globally first: `npm i -g vplan`
+> **If the `vplan` command is not found**, install it globally first: `npm i -g vplan@latest`
 > (published on npm). Re-run the failed command afterward.
 
 ## Workflow
@@ -42,7 +42,7 @@ brace errors that break a render.
   timeline; wraps markdown (ordered lists, prose, nested components). The steps auto-number in
   order. One per major step of the plan.
 - ` ```mermaid ` fenced block — diagrams: architecture (`flowchart`), `sequenceDiagram`,
-  dependency graphs, `stateDiagram-v2`, `classDiagram`, ER, and XY charts. Reach for this first for
+  dependency graphs, `stateDiagram-v2`, `classDiagram`, and ER charts. Reach for this first for
   anything structural. (gantt and pie are not supported; use `<Chart>` for quantitative data.)
 - `<Callout type="note|tip|risk|decision|warn">` — highlight a risk, decision, tip, or note; wraps
   markdown. (`note` is blue, `tip` is green, `decision` is purple, `risk` is red, `warn` is yellow.)
@@ -124,9 +124,7 @@ brace errors that break a render.
   ```
 - Fenced code blocks are syntax-highlighted (Expressive Code): write ` ```ts ` (or js, json, bash,
   python, go, rust, sql, yaml, etc.) to show a key snippet. Add a file name with
-  ` ```ts title="src/path/file.ts" ` to render a filename header on the block; a titled block also
-  gets a VS Code file-type icon automatically. CSS color values in any block (`#1e1e21`, `rgb(...)`,
-  `hsl(...)`) render a small color swatch next to them. Both are automatic, no syntax needed.
+  ` ```ts title="src/path/file.ts" ` to render a filename header on the block.
 - Mark lines and text inside a code block with Expressive Code props in the fence meta string
   (no component needed). Three marker types: `mark` (neutral, the default), `ins` (green,
   inserted), `del` (red, removed). Each takes line numbers, ranges, quoted strings, or a
@@ -138,8 +136,8 @@ brace errors that break a render.
 
 ## Guidance
 
-- Lead with structure: open with a one-paragraph context, then a mermaid architecture diagram,
-  then `<Phase>` sections. Put risks and key decisions in `<Callout>`s, not buried in prose.
+- Lead with structure: open with an optional one-paragraph context, then a mermaid architecture
+  diagram, then `<Phase>` sections. Put risks and key decisions in `<Callout>`s, not buried in prose.
 - Prefer a diagram or a `<FileTree>` over describing structure in sentences.
 - Keep prose tight inside phases; the visual is the point.
 - Keep `<Chart>` labels short (a word or two). Long bar/line x-axis labels get dropped or
