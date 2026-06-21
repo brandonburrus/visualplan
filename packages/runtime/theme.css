@@ -788,6 +788,21 @@ body {
   white-space: pre-wrap;
 }
 
+/* Display math from a ```math fence. Temml emits MathML, which inherits color via currentColor
+   so it tracks light/dark with no per-scheme work; scroll wide equations rather than clip. */
+.vp-math {
+  margin: 1.4rem 0;
+  overflow-x: auto;
+  color: var(--vp-text);
+  font-size: 1.05rem;
+}
+
+.vp-math math {
+  display: block;
+  margin-inline: auto;
+  width: fit-content;
+}
+
 /* Chart canvas sizing (ResponsiveContainer fills 100% of these) */
 .vp-chart__canvas {
   height: 250px;

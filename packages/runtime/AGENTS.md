@@ -18,7 +18,9 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   `.vp-phase__node::before`), so phases self-number in document order with no index prop. The
   connector line is a `.vp-phase__rail::after` pseudo-element omitted on the last step.
 - `components/` holds the components (Phase, FileTree, Chart, Compare, Matrix, Callout, Questions,
-  Checklist, Mermaid). `FileTree` builds a nested directory tree from flat `{path}` entries
+  Checklist, Mermaid, Math). `Math` (exported as `MathBlock` to avoid shadowing the global `Math`,
+  registered under the `Math` scope key) just injects MathML the CLI's `remark-math` produced from
+  a ` ```math ` fence at build time; no math library runs in the browser. `FileTree` builds a nested directory tree from flat `{path}` entries
   (collapsing single-child dir chains); `Checklist` renders done/todo acceptance criteria. Each
   validates its props through `validate.ts`
   against the matching zod schema in `@visualplan/core`, throwing a readable, component-named

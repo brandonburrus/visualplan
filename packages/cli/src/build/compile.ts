@@ -13,6 +13,7 @@ import remarkMdxFrontmatter from 'remark-mdx-frontmatter'
 import { build, createServer, type InlineConfig, type Plugin } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
 import { pluginFileIcons } from './expressive-code-file-icons.js'
+import { remarkMath } from './remark-math.js'
 import { remarkMermaid } from './remark-mermaid.js'
 import { remarkPlanBlocks } from './remark-plan-blocks.js'
 
@@ -107,8 +108,9 @@ function mdxPlugin(): Plugin {
         // Parse markdown-list children of the list components into data props. Must run
         // after remark-gfm (for task-list checked state) and before the JSX is compiled.
         remarkPlanBlocks,
-        // Must run before rehype-expressive-code so mermaid never reaches the highlighter.
+        // Both must run before rehype-expressive-code so mermaid/math never reach the highlighter.
         remarkMermaid,
+        remarkMath,
       ],
       rehypePlugins: [[rehypeExpressiveCode, expressiveCodeOptions]],
     }),

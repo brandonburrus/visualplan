@@ -42,6 +42,7 @@ describe('renderToFile', () => {
       'vp-matrix',
       'vp-chart',
       'vp-mermaid',
+      'vp-math',
     ]) {
       expect(html).toContain(marker)
     }

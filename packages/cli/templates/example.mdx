@@ -69,6 +69,12 @@ flowchart LR
     return count <= MAX_REQUESTS
   }
   ```
+
+  A request is allowed only while the count within the window stays at or below the limit:
+
+  ```math
+  \text{allow}(t) \iff \sum_{i=t-W}^{t} r_i \le L
+  ```
 </Phase>
 
 <Phase title='Roll out behind a flag' status='planned'>

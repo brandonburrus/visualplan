@@ -170,4 +170,11 @@ export const CATALOG: readonly CatalogEntry[] = [
     staticEnums: {},
     example: '```mermaid\nflowchart LR\n  A[Client] --> B[API] --> C[(DB)]\n```',
   },
+  {
+    name: 'math (code fence)',
+    summary:
+      'A display math formula. Write a ```math fenced block containing LaTeX; it is typeset as MathML.',
+    staticEnums: {},
+    example: '```math\n\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}\n```',
+  },
 ]

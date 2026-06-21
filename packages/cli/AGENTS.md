@@ -13,8 +13,11 @@ renders a plan to a self-contained HTML page). Built with tsup to `dist/index.js
   `src/build/expressive-code-file-icons.ts` (a Material Icon Theme file-type icon in a titled
   block's header, given `iconClass: 'vp-file-icon'` so `theme.css` can size it). Both inline their
   output at build time, so the single-file invariant holds. `src/build/check.ts` — the static AST
-  validator. `src/build/remark-mermaid.ts` — rewrites ` ```mermaid ` fences to `<Mermaid>` BEFORE
-  rehype-expressive-code runs.
+  validator (it also runs each ` ```math ` block through Temml to report bad LaTeX as
+  `file:line:col`). `src/build/remark-mermaid.ts` — rewrites ` ```mermaid ` fences to `<Mermaid>`,
+  and `src/build/remark-math.ts` — rewrites ` ```math ` fences to `<Math>` by converting the LaTeX
+  to MathML with `temml` at build time (no math library ships to the browser); both run BEFORE
+  rehype-expressive-code so the highlighter never sees those fences.
 - `src/build/expressive-code-file-icons.ts` — our file-icons EC plugin, modeled on
   `@xt0rted/expressive-code-file-icons` but sourcing from `material-icon-theme`. It resolves a
   block's title filename to an icon name through the package's `dist/material-icons.json` manifest

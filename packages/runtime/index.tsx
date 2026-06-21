@@ -6,6 +6,7 @@ import { Chart } from './components/Chart.js'
 import { Checklist } from './components/Checklist.js'
 import { Compare } from './components/Compare.js'
 import { FileTree } from './components/FileTree.js'
+import { MathBlock } from './components/Math.js'
 import { Matrix } from './components/Matrix.js'
 import { Mermaid } from './components/Mermaid.js'
 import { Phase } from './components/Phase.js'
@@ -15,8 +16,8 @@ import './theme.css'
 
 /**
  * The component scope auto-injected into every plan's MDX (no imports needed).
- * Mermaid is here because a remark plugin rewrites ```mermaid fences to <Mermaid>;
- * fenced code blocks are highlighted at build time by rehype-expressive-code.
+ * Mermaid and Math are here because remark plugins rewrite ```mermaid and ```math fences to
+ * <Mermaid> / <Math>; fenced code blocks are highlighted at build time by rehype-expressive-code.
  */
 export const components = {
   Phase,
@@ -28,6 +29,7 @@ export const components = {
   Questions,
   Checklist,
   Mermaid,
+  Math: MathBlock,
 }
 
 /** Mount a compiled MDX plan into the page shell. */

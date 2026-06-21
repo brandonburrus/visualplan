@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { compile } from '@mdx-js/mdx'
+import temml from 'temml'
 import remarkFrontmatter from 'remark-frontmatter'
 import remarkGfm from 'remark-gfm'
 import remarkMdxFrontmatter from 'remark-mdx-frontmatter'
@@ -82,6 +83,29 @@ export async function checkPlan(mdxPath: string): Promise<CheckIssue[]> {
     .parse(source)
 
   visit(tree, node => {
+    // A ```math fence carries LaTeX that Temml converts at render time; validate it here so a
+    // syntax error surfaces as file:line:col instead of an inline error in the rendered page.
+    const codeNode = node as {
+      type: string
+      lang?: string | null
+      value?: string
+      position?: { start: { line: number; column: number } }
+    }
+    if (codeNode.type === 'code' && codeNode.lang === 'math') {
+      try {
+        temml.renderToString(codeNode.value ?? '', { displayMode: true, throwOnError: true })
+      } catch (error) {
+        const at = codeNode.position?.start ?? { line: 1, column: 1 }
+        const reason = error instanceof Error ? error.message : String(error)
+        issues.push({
+          line: at.line,
+          column: at.column,
+          message: `Invalid LaTeX in math block: ${reason}`,
+        })
+      }
+      return
+    }
+
     const element = node as unknown as JsxNode
     if (element.type !== 'mdxJsxFlowElement' && element.type !== 'mdxJsxTextElement') return
     const name = element.name

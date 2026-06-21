@@ -4,6 +4,7 @@ import { Callout } from '../components/Callout.js'
 import { Checklist } from '../components/Checklist.js'
 import { Compare } from '../components/Compare.js'
 import { FileTree } from '../components/FileTree.js'
+import { MathBlock } from '../components/Math.js'
 import { Matrix } from '../components/Matrix.js'
 import { Phase } from '../components/Phase.js'
 import { Questions } from '../components/Questions.js'
@@ -24,6 +25,20 @@ describe('Phase', () => {
     const html = renderToStaticMarkup(<Phase title='x' />)
     expect(html).toContain('data-status="planned"')
     expect(html).not.toContain('vp-phase__badge')
+  })
+})
+
+describe('MathBlock', () => {
+  it('injects the pre-rendered MathML markup (golden)', () => {
+    const html = renderToStaticMarkup(<MathBlock html='<math><mn>1</mn></math>' />)
+    expect(html).toContain('vp-math')
+    expect(html).toContain('<math>')
+    expect(html).toContain('<mn>1</mn>')
+  })
+
+  it('renders an empty container when given no markup (edge)', () => {
+    const html = renderToStaticMarkup(<MathBlock html='' />)
+    expect(html).toContain('vp-math')
   })
 })
 

@@ -14,7 +14,7 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
 - `vplan components` prints the component vocabulary cheat-sheet.
 
 Plans use a fixed, tiny component vocabulary (`Phase`, `FileTree`, `Chart`, `Compare`, `Matrix`,
-`Callout`, `Questions`, `Checklist`, and ` ```mermaid ` fences) with no imports — the
+`Callout`, `Questions`, `Checklist`, and ` ```mermaid ` / ` ```math ` fences) with no imports — the
 components are auto-injected into MDX scope. A plan starts with a `# Title` heading; there
 is no frontmatter. `Phase` sections render as a numbered vertical timeline; no sidebar. The
 data components (`FileTree`, `Chart`, `Compare`, `Matrix`, `Questions`, `Checklist`) are authored
@@ -109,6 +109,10 @@ A release is cut by creating a GitHub release; the tag is the published version 
   Why: text-based, reliable for an agent to author, one dep covers many shapes.
 - 2026-06-20: Diagrams render via `beautiful-mermaid` (`renderMermaidSVG`). Why: synchronous,
   DOM-free (renders in static HTML), themes from our CSS vars. Tradeoff: no gantt/pie.
+- 2026-06-20: Math (` ```math ` fence) renders via `temml` to MathML at build time, not a runtime
+  library. Why: MathML is pure markup (no fonts) so the single-file output stays tiny, and it
+  themes via `currentColor`; KaTeX's HTML mode would need ~20 inlined font files. System math
+  fonts render well; bundle Latin Modern Math only if fidelity gaps appear.
 - 2026-06-20: Fenced code highlighted by `rehype-expressive-code` (build-time), with a
   `remarkMermaid` plugin extracting mermaid fences BEFORE it. Why: file-title frames + dual
   light/dark; the remark step keeps mermaid out of the highlighter. Replaced highlight.js.

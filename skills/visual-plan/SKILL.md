@@ -44,6 +44,8 @@ brace errors that break a render.
 - ` ```mermaid ` fenced block — diagrams: architecture (`flowchart`), `sequenceDiagram`,
   dependency graphs, `stateDiagram-v2`, `classDiagram`, and ER charts. Reach for this first for
   anything structural. (gantt and pie are not supported; use `<Chart>` for quantitative data.)
+- ` ```math ` fenced block — a display formula written in LaTeX, typeset as math (complexity
+  bounds, probabilities, linear algebra). Example: ` ```math ` then `T(n) = O(n \log n)`.
 - `<Callout type="note|tip|risk|decision|warn">` — highlight a risk, decision, tip, or note; wraps
   markdown. (`note` is blue, `tip` is green, `decision` is purple, `risk` is red, `warn` is yellow.)
 - `<FileTree>` — file-change map. One bullet per file, `- <change> <path>`, where `change` is

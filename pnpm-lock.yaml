@@ -104,6 +104,9 @@ importers:
       remark-parse:
         specifier: ^11.0.0
         version: 11.0.0
+      temml:
+        specifier: ^0.13.3
+        version: 0.13.3
       unified:
         specifier: ^11.0.5
         version: 11.0.5
@@ -2511,6 +2514,10 @@ packages:
 
   symbol-tree@3.2.4:
     resolution: {integrity: sha512-9QNk5KwDF+Bvz+PyObkmSYjI5ksVUYtjW7AU22r2NKcfLJcXp96hkDWU3+XndOsUb+AQ9QhfzfCT2O+CNWT5Tw==}
+
+  temml@0.13.3:
+    resolution: {integrity: sha512-GLNEdf5qBWux3adbOxFus4jlds8nCdEIkkKq99m/4GGTfqnsjlVlK/i371Ux7yYSg/WNmOyAkNT/GJlZoJ0v+w==}
+    engines: {node: '>=18.13.0'}
 
   thenify-all@1.6.0:
     resolution: {integrity: sha512-RNxQH/qI8/t3thXJDwcstUO4zeqo64+Uy/+sNVRBx4Xn2OX+OZ9oP+iJnNFqplFra2ZUVeKCSa2oVWi3T4uVmA==}
@@ -5464,6 +5471,8 @@ snapshots:
       xml-reader: 2.4.3
 
   symbol-tree@3.2.4: {}
+
+  temml@0.13.3: {}
 
   thenify-all@1.6.0:
     dependencies:
