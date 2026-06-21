@@ -294,7 +294,7 @@ describe('ShareButton', () => {
     setShare({ data: 'abc123', dev: false })
     const html = renderToStaticMarkup(<ShareButton />)
     expect(html).toContain('vp-share__icon')
-    expect(html).toContain('Copy link')
+    expect(html).toContain('Copy plan to clipboard for sharing')
   })
 
   it('renders nothing when no plan data is injected (edge)', () => {

@@ -104,7 +104,7 @@ export function ShareButton() {
       <div className='vp-share__pop'>
         <button type='button' className='vp-share__copy' data-copied={copied} onClick={onCopy}>
           {copied ? <IconCheck size={16} /> : <IconShare3 size={16} />}
-          {copied ? 'Copied' : 'Copy link'}
+          {copied ? 'Copied' : 'Copy plan to clipboard for sharing'}
         </button>
         {share.dev && (
           <p className='vp-share__note'>Shares a snapshot of the plan as it is right now</p>
