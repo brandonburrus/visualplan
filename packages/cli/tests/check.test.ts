@@ -105,6 +105,36 @@ describe('checkPlan', () => {
     expect(issues.some(issue => /single series/.test(issue.message))).toBe(true)
   })
 
+  it('accepts a valid mermaid diagram (golden)', async () => {
+    const path = await writePlan(
+      'good-mermaid.mdx',
+      '# T\n\n```mermaid\nflowchart LR\n  A[Client] --> B[API]\n```\n',
+    )
+    expect(await checkPlan(path)).toEqual([])
+  })
+
+  it('flags an unsupported mermaid diagram type with its line (error)', async () => {
+    const path = await writePlan(
+      'bad-mermaid.mdx',
+      '# T\n\n```mermaid\ngantt\n  title Roadmap\n  section S\n  task: a, 2026-01-01, 3d\n```\n',
+    )
+    const issues = await checkPlan(path)
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.message).toMatch(/Invalid mermaid diagram/)
+    expect(issues[0]?.line).toBe(3)
+  })
+
+  it('flags a FileTree move missing its destination arrow (error)', async () => {
+    const path = await writePlan(
+      'bad-move.mdx',
+      '# T\n\n<FileTree>\n- move src/old.ts\n</FileTree>\n',
+    )
+    const issues = await checkPlan(path)
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.message).toMatch(/needs a destination/)
+    expect(issues[0]?.line).toBe(4)
+  })
+
   it('points to the real line for an unclosed tag with no structured position (edge)', async () => {
     // MDX gives this error no line/column/place; the position is only in the message
     // ("(3:1-3:41)"). The checker must recover it so the prefix is not a misleading 1:1.

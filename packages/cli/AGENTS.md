@@ -13,8 +13,11 @@ renders a plan to a self-contained HTML page). Built with tsup to `dist/index.js
   `src/build/expressive-code-file-icons.ts` (a Material Icon Theme file-type icon in a titled
   block's header, given `iconClass: 'vp-file-icon'` so `theme.css` can size it). Both inline their
   output at build time, so the single-file invariant holds. `src/build/check.ts` — the static AST
-  validator (it also runs each ` ```math ` block through Temml to report bad LaTeX as
-  `file:line:col`). `src/build/remark-mermaid.ts` — rewrites ` ```mermaid ` fences to `<Mermaid>`,
+  validator. It also runs each ` ```math ` block through Temml and each ` ```mermaid ` block through
+  `beautiful-mermaid`'s `renderMermaidSVG` (the same renderer the runtime `Mermaid` component calls)
+  to report bad LaTeX / an unrenderable diagram as `file:line:col`, so `check` and render agree on
+  what is renderable (an unsupported type like pie/gantt is caught here instead of as an inline
+  error box at render time). `src/build/remark-mermaid.ts` — rewrites ` ```mermaid ` fences to `<Mermaid>`,
   and `src/build/remark-math.ts` — rewrites ` ```math ` fences to `<Math>` by converting the LaTeX
   to MathML with `temml` at build time (no math library ships to the browser); both run BEFORE
   rehype-expressive-code so the highlighter never sees those fences.

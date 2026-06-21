@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { compile } from '@mdx-js/mdx'
+import { renderMermaidSVG } from 'beautiful-mermaid'
 import temml from 'temml'
 import remarkFrontmatter from 'remark-frontmatter'
 import remarkGfm from 'remark-gfm'
@@ -101,6 +102,25 @@ export async function checkPlan(mdxPath: string): Promise<CheckIssue[]> {
           line: at.line,
           column: at.column,
           message: `Invalid LaTeX in math block: ${reason}`,
+        })
+      }
+      return
+    }
+
+    // A ```mermaid fence renders client-side via beautiful-mermaid. Run that same renderer here
+    // so a diagram that would throw an inline error box at render time (an unsupported type like
+    // pie/gantt, or a malformed header) is caught as file:line:col instead. This is the identical
+    // function the Mermaid component calls, so check and render agree on what is renderable.
+    if (codeNode.type === 'code' && codeNode.lang === 'mermaid') {
+      try {
+        renderMermaidSVG(codeNode.value ?? '')
+      } catch (error) {
+        const at = codeNode.position?.start ?? { line: 1, column: 1 }
+        const reason = error instanceof Error ? error.message : String(error)
+        issues.push({
+          line: at.line,
+          column: at.column,
+          message: `Invalid mermaid diagram: ${reason}`,
         })
       }
       return
