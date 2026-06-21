@@ -952,74 +952,118 @@ body {
   }
 }
 
-/* Share: a fixed top-right button that copies a stateless ?data= link to this plan. */
+/* Share: a faint fixed top-right icon that brightens and opens a copy popover on
+   hover/focus, so the affordance stays out of the way until wanted. */
 .vp-share {
   position: fixed;
   top: 1rem;
   right: 1rem;
   z-index: 20;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 0.4rem;
 }
 
-.vp-share__btn {
+.vp-share__icon {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  justify-content: center;
+  width: 32px;
   height: 32px;
-  padding: 0 0.7rem;
+  padding: 0;
   border: 1px solid var(--vp-border);
   border-radius: 8px;
   background: var(--vp-surface);
   color: var(--vp-muted);
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 500;
   cursor: pointer;
+  opacity: 0.4;
   transition:
+    opacity 120ms var(--vp-ease),
     color 120ms var(--vp-ease),
-    border-color 120ms var(--vp-ease),
-    background 120ms var(--vp-ease);
+    border-color 120ms var(--vp-ease);
 }
 
-.vp-share__btn:hover {
+.vp-share:hover .vp-share__icon,
+.vp-share:focus-within .vp-share__icon {
+  opacity: 1;
+}
+
+.vp-share__icon:hover {
   color: var(--vp-text);
   border-color: var(--vp-border-strong);
-  background: var(--vp-surface-2);
 }
 
-.vp-share__btn[data-copied="true"] {
+.vp-share__icon[data-copied="true"] {
+  opacity: 1;
   color: var(--vp-done);
   border-color: var(--vp-done);
 }
 
+/* The popover card, hidden until the icon is hovered/focused (or forced open by the
+   manual-copy fallback). Anchored under the icon, right-aligned to the viewport edge. */
+.vp-share__pop {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  width: max-content;
+  max-width: min(20rem, 70vw);
+  padding: 0.35rem;
+  border: 1px solid var(--vp-border);
+  border-radius: 9px;
+  background: var(--vp-surface);
+  box-shadow: 0 6px 18px -10px rgba(0, 0, 0, 0.3);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition:
+    opacity 120ms var(--vp-ease),
+    transform 120ms var(--vp-ease),
+    visibility 120ms var(--vp-ease);
+  pointer-events: none;
+}
+
+.vp-share:hover .vp-share__pop,
+.vp-share:focus-within .vp-share__pop,
+.vp-share[data-open="true"] .vp-share__pop {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.vp-share__copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.4rem 0.55rem;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--vp-text);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 120ms var(--vp-ease);
+}
+
+.vp-share__copy:hover {
+  background: var(--vp-surface-2);
+}
+
+.vp-share__copy[data-copied="true"] {
+  color: var(--vp-done);
+}
+
 .vp-share__note {
-  margin: 0;
-  max-width: 12rem;
-  text-align: right;
+  margin: 0.3rem 0.55rem 0.15rem;
   font-size: 0.68rem;
   line-height: 1.35;
   color: var(--vp-faint);
 }
 
-.vp-share__manual {
-  width: min(20rem, 70vw);
-  padding: 0.6rem 0.7rem;
-  border: 1px solid var(--vp-border);
-  border-radius: 8px;
-  background: var(--vp-surface);
-}
-
-.vp-share__manual p {
-  margin: 0 0 0.35rem;
-  font-size: 0.72rem;
-  color: var(--vp-muted);
-}
-
 .vp-share__input {
-  width: 100%;
+  width: calc(100% - 1.1rem);
+  margin: 0.35rem 0.55rem 0.3rem;
   padding: 0.35rem 0.45rem;
   border: 1px solid var(--vp-border);
   border-radius: 6px;
@@ -1029,21 +1073,9 @@ body {
   font-size: 0.72rem;
 }
 
-/* Compact to an icon-only button where a labeled pill would crowd the title. */
-@media (max-width: 640px) {
-  .vp-share__label {
-    display: none;
-  }
-
-  .vp-share__btn {
-    width: 32px;
-    padding: 0;
-    justify-content: center;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .vp-share__btn {
+  .vp-share__icon,
+  .vp-share__pop {
     transition: none;
   }
 }

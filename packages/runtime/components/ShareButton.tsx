@@ -66,9 +66,10 @@ export async function copyText(text: string): Promise<boolean> {
 type Status = 'idle' | 'copied' | 'manual'
 
 /**
- * A fixed top-right button that copies a stateless `visualplan.dev/view?data=...`
- * link encoding this whole plan. Renders nothing when no plan data was injected
- * (e.g. a unit test, or the runtime mounted without the build plugin).
+ * A faint top-right icon that brightens and opens a copy popover on hover or focus.
+ * Clicking the icon (or the popover's button) copies a stateless
+ * `visualplan.dev/view?data=...` link encoding this whole plan. Renders nothing when
+ * no plan data was injected (e.g. a unit test, or the runtime mounted without the build).
  */
 export function ShareButton() {
   const share = readShare()
@@ -76,7 +77,9 @@ export function ShareButton() {
   const [url, setUrl] = useState('')
   if (!share) return null
 
-  const onClick = async () => {
+  const copied = status === 'copied'
+
+  const onCopy = async () => {
     const link = `${VIEW_URL}?data=${await currentData(share)}`
     setUrl(link)
     const ok = await copyText(link)
@@ -85,24 +88,28 @@ export function ShareButton() {
   }
 
   return (
-    <div className='vp-share'>
+    // The manual fallback needs the popover to stay open (no hover) so the link can be
+    // selected, so force it open in that state.
+    <div className='vp-share' data-open={status === 'manual'}>
       <button
         type='button'
-        className='vp-share__btn'
-        data-copied={status === 'copied'}
-        onClick={onClick}
+        className='vp-share__icon'
+        data-copied={copied}
+        onClick={onCopy}
         aria-label='Copy a shareable link to this plan'
         title='Copy a shareable link to this plan'
       >
-        {status === 'copied' ? <IconCheck size={17} /> : <IconShare3 size={17} />}
-        <span className='vp-share__label'>{status === 'copied' ? 'Copied' : 'Share'}</span>
+        {copied ? <IconCheck size={17} /> : <IconShare3 size={17} />}
       </button>
-      {share.dev && (
-        <p className='vp-share__note'>Shares a snapshot of the plan as it is right now</p>
-      )}
-      {status === 'manual' && (
-        <div className='vp-share__manual'>
-          <p>Copy this link:</p>
+      <div className='vp-share__pop'>
+        <button type='button' className='vp-share__copy' data-copied={copied} onClick={onCopy}>
+          {copied ? <IconCheck size={16} /> : <IconShare3 size={16} />}
+          {copied ? 'Copied' : 'Copy link'}
+        </button>
+        {share.dev && (
+          <p className='vp-share__note'>Shares a snapshot of the plan as it is right now</p>
+        )}
+        {status === 'manual' && (
           <input
             className='vp-share__input'
             readOnly
@@ -112,8 +119,8 @@ export function ShareButton() {
               node?.select()
             }}
           />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   )
 }

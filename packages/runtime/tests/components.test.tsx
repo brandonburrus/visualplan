@@ -290,11 +290,11 @@ describe('ShareButton', () => {
     vi.restoreAllMocks()
   })
 
-  it('renders the share button when plan data is injected (golden)', () => {
+  it('renders the share icon and copy popover when plan data is injected (golden)', () => {
     setShare({ data: 'abc123', dev: false })
     const html = renderToStaticMarkup(<ShareButton />)
-    expect(html).toContain('vp-share__btn')
-    expect(html).toContain('Share')
+    expect(html).toContain('vp-share__icon')
+    expect(html).toContain('Copy link')
   })
 
   it('renders nothing when no plan data is injected (edge)', () => {
