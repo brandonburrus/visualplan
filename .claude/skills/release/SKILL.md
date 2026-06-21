@@ -3,6 +3,8 @@ name: release
 description: Use this skill when cutting a new release of this repo, when the user types /release or says "cut a release", "ship a new version", "publish the next version", "bump the version and release", or "create the release". Picks the next semver version from the commits since the last release, writes grouped release notes, and creates the GitHub release, which triggers the npm publish workflow. Do not use for editing the publish workflow, committing code, or publishing to npm by hand.
 disable-model-invocation: true
 argument-hint: "[major|minor|patch|X.Y.Z]"
+metadata:
+  internal: true
 ---
 
 ## Purpose
