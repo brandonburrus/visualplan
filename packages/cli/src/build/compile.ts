@@ -5,7 +5,6 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import mdx from '@mdx-js/rollup'
-import { pluginFileIcons } from '@xt0rted/expressive-code-file-icons'
 import { pluginColorChips } from 'expressive-code-color-chips'
 import rehypeExpressiveCode, { type RehypeExpressiveCodeOptions } from 'rehype-expressive-code'
 import remarkFrontmatter from 'remark-frontmatter'
@@ -13,15 +12,17 @@ import remarkGfm from 'remark-gfm'
 import remarkMdxFrontmatter from 'remark-mdx-frontmatter'
 import { build, createServer, type InlineConfig, type Plugin } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
+import { pluginFileIcons } from './expressive-code-file-icons.js'
 import { remarkMermaid } from './remark-mermaid.js'
 import { remarkPlanBlocks } from './remark-plan-blocks.js'
 
 const expressiveCodeOptions: RehypeExpressiveCodeOptions = {
   themes: ['github-dark', 'github-light'],
   useDarkModeMediaQuery: true,
-  // Color chips render a swatch next to CSS color values; file icons add a VS Code file-type
-  // icon to a block's title bar. Both inline their markup/SVG at build time (no external asset),
-  // so the single-file output stays self-contained. iconClass lets theme.css size the icon.
+  // Color chips render a swatch next to CSS color values; our file-icons plugin adds a Material
+  // Icon Theme file-type icon to a block's title bar. Both inline their markup/SVG at build time
+  // (no external asset), so the single-file output stays self-contained. iconClass lets theme.css
+  // size the icon.
   plugins: [pluginColorChips(), pluginFileIcons({ iconClass: 'vp-file-icon' })],
   // The copy-button script does not execute reliably in our client-rendered SPA;
   // frames (titles) are CSS-only, so keep those and drop the interactive button.

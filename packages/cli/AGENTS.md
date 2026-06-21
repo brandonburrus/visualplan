@@ -9,11 +9,17 @@ renders a plan to a self-contained HTML page). Built with tsup to `dist/index.js
   components).
 - `src/build/compile.ts` — Vite orchestration for `render` (single-file build via
   `vite-plugin-singlefile`) and `--watch` (dev server). Holds the `rehype-expressive-code` options,
-  including two EC plugins: `pluginColorChips` (CSS color swatches) and `pluginFileIcons`
-  (VS Code file-type icon in a titled block's header, given `iconClass: 'vp-file-icon'` so
-  `theme.css` can size it). Both inline their output at build time, so the single-file invariant
-  holds. `src/build/check.ts` — the static AST validator. `src/build/remark-mermaid.ts` — rewrites
-  ` ```mermaid ` fences to `<Mermaid>` BEFORE rehype-expressive-code runs.
+  including two EC plugins: `pluginColorChips` (CSS color swatches) and our own
+  `src/build/expressive-code-file-icons.ts` (a Material Icon Theme file-type icon in a titled
+  block's header, given `iconClass: 'vp-file-icon'` so `theme.css` can size it). Both inline their
+  output at build time, so the single-file invariant holds. `src/build/check.ts` — the static AST
+  validator. `src/build/remark-mermaid.ts` — rewrites ` ```mermaid ` fences to `<Mermaid>` BEFORE
+  rehype-expressive-code runs.
+- `src/build/expressive-code-file-icons.ts` — our file-icons EC plugin, modeled on
+  `@xt0rted/expressive-code-file-icons` but sourcing from `material-icon-theme`. It resolves a
+  block's title filename to an icon name through the package's `dist/material-icons.json` manifest
+  (exact filename, then longest matching extension, then language, then the default `file`), reads
+  the SVG from the package's `icons/`, and inlines it. `iconNameForFile` is exported for unit tests.
 - `src/build/plan-blocks.ts` — `parseBlockChildren(name, node)`: turns the markdown children of
   the data components (FileTree, Checklist, Questions, Chart, Compare, Matrix) into the structured
   props their zod schemas expect, plus positioned `issues`. Most parse a markdown list; `Matrix`
@@ -59,9 +65,10 @@ Do not remove them.
   `vendor.mjs`, included in the tarball via `files`). Never edit them; edit the source packages.
 - **Publish with `pnpm publish`** so the `workspace:*` protocol is rewritten. `prepack` runs
   `vendor.mjs` then `tsup`.
-- The EC plugins (`@xt0rted/expressive-code-file-icons`, `expressive-code-color-chips`) are real
-  prod `dependencies`; file-icons ships its `dist/icons/*.svg` and reads them at build time via
-  `import.meta.url`, so they resolve wherever the package is installed. file-icons declares an older
-  `@expressive-code/core`/`plugin-frames` range, so the **root `pnpm.overrides` pins both to the
-  version `rehype-expressive-code` uses** — without it the tree duplicates core and the plugin's
-  return type no longer matches the `plugins` array (typecheck fails). Keep the override.
+- The icon/highlighting deps (`material-icon-theme`, `expressive-code-color-chips`,
+  `@expressive-code/core`, `hast-util-from-html`) are real prod `dependencies`. `material-icon-theme`
+  ships `icons/*.svg` + `dist/material-icons.json`; our plugin resolves the package root via
+  `require.resolve('material-icon-theme/package.json')` (it has no `exports` map) and reads them at
+  build time, so they resolve wherever the package is installed. This was verified end-to-end through
+  the built `dist` (not just the TS source). No pnpm override is needed: owning the plugin lets it
+  import the same `@expressive-code/core` (0.43.1) that `rehype-expressive-code` uses.

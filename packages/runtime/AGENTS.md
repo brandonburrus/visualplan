@@ -55,10 +55,10 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
 - **Icons are Tabler (`@tabler/icons-react`), one family, stroke ~2.** Components render icon
   elements (FileTree change markers + folder, Compare check/x/star, Callout type icon, Questions
   help icon); never hand-roll SVG paths or text glyphs. Icons inherit `currentColor`, so the
-  semantic color CSS still drives them. The one sanctioned exception is the colored VS Code
-  file-type icon in code-block title bars: that comes from the build-time `expressive-code-file-icons`
-  plugin (configured in the CLI's `compile.ts`), not from a runtime component, and is intentionally
-  colored. theme.css sizes it via the `.vp-file-icon` class.
+  semantic color CSS still drives them. The one sanctioned exception is the colored Material Icon
+  Theme file-type icon in code-block title bars: that comes from the CLI's own build-time file-icons
+  plugin (`packages/cli/src/build/expressive-code-file-icons.ts`), not from a runtime component, and
+  is intentionally colored. theme.css sizes it via the `.vp-file-icon` class.
 - **Fullscreen applies to diagrams and charts only (not code).** React surfaces (Mermaid, Chart)
   render `<ExpandButton>` and get the `.vp-expandable` class; `Layout`'s `useEffect` calls
   `initFullscreenControls()`. Code blocks deliberately have no fullscreen.

@@ -58,8 +58,8 @@ describe('renderToFile', () => {
   })
 
   it('adds a file-type icon to a titled code block via the file-icons plugin (golden)', () => {
-    // pluginFileIcons inlines a VS Code file-type SVG into the title bar (no external asset),
-    // tagged with our iconClass so theme.css can size it. The ```ts block carries a title.
+    // our file-icons plugin inlines a Material file-type SVG into the title bar (no external
+    // asset), tagged with our iconClass so theme.css can size it. The ```ts block carries a title.
     expect(html).toContain('vp-file-icon')
   })
 
