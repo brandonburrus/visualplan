@@ -19,10 +19,12 @@ const repoRoot = dirname(packagesDir)
 const runtimeSrc = join(packagesDir, 'runtime')
 const coreSrc = join(packagesDir, 'core', 'src', 'index.ts')
 const readmeSrc = join(repoRoot, 'README.md')
+const licenseSrc = join(repoRoot, 'LICENSE')
 
 const runtimeDest = join(cliDir, 'runtime')
 const coreDest = join(cliDir, 'core', 'index.ts')
 const readmeDest = join(cliDir, 'README.md')
+const licenseDest = join(cliDir, 'LICENSE')
 
 await rm(runtimeDest, { recursive: true, force: true })
 await rm(join(cliDir, 'core'), { recursive: true, force: true })
@@ -39,7 +41,9 @@ await cp(runtimeSrc, runtimeDest, {
 await mkdir(dirname(coreDest), { recursive: true })
 await cp(coreSrc, coreDest)
 
-// npm renders the README from the published package's own dir, so copy the root one in.
+// npm only ships the README/LICENSE found in the published package's own dir, so copy the
+// root ones in (the license field claims MIT; this makes the package actually carry the text).
 await cp(readmeSrc, readmeDest)
+await cp(licenseSrc, licenseDest)
 
-process.stdout.write(`vendored runtime + core + README into ${cliDir}\n`)
+process.stdout.write(`vendored runtime + core + README + LICENSE into ${cliDir}\n`)

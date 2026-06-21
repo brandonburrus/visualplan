@@ -17,6 +17,7 @@ coverage
 /packages/cli/runtime/
 /packages/cli/core/
 /packages/cli/README.md
+/packages/cli/LICENSE
 
 # TypeScript cache
 *.tsbuildinfo
