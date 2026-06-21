@@ -1,7 +1,7 @@
 ---
 layout: ../../layouts/Docs.astro
 title: Authoring plans
-description: The fixed component vocabulary a plan is written in, with a live rendered example of each.
+description: A high-level tour of the pieces a plan is built from, with a live render of each.
 ---
 
 import Demo from '../../components/Demo.astro'
@@ -21,45 +21,28 @@ export const sumFormula = temml.renderToString('\\sum_{i=1}^{n} i = \\frac{n(n+1
 
 # Authoring plans
 
-A plan is an MDX file. It begins with a single `# Title` heading (there is no frontmatter), then
-uses a fixed, tiny component vocabulary. You never write `import` statements: the components are
-always in scope. Use the ones that fit the plan and skip the rest.
+A visual plan is a single page that lays out a piece of work as **structure** instead of paragraphs:
+a numbered sequence of steps, a diagram of how the pieces fit, the files that change, the tradeoffs
+that were weighed. An AI agent writes the plan; you read it at a glance, instead of wading through a
+wall of terminal text.
 
-The vocabulary is general. Although the examples below are code-flavored, it fits any structured
-plan, a product launch, a research agenda, an incident response, not just software changes. Every
-component on this page is shown twice: the MDX you write, and directly beneath it, the **live
-rendered result**, the same components the `vplan` CLI compiles into a plan.
+This page is a tour of the pieces a plan is built from, and what each one looks like once rendered.
+You do not write these by hand: an agent assembles them, taught by the
+[visual-plan skill](/docs/install/), which carries the exact syntax. Here the focus is on **what a
+plan is made of** and why each piece earns its place.
 
-> Run `vplan components` anytime for the exact prop signatures, or open a complete plan from the
-> **Examples** list in the sidebar.
+## How a plan is shaped
 
-## Data as markdown children
+Every plan opens with a title and an optional sentence or two of context, then is composed, top to
+bottom, from a small, fixed set of building blocks. The same handful of pieces covers a code change,
+a database migration, or a product launch; the agent reaches for the ones that fit the work and
+skips the rest. The blocks below are roughly in the order you would meet them in a plan.
 
-The data components (`FileTree`, `Chart`, `Compare`, `Matrix`, `Questions`, `Checklist`) take their
-data as **markdown children**, not props: write a normal markdown list (or, for `Matrix` and a
-multi-series `Chart`, a markdown table) between the tags. Only the scalar settings (`title`, `type`,
-`status`) are attributes. This is fewer tokens and avoids the brace errors that break a render.
+## Phases: the backbone
 
-## Phase
-
-`<Phase title="..." status="planned|active|done">`, one step in a numbered vertical timeline. It
-wraps markdown (ordered lists, prose, nested components) and the steps auto-number in document
-order, so you never write the numbers. Use one per major step of the plan; `status` colors the node
-(active is filled ink, done is green).
-
-````mdx
-<Phase title="Build the limiter" status="done">
-  Implement the Redis-backed sliding window.
-</Phase>
-
-<Phase title="Wire the middleware" status="active">
-  Reject over-limit requests with a 429 and a Retry-After header.
-</Phase>
-
-<Phase title="Dashboards" status="planned">
-  Emit metrics and chart rejection rates.
-</Phase>
-````
+Most plans are a sequence of steps, and a phase is how that sequence is drawn: a numbered vertical
+timeline. Each step carries a status, so at a glance you can see what is done, what is in progress,
+and what is still ahead.
 
 <Demo>
   <Phase title="Build the limiter" status="done">Implement the Redis-backed sliding window.</Phase>
@@ -67,57 +50,20 @@ order, so you never write the numbers. Use one per major step of the plan; `stat
   <Phase title="Dashboards" status="planned">Emit metrics and chart rejection rates.</Phase>
 </Demo>
 
-## Mermaid diagrams
+## Diagrams: the shape of the work
 
-A ` ```mermaid ` fenced block. Reach for this first for anything structural: architecture
-(`flowchart`), `sequenceDiagram`, dependency graphs, `stateDiagram-v2`, `classDiagram`, `erDiagram`,
-and `xychart-beta`. The diagram colors track the page theme automatically.
-
-````mdx
-```mermaid
-flowchart LR
-  Client --> Gateway --> Limiter --> API
-  Limiter --> Redis[(Redis)]
-```
-````
+When a plan has structure, a request path, a set of services, a state machine, a diagram says it
+faster than a paragraph. Plans draw these as diagrams that pick up the page's light or dark theme
+automatically.
 
 <Demo>
   <Mermaid chart={'flowchart LR\n  Client --> Gateway --> Limiter --> API\n  Limiter --> Redis[(Redis)]'} />
 </Demo>
 
-`gantt` and `pie` are not supported (use `<Chart>` for quantitative data). `check` validates each
-diagram, so an unsupported type fails with a `file:line:col` instead of rendering an error box.
+## Callouts: what to pay attention to
 
-## Math
-
-A ` ```math ` fenced block, a display formula written in LaTeX, typeset as math (complexity bounds,
-probabilities, linear algebra). It is converted to MathML at build time, so no math library ships
-to the browser and the equation tracks the theme.
-
-````mdx
-```math
-\sum_{i=1}^{n} i = \frac{n(n+1)}{2}
-```
-````
-
-<Demo>
-  <MathBlock html={sumFormula} />
-</Demo>
-
-## Callout
-
-`<Callout type="note|tip|risk|decision|warn">`, highlight a risk, decision, tip, or note. It wraps
-markdown. Each type has its own color and icon, so they stay distinct at a glance.
-
-````mdx
-<Callout type="decision">
-  We chose the Redis sliding window for accuracy across nodes.
-</Callout>
-
-<Callout type="risk">
-  A Redis outage must fail open, not closed.
-</Callout>
-````
+Risks, decisions, and notes do not belong buried in prose. A callout lifts them out, color-coded by
+kind, so the one thing you must not miss is the one thing that stands out.
 
 <Demo>
   <Callout type="note">A neutral note for context the reader needs.</Callout>
@@ -127,19 +73,11 @@ markdown. Each type has its own color and icon, so they stay distinct at a glanc
   <Callout type="warn">This migration briefly locks the table under load.</Callout>
 </Demo>
 
-## FileTree
+## File changes: what gets touched
 
-`<FileTree>`, a file-change map. One bullet per file, `- <change> <path>`, where `change` is `add`,
-`modify`, `delete`, or `move`. A move needs both ends, `- move <from> -> <to>`. A path ending in `/`
-marks a whole directory.
-
-````mdx
-<FileTree>
-- add src/gateway/rate-limiter.ts
-- modify src/gateway/middleware.ts
-- delete src/gateway/legacy/
-</FileTree>
-````
+For a code change, the fastest way to convey scope is a map of the files involved, added, modified,
+deleted, or moved. The file tree draws that map so the blast radius is obvious before you read a
+single line.
 
 <Demo>
   <FileTree files={[
@@ -149,64 +87,27 @@ marks a whole directory.
   ]} />
 </Demo>
 
-## Chart
+## Charts: the numbers
 
-`<Chart type="bar|line|pie" title="...">`, estimates and metrics, backed by real, interactive
-charts. For a single series, one bullet per point, `- <label>: <value>`. For multiple series
-(bar/line only), write a table whose header is `category | series1 | series2`. `pie` is always
-single-series, so use the list form for it.
-
-````mdx
-<Chart type="bar" title="Effort (days)">
-- Limiter: 2
-- Dashboards: 1
-- Tests: 1.5
-</Chart>
-````
+When a plan involves quantities, effort, latency, traffic, rows, a small chart shows the shape of
+the data better than a list of figures. Plans render real bar, line, and pie charts.
 
 <Demo>
   <Chart client:only="react" type="bar" title="Effort (days)" data={{ series: ['value'], data: [{ label: 'Limiter', values: [2] }, { label: 'Dashboards', values: [1] }, { label: 'Tests', values: [1.5] }] }} />
 </Demo>
 
-Multiple series come from a markdown table, one column per series:
-
-````mdx
-<Chart type="line" title="Latency by stage (ms)">
-| Stage  | p50 | p95 |
-|--------|-----|-----|
-| Auth   | 12  | 30  |
-| DB     | 40  | 120 |
-| Render | 8   | 22  |
-</Chart>
-````
-
 <Demo>
   <Chart client:only="react" type="line" title="Latency by stage (ms)" data={{ series: ['p50', 'p95'], data: [{ label: 'Auth', values: [12, 30] }, { label: 'DB', values: [40, 120] }, { label: 'Render', values: [8, 22] }] }} />
 </Demo>
-
-A `pie` chart renders its slices with a percentage legend:
 
 <Demo>
   <Chart client:only="react" type="pie" title="Traffic by client" data={{ series: ['value'], data: [{ label: 'Web', values: [62] }, { label: 'Mobile', values: [28] }, { label: 'API', values: [10] }] }} />
 </Demo>
 
-## Compare
+## Comparing options
 
-`<Compare>`, weigh approaches side by side as pros/cons cards. Each option is a `## Name` heading
-(append `(pick)` to mark the recommended one) followed by `- pro:` / `- con:` bullets.
-
-````mdx
-<Compare>
-## Redis sliding window (pick)
-- pro: accurate
-- pro: shared across nodes
-- con: network hop
-
-## In-memory token bucket
-- pro: fast
-- con: per-node only
-</Compare>
-````
+When there is a real choice to make, a comparison lays the options side by side as pros and cons,
+with the recommended one marked, so the reasoning is visible rather than asserted.
 
 <Demo>
   <Compare options={[
@@ -215,22 +116,8 @@ A `pie` chart renders its slices with a percentage legend:
   ]} />
 </Demo>
 
-## Matrix
-
-`<Matrix>`, a comparison grid (options across the columns, criteria down the rows) for scoring
-several choices against several dimensions. Write a markdown table; the first column is the row
-labels, and you append `(pick)` to one column header to highlight it. Use `<Compare>` for pros/cons,
-`<Matrix>` for a scorecard.
-
-````mdx
-<Matrix>
-| Dimension | Postgres (pick) | ClickHouse | DynamoDB |
-|-----------|-----------------|------------|----------|
-| Writes    | medium          | high       | high     |
-| Querying  | high            | medium     | low      |
-| Ops cost  | low             | medium     | low      |
-</Matrix>
-````
+For scoring several options against several criteria at once, a matrix is a compact scorecard with
+the recommended column highlighted.
 
 <Demo>
   <Matrix data={{
@@ -244,17 +131,10 @@ labels, and you append `(pick)` to one column header to highlight it. Use `<Comp
   }} />
 </Demo>
 
-## Questions
+## Questions and checklists
 
-`<Questions>`, open questions you want the reader to resolve before building, one per bullet. The
-title defaults to "Open questions"; override with `title="..."`.
-
-````mdx
-<Questions>
-- Should the limiter fail open or fail closed if Redis is unreachable?
-- Is a 15-minute access-token TTL acceptable?
-</Questions>
-````
+Open questions that need a decision before work starts get their own list, so they are not lost in
+the prose and the reader knows exactly what is being asked of them.
 
 <Demo>
   <Questions items={[
@@ -263,17 +143,8 @@ title defaults to "Open questions"; override with `title="..."`.
   ]} />
 </Demo>
 
-## Checklist
-
-`<Checklist title="Done when">`, acceptance criteria as a markdown task list: `- [x]` for done,
-`- [ ]` for todo.
-
-````mdx
-<Checklist title="Done when">
-- [x] Returns 429 over the limit
-- [ ] Dashboards live
-</Checklist>
-````
+A plan usually closes with a checklist: the definition of done, the conditions that mean the work is
+actually finished.
 
 <Demo>
   <Checklist title="Done when" items={[
@@ -282,18 +153,12 @@ title defaults to "Open questions"; override with `title="..."`.
   ]} />
 </Demo>
 
-## Code blocks
+## Code and math
 
-Fenced code blocks are syntax-highlighted. Add a file name with
-` ```ts title="src/path/file.ts" ` to render a filename header on the block. Mark lines and text
-with Expressive Code props in the fence meta string, `mark` (neutral), `ins` (green, inserted),
-`del` (red, removed), each taking line numbers, ranges, quoted strings, or a `/regex/`:
+Where a specific snippet or a formula carries the point, a plan can embed syntax-highlighted code
+and typeset math, both rendered inline rather than described.
 
-- Lines and ranges: `{2}`, `{2-4}`, `{1, 3, 5-6}`
-- Typed lines: `ins={3-4} del={2} mark={6}`
-- Inline text: `"TokenBucket"`, a rename as `del="oldName" ins="newName"`
-
-```ts title="src/gateway/rate-limiter.ts"
+```ts
 export async function allow(key: string): Promise<boolean> {
   const count = await redis.incr(key)
   if (count === 1) await redis.expire(key, WINDOW_SECONDS)
@@ -301,20 +166,12 @@ export async function allow(key: string): Promise<boolean> {
 }
 ```
 
-In a rendered plan the block also gets a Material file-type icon in its title bar and your
-`ins`/`del`/`mark` line markers. See the [rate-limiting example](/examples/rate-limiting.html) for a
-titled, line-marked block in context.
+<Demo>
+  <MathBlock html={sumFormula} />
+</Demo>
 
-## Guidance
+## Seeing it all together
 
-- Lead with structure: an optional one-paragraph context, then a mermaid diagram, then `<Phase>`
-  sections. Put risks and decisions in `<Callout>`s, not buried in prose.
-- Right-size the structure to the change. A two-or-three-file change may need only a short
-  `<FileTree>` and a `<Checklist>`. An empty two-node diagram is worse than no diagram.
-- In prose, `<`, `{`, and `}` are MDX syntax. Wrap literal angle brackets, braces, or generics
-  (`List<T>`) in backticks, where every character is safe and literal.
-- No images or external assets. The page is a single self-contained file, so a markdown image
-  cannot be embedded; `check` rejects them. Use a mermaid diagram or describe it in text.
-- Raw inline HTML tags (`<kbd>`, `<sub>`, `<details>`) do not render, they read as unknown
-  components and fail `check`. Use backticks or plain text instead.
-- Always [`check`](/docs/cli/) before presenting, so the user never sees a broken render.
+Those pieces are the whole vocabulary. To see them combined into real plans, open one from the
+**Examples** in the sidebar. To render a plan of your own from an `.mdx` file, see the
+[CLI reference](/docs/cli/).
