@@ -1,4 +1,4 @@
-import { IconCheck, IconShare3 } from '@tabler/icons-react'
+import { IconCheck, IconCopy, IconShare3 } from '@tabler/icons-react'
 import { useState } from 'react'
 
 /** The page `/view` lives at on visualplan.dev; the share link points here. */
@@ -103,7 +103,7 @@ export function ShareButton() {
       </button>
       <div className='vp-share__pop'>
         <button type='button' className='vp-share__copy' data-copied={copied} onClick={onCopy}>
-          {copied ? <IconCheck size={16} /> : <IconShare3 size={16} />}
+          {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
           {copied ? 'Copied' : 'Copy plan to clipboard for sharing'}
         </button>
         {share.dev && (
