@@ -1,0 +1,461 @@
+/*
+ * Site styles for visualplan.dev. The palette and typography mirror the rendered-plan
+ * runtime theme (packages/runtime/theme.css) so the docs site and the pages vplan
+ * produces read as one product. Tokens are duplicated here on purpose: the runtime
+ * ships as source compiled per-render and is not importable by the Astro build.
+ */
+:root {
+  --vp-bg: #fbfbfa;
+  --vp-surface: #f3f3f1;
+  --vp-surface-2: #ececea;
+  --vp-text: #1a1a1c;
+  --vp-muted: #5f5f66;
+  --vp-faint: #8a8a90;
+  --vp-border: #e4e4e1;
+  --vp-border-strong: #d6d6d2;
+  --vp-accent: #1a1a1c;
+  --vp-on-accent: #fbfbfa;
+  --vp-link: #2f6fed;
+  --vp-done: #15803d;
+  --vp-ease: cubic-bezier(0.25, 1, 0.5, 1);
+  --vp-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --vp-mono: "SF Mono", ui-monospace, "JetBrains Mono", Menlo, Consolas, monospace;
+  --vp-measure: 720px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --vp-bg: #161618;
+    --vp-surface: #1e1e21;
+    --vp-surface-2: #26262a;
+    --vp-text: #e9e9e6;
+    --vp-muted: #a1a1a8;
+    --vp-faint: #74747b;
+    --vp-border: #2b2b2f;
+    --vp-border-strong: #3a3a3f;
+    --vp-accent: #e9e9e6;
+    --vp-on-accent: #161618;
+    --vp-link: #7aa2ff;
+    --vp-done: #45c97a;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  background: var(--vp-bg);
+  color: var(--vp-text);
+  font-family: var(--vp-font);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--vp-link);
+  text-decoration-color: color-mix(in srgb, var(--vp-link) 45%, transparent);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--vp-accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Site header: flat bar, logo wordmark left, nav right. */
+.vp-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: color-mix(in srgb, var(--vp-bg) 88%, transparent);
+  backdrop-filter: saturate(1.4) blur(8px);
+  border-bottom: 1px solid var(--vp-border);
+}
+
+.vp-header__inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0.85rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.vp-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  font-size: 1.02rem;
+  color: var(--vp-text);
+  text-decoration: none;
+}
+
+.vp-brand__mark {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  color: var(--vp-accent);
+}
+
+.vp-nav {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  font-size: 0.9rem;
+}
+
+.vp-nav a {
+  color: var(--vp-muted);
+  text-decoration: none;
+}
+
+.vp-nav a:hover,
+.vp-nav a[aria-current="page"] {
+  color: var(--vp-text);
+}
+
+/* Landing hero */
+.vp-hero {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 5rem 1.5rem 3rem;
+}
+
+.vp-hero__eyebrow {
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--vp-muted);
+  margin: 0 0 1rem;
+}
+
+.vp-hero h1 {
+  font-size: clamp(2rem, 5vw, 3rem);
+  line-height: 1.08;
+  font-weight: 680;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+  margin: 0 0 1.1rem;
+  max-width: 16ch;
+}
+
+.vp-hero__lede {
+  font-size: 1.15rem;
+  color: var(--vp-muted);
+  text-wrap: pretty;
+  max-width: 54ch;
+  margin: 0 0 1.9rem;
+}
+
+.vp-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.vp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.6rem 1.05rem;
+  border-radius: 9px;
+  font-size: 0.92rem;
+  font-weight: 550;
+  text-decoration: none;
+  border: 1px solid transparent;
+  transition:
+    background 120ms var(--vp-ease),
+    border-color 120ms var(--vp-ease);
+}
+
+.vp-btn--primary {
+  background: var(--vp-accent);
+  color: var(--vp-on-accent);
+}
+
+.vp-btn--primary:hover {
+  background: color-mix(in srgb, var(--vp-accent) 85%, var(--vp-bg));
+}
+
+.vp-btn--ghost {
+  border-color: var(--vp-border-strong);
+  color: var(--vp-text);
+}
+
+.vp-btn--ghost:hover {
+  background: var(--vp-surface);
+}
+
+/* A copyable install command pill on the landing page. */
+.vp-install {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1.75rem;
+  padding: 0.55rem 0.9rem;
+  border: 1px solid var(--vp-border);
+  border-radius: 9px;
+  background: var(--vp-surface);
+  font-family: var(--vp-mono);
+  font-size: 0.86rem;
+  color: var(--vp-text);
+}
+
+.vp-install__prompt {
+  color: var(--vp-faint);
+  user-select: none;
+}
+
+/* Landing feature grid */
+.vp-features {
+  max-width: 1080px;
+  margin: 2.5rem auto 5rem;
+  padding: 0 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  gap: 1rem;
+}
+
+.vp-feature {
+  border: 1px solid var(--vp-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  background: var(--vp-surface);
+}
+
+.vp-feature__icon {
+  width: 22px;
+  height: 22px;
+  color: var(--vp-accent);
+  margin-bottom: 0.7rem;
+}
+
+.vp-feature h3 {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.vp-feature p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--vp-muted);
+}
+
+/* Docs two-column shell: sticky sidebar + prose. */
+.vp-docs {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 6rem;
+  display: grid;
+  grid-template-columns: 200px minmax(0, 1fr);
+  gap: 3rem;
+}
+
+.vp-sidebar {
+  position: sticky;
+  top: 5rem;
+  align-self: start;
+  height: max-content;
+}
+
+.vp-sidebar__group {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--vp-faint);
+  margin: 0 0 0.6rem;
+}
+
+.vp-sidebar__list {
+  list-style: none;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.vp-sidebar__list a {
+  display: block;
+  padding: 0.32rem 0.6rem;
+  border-radius: 7px;
+  font-size: 0.9rem;
+  color: var(--vp-muted);
+  text-decoration: none;
+}
+
+.vp-sidebar__list a:hover {
+  background: var(--vp-surface);
+  color: var(--vp-text);
+}
+
+.vp-sidebar__list a[aria-current="page"] {
+  background: var(--vp-surface);
+  color: var(--vp-text);
+  font-weight: 550;
+}
+
+/* Prose: typography for rendered markdown, mirroring the plan page rhythm. */
+.vp-prose {
+  min-width: 0;
+  max-width: var(--vp-measure);
+}
+
+.vp-prose > :first-child {
+  margin-top: 0;
+}
+
+.vp-prose h1 {
+  font-size: 1.9rem;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+  margin: 0 0 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--vp-border);
+}
+
+.vp-prose h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.012em;
+  text-wrap: balance;
+  margin: 2.5rem 0 0.75rem;
+  scroll-margin-top: 5rem;
+}
+
+.vp-prose h3 {
+  font-size: 1.02rem;
+  font-weight: 600;
+  margin: 1.75rem 0 0.5rem;
+  scroll-margin-top: 5rem;
+}
+
+.vp-prose p,
+.vp-prose li {
+  text-wrap: pretty;
+}
+
+.vp-prose table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  font-size: 0.9rem;
+}
+
+.vp-prose th,
+.vp-prose td {
+  padding: 0.5rem 0.85rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--vp-border);
+}
+
+.vp-prose thead th {
+  font-weight: 600;
+  color: var(--vp-muted);
+  border-bottom-color: var(--vp-border-strong);
+}
+
+.vp-prose blockquote {
+  margin: 1.25rem 0;
+  padding: 0.1rem 0 0.1rem 1rem;
+  border-left: 2px solid var(--vp-border-strong);
+  color: var(--vp-muted);
+}
+
+.vp-prose :not(pre) > code {
+  font-family: var(--vp-mono);
+  font-size: 0.84em;
+  background: var(--vp-surface);
+  border: 1px solid var(--vp-border);
+  padding: 0.08em 0.34em;
+  border-radius: 5px;
+}
+
+/* Shiki dual-theme code blocks. `defaultColor: false` (astro.config.mjs) makes
+   Shiki emit only `--shiki-light` / `--shiki-dark` custom props per token and no
+   resolved inline color, so we drive the color from those vars and the cascade
+   wins with no `!important`. Our own surface replaces Shiki's block background. */
+.vp-prose pre.astro-code {
+  margin: 1.25rem 0;
+  padding: 0.95rem 1.1rem;
+  border: 1px solid var(--vp-border);
+  border-radius: 10px;
+  overflow-x: auto;
+  font-size: 0.82rem;
+  line-height: 1.6;
+  background: var(--vp-surface);
+}
+
+.vp-prose pre.astro-code code {
+  font-family: var(--vp-mono);
+}
+
+.vp-prose pre.astro-code,
+.vp-prose pre.astro-code span {
+  color: var(--shiki-light);
+}
+
+@media (prefers-color-scheme: dark) {
+  .vp-prose pre.astro-code,
+  .vp-prose pre.astro-code span {
+    color: var(--shiki-dark);
+  }
+}
+
+/* Page footer */
+.vp-footer {
+  border-top: 1px solid var(--vp-border);
+  color: var(--vp-faint);
+  font-size: 0.82rem;
+}
+
+.vp-footer__inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.vp-footer a {
+  color: var(--vp-muted);
+  text-decoration: none;
+}
+
+.vp-footer a:hover {
+  color: var(--vp-text);
+}
+
+/* Collapse the docs sidebar above the prose on narrow screens. */
+@media (max-width: 760px) {
+  .vp-docs {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+
+  .vp-sidebar {
+    position: static;
+    top: auto;
+  }
+}

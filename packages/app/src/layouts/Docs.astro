@@ -1,0 +1,38 @@
+---
+import Base from './Base.astro'
+import { docLinks } from '../nav'
+
+// Markdown docs pages set `layout: ../../layouts/Docs.astro` and supply `title`
+// (and optional `description`) via frontmatter. Astro nests a markdown file's
+// frontmatter under `Astro.props.frontmatter` (not spread to the top level).
+interface Props {
+  frontmatter: { title: string; description?: string }
+}
+
+const { title, description } = Astro.props.frontmatter
+const path = Astro.url.pathname
+---
+
+<Base title={title} description={description}>
+  <div class="vp-docs">
+    <aside class="vp-sidebar">
+      <nav aria-label="Documentation">
+        <p class="vp-sidebar__group">Guide</p>
+        <ul class="vp-sidebar__list">
+          {
+            docLinks.map(link => (
+              <li>
+                <a href={link.href} aria-current={path === link.href ? 'page' : undefined}>
+                  {link.label}
+                </a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </aside>
+    <article class="vp-prose">
+      <slot />
+    </article>
+  </div>
+</Base>

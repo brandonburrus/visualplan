@@ -1,0 +1,83 @@
+---
+import Base from '../layouts/Base.astro'
+
+const features = [
+  {
+    title: 'A fixed component vocabulary',
+    body: 'Phases, mermaid diagrams, charts, file-change trees, option comparisons, scorecards, callouts, and checklists. No imports, no per-plan setup.',
+    icon: 'grid',
+  },
+  {
+    title: 'One self-contained file',
+    body: 'A plan compiles to a single HTML page with everything inlined. No external assets, no server. Open it anywhere or hand it off.',
+    icon: 'file',
+  },
+  {
+    title: 'Written for agents',
+    body: 'The visual-plan skill teaches any coding agent the vocabulary, so it presents plans as scannable visuals instead of walls of terminal text.',
+    icon: 'robot',
+  },
+]
+---
+
+<Base title="VisualPlan">
+  <section class="vp-hero">
+    <p class="vp-hero__eyebrow">MDX in, a polished plan out</p>
+    <h1>Show the plan, not a wall of text.</h1>
+    <p class="vp-hero__lede">
+      VisualPlan renders an AI agent's implementation and design plans as polished web pages,
+      architecture diagrams, charts, file-change maps, option comparisons, and a numbered phase
+      timeline, all from a single MDX file compiled to one self-contained HTML page.
+    </p>
+    <div class="vp-cta-row">
+      <a class="vp-btn vp-btn--primary" href="/docs/">Read the docs</a>
+      <a class="vp-btn vp-btn--ghost" href="/docs/install/">Install</a>
+    </div>
+    <div class="vp-install">
+      <span class="vp-install__prompt">$</span>
+      <span>npx skills add brandonburrus/visualplan</span>
+    </div>
+  </section>
+
+  <section class="vp-features">
+    {
+      features.map(feature => (
+        <div class="vp-feature">
+          <svg
+            class="vp-feature__icon"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            {feature.icon === 'grid' && (
+              <>
+                <path d="M4 4h7v7H4z" />
+                <path d="M4 15h7v5H4z" />
+                <path d="M15 4h5v5h-5z" />
+                <path d="M15 13h5v7h-5z" />
+              </>
+            )}
+            {feature.icon === 'file' && (
+              <>
+                <path d="M14 3v4a1 1 0 0 0 1 1h4" />
+                <path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z" />
+              </>
+            )}
+            {feature.icon === 'robot' && (
+              <>
+                <rect x="4" y="8" width="16" height="12" rx="2" />
+                <path d="M12 8V4M9 13h.01M15 13h.01M9 17h6" />
+              </>
+            )}
+          </svg>
+          <h3>{feature.title}</h3>
+          <p>{feature.body}</p>
+        </div>
+      ))
+    }
+  </section>
+</Base>

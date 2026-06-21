@@ -22,6 +22,9 @@ coverage
 # TypeScript cache
 *.tsbuildinfo
 
+# Astro types/cache (generated)
+.astro/
+
 # Rendered plan output
 *.plan.html
 

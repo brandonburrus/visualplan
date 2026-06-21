@@ -24,7 +24,7 @@ a multi-series `Chart`), not inline object-array props; only scalar settings (`t
 
 ## Workspace layout
 
-`pnpm-workspace.yaml` globs `packages/*`. Three packages, one published:
+`pnpm-workspace.yaml` globs `packages/*`. Four packages, one published:
 
 - `packages/cli` — **the only published package** (`vplan`). The Node CLI (commander
   dispatch + Vite/MDX build), built with tsup to `dist/index.js` (the `bin`). Holds
@@ -34,6 +34,9 @@ a multi-series `Chart`), not inline object-array props; only scalar settings (`t
   `index.tsx` (MDX scope + `mount`), `theme.css`, `fullscreen.ts`.
 - `packages/core` — `@visualplan/core` (private). The isomorphic component vocabulary
   (zod schemas + `CATALOG`); imported by both the runtime and the CLI.
+- `packages/app` — `@visualplan/app` (private, never published). The visualplan.dev docs site:
+  a plain Astro static site, deployed to GitHub Pages on release by `.github/workflows/docs.yml`.
+  Unrelated to the CLI render pipeline; it duplicates the runtime's ink design tokens by design.
 - `skills/visual-plan/` — the agent skill (a top-level sibling, not a package). The plural
   `skills/` name is required for the skills.sh CLI (`npx skills add ...`) to discover it.
 

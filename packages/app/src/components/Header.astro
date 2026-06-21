@@ -1,0 +1,34 @@
+---
+// The sticky site header: wordmark plus top-level navigation. `aria-current`
+// is set on whichever top-level section the current path falls under.
+const path = Astro.url.pathname
+const inDocs = path.startsWith('/docs')
+---
+
+<header class="vp-header">
+  <div class="vp-header__inner">
+    <a class="vp-brand" href="/">
+      <svg
+        class="vp-brand__mark"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M4 4h7v7H4z" />
+        <path d="M4 15h7v5H4z" />
+        <path d="M15 4h5v5h-5z" />
+        <path d="M15 13h5v7h-5z" />
+      </svg>
+      VisualPlan
+    </a>
+    <nav class="vp-nav" aria-label="Primary">
+      <a href="/docs/" aria-current={inDocs ? 'page' : undefined}>Docs</a>
+      <a href="https://github.com/brandonburrus/visualplan">GitHub</a>
+      <a href="https://www.npmjs.com/package/vplan">npm</a>
+    </nav>
+  </div>
+</header>
