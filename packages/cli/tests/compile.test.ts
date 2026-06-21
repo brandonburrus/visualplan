@@ -40,6 +40,10 @@ describe('renderToFile', () => {
     }
   })
 
+  it('sets the page <title> from the plan H1 (golden)', () => {
+    expect(html).toContain('<title>Add rate limiting to the API</title>')
+  })
+
   it('highlights code via Expressive Code with a file title (golden)', () => {
     // the build runs rehype-expressive-code; the ```ts block has title="...rate-limiter.ts"
     expect(html).toContain('expressive-code')

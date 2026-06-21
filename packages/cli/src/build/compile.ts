@@ -1,5 +1,5 @@
 import { cp, mkdtemp, rm } from 'node:fs/promises'
-import { existsSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
@@ -104,6 +104,32 @@ function mdxPlugin(): Plugin {
   }
 }
 
+/** The plan's title is its first `# ` heading (plans have no frontmatter). */
+function planTitle(mdxPath: string): string {
+  try {
+    return readFileSync(mdxPath, 'utf8').match(/^# (.+?)\s*$/m)?.[1] ?? 'Plan'
+  } catch {
+    return 'Plan'
+  }
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+}
+
+/** Set the page `<title>` to the plan's title so the browser tab is named, not "Plan". */
+function htmlTitlePlugin(mdxPath: string): Plugin {
+  const title = escapeHtml(planTitle(mdxPath))
+  return {
+    name: 'visualplan:html-title',
+    transformIndexHtml: html => html.replace(/<title>[\s\S]*?<\/title>/, `<title>${title}</title>`),
+  }
+}
+
 function baseConfig(paths: RuntimePaths, mdxPath: string): InlineConfig {
   return {
     root: paths.runtimeDir,
@@ -124,7 +150,7 @@ function baseConfig(paths: RuntimePaths, mdxPath: string): InlineConfig {
       },
     },
     esbuild: { jsx: 'automatic', jsxImportSource: 'react' },
-    plugins: [mdxPlugin()],
+    plugins: [mdxPlugin(), htmlTitlePlugin(mdxPath)],
     // The runtime, core, and the user's plan span sibling dirs (and a hoisted
     // node_modules) in the monorepo, so the dev server cannot use a single allow
     // root. This is a local tool rendering the user's own file, so fs is unrestricted.
