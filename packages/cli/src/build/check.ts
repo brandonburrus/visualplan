@@ -39,9 +39,13 @@ const ENUMS_BY_COMPONENT = new Map(CATALOG.map(entry => [entry.name, entry.stati
 
 const BLOCK_COMPONENTS: readonly string[] = CHILD_BLOCK_COMPONENTS
 
-/** Validate a plan's MDX: real compile errors plus static enum / unknown-component checks. */
+/** Validate a plan's MDX file: real compile errors plus static enum / unknown-component checks. */
 export async function checkPlan(mdxPath: string): Promise<CheckIssue[]> {
-  const source = await readFile(mdxPath, 'utf8')
+  return checkSource(await readFile(mdxPath, 'utf8'))
+}
+
+/** Validate a plan's MDX source string (the in-memory form `checkPlan` and the API both use). */
+export async function checkSource(source: string): Promise<CheckIssue[]> {
   const issues: CheckIssue[] = []
 
   try {

@@ -1,10 +1,10 @@
-import { cp, mkdtemp, rm } from 'node:fs/promises'
 import { existsSync, readFileSync } from 'node:fs'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import mdx from '@mdx-js/rollup'
+import { compile, type CompileOptions } from '@mdx-js/mdx'
 import { baseExpressiveCodeOptions, remarkPlugins } from '@visualplan/compile'
 import { pluginFileIcons } from '@visualplan/compile/file-icons'
 import { remarkFileTreeIcons } from '@visualplan/compile/filetree-icons'
@@ -25,7 +25,29 @@ const expressiveCodeOptions: RehypeExpressiveCodeOptions = {
   ],
 }
 
+// The one place MDX is compiled for the render path. The same remark/rehype config drives both the
+// one-shot build and the --watch dev server (both go through virtualPlanPlugin), so they cannot
+// drift. remarkFileTreeIcons is appended CLI-only: it inlines Material file icons (Node-only, reads
+// SVGs from disk) after plan-blocks serializes the FileTree data, so the browser /view path never
+// pulls in material-icon-theme and falls back to a generic icon.
+const mdxCompileOptions: CompileOptions = {
+  providerImportSource: '@mdx-js/react',
+  remarkPlugins: [...remarkPlugins, remarkFileTreeIcons],
+  rehypePlugins: [[rehypeExpressiveCode, expressiveCodeOptions]],
+}
+
 const require = createRequire(import.meta.url)
+
+/** A plan to render: either MDX source in memory (the programmatic API) or a file to read. */
+type PlanInput = string | { path: string }
+
+/** Read the plan's current source, BOM-stripped; for a `{ path }` input it re-reads each call so a
+ * watched plan reflects its latest saved state. */
+function sourceReader(input: PlanInput): () => string {
+  if (typeof input === 'string') return () => input
+  const { path } = input
+  return () => readFileSync(path, 'utf8').replace(/^\ufeff/, '')
+}
 
 interface RuntimePaths {
   /** Directory Vite roots at: holds index.html plus the runtime source. */
@@ -59,28 +81,44 @@ function findRuntimePaths(): RuntimePaths {
   return { runtimeDir, coreEntry: join(coreDir, 'src', 'index.ts') }
 }
 
-function mdxPlugin(): Plugin {
+const VIRTUAL_PLAN_ID = 'virtual:plan'
+const RESOLVED_VIRTUAL_PLAN_ID = '\0virtual:plan'
+
+/**
+ * Serve the plan as the `virtual:plan` module the runtime imports. The source is compiled with
+ * `@mdx-js/mdx` here (not via @mdx-js/rollup) so the plan can be an in-memory string with no file
+ * on disk. The compiled module's default export is the MDX component, matching virtual-plan.d.ts.
+ * For a `{ path }` input (the --watch dev server) the file is re-read and registered with
+ * `addWatchFile`, so an edit invalidates this module and Vite recompiles + reloads.
+ */
+function virtualPlanPlugin(input: PlanInput): Plugin {
+  const readSource = sourceReader(input)
+  const watchPath = typeof input === 'string' ? null : input.path
   return {
+    name: 'visualplan:virtual-plan',
     enforce: 'pre',
-    ...mdx({
-      providerImportSource: '@mdx-js/react',
-      // The ordered list (frontmatter, gfm, plan-blocks, mermaid, math) is shared with the
-      // /view browser compiler via @visualplan/compile so both render plans identically.
-      // remarkFileTreeIcons is appended CLI-only: it inlines Material file icons (Node-only,
-      // reads SVGs from disk) after plan-blocks serializes the FileTree data, so the browser
-      // bundle never pulls in material-icon-theme and /view falls back to a generic icon.
-      remarkPlugins: [...remarkPlugins, remarkFileTreeIcons],
-      rehypePlugins: [[rehypeExpressiveCode, expressiveCodeOptions]],
-    }),
+    resolveId(id) {
+      if (id === VIRTUAL_PLAN_ID) return RESOLVED_VIRTUAL_PLAN_ID
+    },
+    async load(id) {
+      if (id !== RESOLVED_VIRTUAL_PLAN_ID) return null
+      if (watchPath) this.addWatchFile(watchPath)
+      const compiled = await compile(readSource(), mdxCompileOptions)
+      return String(compiled)
+    },
   }
 }
 
 /** The plan's title is its first `# ` heading (plans have no frontmatter). */
+function planTitleFromSource(source: string): string {
+  // Strip a leading UTF-8 BOM first, or a BOM-prefixed "# Title" first line never matches `^# `.
+  return source.replace(/^\ufeff/, '').match(/^# (.+?)\s*$/m)?.[1] ?? 'Plan'
+}
+
+/** The plan's title from a file path; falls back to "Plan" if the file is unreadable. */
 export function planTitle(mdxPath: string): string {
   try {
-    // Strip a leading UTF-8 BOM first, or a BOM-prefixed "# Title" first line never matches `^# `.
-    const source = readFileSync(mdxPath, 'utf8').replace(/^\ufeff/, '')
-    return source.match(/^# (.+?)\s*$/m)?.[1] ?? 'Plan'
+    return planTitleFromSource(readFileSync(mdxPath, 'utf8'))
   } catch {
     return 'Plan'
   }
@@ -95,11 +133,14 @@ function escapeHtml(text: string): string {
 }
 
 /** Set the page `<title>` to the plan's title so the browser tab is named, not "Plan". */
-function htmlTitlePlugin(mdxPath: string): Plugin {
-  const title = escapeHtml(planTitle(mdxPath))
+function htmlTitlePlugin(readSource: () => string): Plugin {
   return {
     name: 'visualplan:html-title',
-    transformIndexHtml: html => html.replace(/<title>[\s\S]*?<\/title>/, `<title>${title}</title>`),
+    transformIndexHtml: html =>
+      html.replace(
+        /<title>[\s\S]*?<\/title>/,
+        `<title>${escapeHtml(planTitleFromSource(readSource()))}</title>`,
+      ),
   }
 }
 
@@ -114,12 +155,12 @@ interface PlanShare {
 /**
  * Embed the plan's encoded MDX source so the runtime share button can build a
  * stateless `visualplan.dev/view?data=...` link. The source is read fresh on
- * every call (BOM-stripped to match `planTitle`), so the `--watch` dev server
- * always reflects the current file: `transformIndexHtml` seeds the initial value,
- * and a `/__vp_share` dev endpoint re-encodes on demand when the button is clicked.
+ * every call, so the `--watch` dev server always reflects the current file:
+ * `transformIndexHtml` seeds the initial value, and a `/__vp_share` dev endpoint
+ * re-encodes on demand when the button is clicked.
  */
-function planSharePlugin(mdxPath: string): Plugin {
-  const encode = () => encodePlan(readFileSync(mdxPath, 'utf8').replace(/^\ufeff/, ''))
+function planSharePlugin(readSource: () => string): Plugin {
+  const encode = () => encodePlan(readSource())
   return {
     name: 'visualplan:share',
     configureServer(server) {
@@ -151,41 +192,39 @@ function planSharePlugin(mdxPath: string): Plugin {
   }
 }
 
-function baseConfig(paths: RuntimePaths, mdxPath: string): InlineConfig {
+function baseConfig(paths: RuntimePaths, input: PlanInput): InlineConfig {
+  const readSource = sourceReader(input)
   return {
     root: paths.runtimeDir,
     configFile: false,
     logLevel: 'silent',
     resolve: {
       alias: {
-        'virtual:plan': mdxPath,
         '@visualplan/core': paths.coreEntry,
-        // The plan .mdx lives anywhere on disk, often outside any node project, but
-        // @mdx-js/rollup makes it import react/jsx-runtime and @mdx-js/react. Those
-        // are attributed to the plan's own directory, which usually has no
-        // node_modules, so resolve them from the CLI's install instead. Without this
-        // a plan in a bare directory fails with "failed to resolve react/jsx-runtime".
+        // The compiled plan imports react/jsx-runtime and @mdx-js/react, but it is a virtual
+        // module with no directory of its own (and a file plan often lives outside any node
+        // project), so resolve those from the CLI's own install. Without this a plan in a bare
+        // directory fails with "failed to resolve react/jsx-runtime".
         'react/jsx-runtime': require.resolve('react/jsx-runtime'),
         'react/jsx-dev-runtime': require.resolve('react/jsx-dev-runtime'),
         '@mdx-js/react': require.resolve('@mdx-js/react'),
       },
     },
     esbuild: { jsx: 'automatic', jsxImportSource: 'react' },
-    plugins: [mdxPlugin(), htmlTitlePlugin(mdxPath), planSharePlugin(mdxPath)],
-    // The runtime, core, and the user's plan span sibling dirs (and a hoisted
-    // node_modules) in the monorepo, so the dev server cannot use a single allow
-    // root. This is a local tool rendering the user's own file, so fs is unrestricted.
+    plugins: [virtualPlanPlugin(input), htmlTitlePlugin(readSource), planSharePlugin(readSource)],
+    // The runtime, core, and (for a file input) the user's plan span sibling dirs (and a hoisted
+    // node_modules) in the monorepo, so the dev server cannot use a single allow root. This is a
+    // local tool rendering the user's own plan, so fs is unrestricted.
     server: { fs: { strict: false }, open: false },
   }
 }
 
-/** Compile an MDX plan to a single self-contained HTML file at `outPath`. */
-export async function renderToFile(mdxPath: string, outPath: string): Promise<void> {
+/** Compile a plan's MDX source to a single self-contained HTML page, returned as a string. */
+export async function buildHtml(source: string): Promise<string> {
   const paths = findRuntimePaths()
-  const absMdx = resolve(mdxPath)
   const outDir = await mkdtemp(join(tmpdir(), 'visualplan-build-'))
   try {
-    const config = baseConfig(paths, absMdx)
+    const config = baseConfig(paths, source)
     await build({
       ...config,
       plugins: [...(config.plugins ?? []), viteSingleFile()],
@@ -195,10 +234,16 @@ export async function renderToFile(mdxPath: string, outPath: string): Promise<vo
         rollupOptions: { input: join(paths.runtimeDir, 'index.html') },
       },
     })
-    await cp(join(outDir, 'index.html'), resolve(outPath))
+    return await readFile(join(outDir, 'index.html'), 'utf8')
   } finally {
     await rm(outDir, { recursive: true, force: true })
   }
+}
+
+/** Compile an MDX plan file to a single self-contained HTML file at `outPath`. */
+export async function renderToFile(mdxPath: string, outPath: string): Promise<void> {
+  const source = readFileSync(resolve(mdxPath), 'utf8').replace(/^\ufeff/, '')
+  await writeFile(resolve(outPath), await buildHtml(source))
 }
 
 export interface DevServer {
@@ -206,11 +251,10 @@ export interface DevServer {
   close: () => Promise<void>
 }
 
-/** Start a hot-reloading dev server for an MDX plan and return its local URL. */
+/** Start a hot-reloading dev server for an MDX plan file and return its local URL. */
 export async function startDevServer(mdxPath: string): Promise<DevServer> {
   const paths = findRuntimePaths()
-  const absMdx = resolve(mdxPath)
-  const server = await createServer(baseConfig(paths, absMdx))
+  const server = await createServer(baseConfig(paths, { path: resolve(mdxPath) }))
   await server.listen()
   const url =
     server.resolvedUrls?.local[0] ?? `http://localhost:${server.config.server.port ?? 5173}`
