@@ -32,6 +32,15 @@
   "bin": {
     "vplan": "dist/index.js"
   },
+  "main": "dist/api.js",
+  "types": "dist/api.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/api.d.ts",
+      "import": "./dist/api.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": [
     "dist",
     "runtime",
