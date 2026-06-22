@@ -341,6 +341,79 @@ describe('Chart', () => {
     expect(html).not.toContain('vp-chart__legend')
   })
 
+  it('mounts a scatter chart and emits the vp-chart markup (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Chart type='scatter' data={chartData(['x', 'y'], [{ label: 'A', values: [1, 2] }])} />,
+    )
+    expect(html).toContain('vp-chart')
+    expect(html).toContain('data-type="scatter"')
+  })
+
+  it('mounts a radar chart and emits the vp-chart markup (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Chart
+        type='radar'
+        data={chartData(
+          ['p50', 'p95'],
+          [
+            { label: 'Auth', values: [1, 2] },
+            { label: 'DB', values: [3, 4] },
+          ],
+        )}
+      />,
+    )
+    expect(html).toContain('vp-chart')
+    expect(html).toContain('data-type="radar"')
+  })
+
+  it('mounts a gauge chart and emits its legend list (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Chart type='gauge' data={chartData(['value'], [{ label: 'Done', values: [80] }])} />,
+    )
+    expect(html).toContain('vp-chart')
+    expect(html).toContain('data-type="gauge"')
+    expect(html).toContain('vp-chart__legend')
+  })
+
+  it('mounts a funnel chart and emits the vp-chart markup (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Chart type='funnel' data={chartData(['value'], [{ label: 'Visit', values: [100] }])} />,
+    )
+    expect(html).toContain('vp-chart')
+    expect(html).toContain('data-type="funnel"')
+  })
+
+  it('mounts a treemap chart and emits the vp-chart markup (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Chart type='treemap' data={chartData(['value'], [{ label: 'API', values: [60] }])} />,
+    )
+    expect(html).toContain('vp-chart')
+    expect(html).toContain('data-type="treemap"')
+  })
+
+  it('mounts a stacked multi-series bar chart (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Chart
+        type='bar'
+        stacked
+        data={chartData(['p50', 'p95'], [{ label: 'Auth', values: [12, 30] }])}
+      />,
+    )
+    expect(html).toContain('vp-chart')
+    expect(html).toContain('data-type="bar"')
+  })
+
+  it('accepts the string form of the stacked attribute (edge)', () => {
+    const html = renderToStaticMarkup(
+      <Chart
+        type='area'
+        stacked='true'
+        data={chartData(['a', 'b'], [{ label: 'x', values: [1, 2] }])}
+      />,
+    )
+    expect(html).toContain('data-type="area"')
+  })
+
   it('throws on an unknown chart type (error)', () => {
     expect(() =>
       renderToStaticMarkup(

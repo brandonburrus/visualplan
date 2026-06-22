@@ -20,6 +20,28 @@ describe('chartSchema', () => {
     expect(result.success).toBe(true)
   })
 
+  it('accepts each new chart type (golden)', () => {
+    for (const type of ['scatter', 'radar', 'gauge', 'funnel', 'treemap']) {
+      const result = chartSchema.safeParse({
+        type,
+        series: ['value'],
+        data: [{ label: 'x', values: [1] }],
+      })
+      expect(result.success).toBe(true)
+    }
+  })
+
+  it('accepts the stacked attribute and keeps it on the parsed object (golden)', () => {
+    const result = chartSchema.safeParse({
+      type: 'bar',
+      stacked: true,
+      series: ['a', 'b'],
+      data: [{ label: 'x', values: [1, 2] }],
+    })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.stacked).toBe(true)
+  })
+
   it('rejects an unknown chart type (error)', () => {
     const result = chartSchema.safeParse({
       type: 'donut',

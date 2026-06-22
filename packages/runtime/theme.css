@@ -825,6 +825,13 @@ body {
 .vp-chart__canvas[data-type="pie"] {
   height: 230px;
 }
+/* Radial, polar, and area-fill charts read better with a taller, squarer canvas. */
+.vp-chart__canvas[data-type="gauge"],
+.vp-chart__canvas[data-type="radar"],
+.vp-chart__canvas[data-type="treemap"],
+.vp-chart__canvas[data-type="funnel"] {
+  height: 280px;
+}
 
 /* Fullscreen affordance for code blocks, diagrams, and charts */
 .vp-expandable {

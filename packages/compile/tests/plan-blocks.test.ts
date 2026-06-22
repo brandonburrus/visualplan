@@ -124,6 +124,31 @@ describe('Chart block', () => {
     )
     expect(issues.some(issue => /single series/.test(issue.message))).toBe(true)
   })
+
+  it('rejects a multi-series gauge (error)', () => {
+    const { issues } = parseBlock(
+      'Chart',
+      '<Chart type="gauge">\n| Stage | p50 | p95 |\n|---|---|---|\n| Auth | 12 | 30 |\n</Chart>\n',
+    )
+    expect(issues.some(issue => /single series/.test(issue.message))).toBe(true)
+  })
+
+  it('rejects a scatter list-form (error)', () => {
+    const { issues } = parseBlock('Chart', '<Chart type="scatter">\n- API: 3\n- UI: 2\n</Chart>\n')
+    expect(issues.some(issue => /needs a table with x and y columns/.test(issue.message))).toBe(
+      true,
+    )
+  })
+
+  it('rejects a scatter table without exactly two value columns (error)', () => {
+    const { issues } = parseBlock(
+      'Chart',
+      '<Chart type="scatter">\n| Point | x | y | z |\n|---|---|---|---|\n| A | 1 | 2 | 3 |\n</Chart>\n',
+    )
+    expect(
+      issues.some(issue => /needs exactly two value columns \(x, y\)/.test(issue.message)),
+    ).toBe(true)
+  })
 })
 
 describe('Matrix block', () => {
