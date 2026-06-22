@@ -59,7 +59,14 @@ looks like a locally-built one. Untrusted source from a URL is the core risk, ha
   `rehype-expressive-code`. Heavy, so it is imported lazily (a code-split chunk behind a spinner).
   It sets shiki's `engine: 'javascript'` (no WebAssembly in the browser); this is set ONLY here, not
   in the shared `baseExpressiveCodeOptions`, so the CLI keeps oniguruma and its output stays
-  byte-stable. File-type icons are omitted in the browser (the plugin is disk-based and Node-only).
+  byte-stable. Code-block file-type icons are omitted in the browser (that EC plugin is disk-based
+  and Node-only). FileTree file icons, however, ARE shown: `compile-browser.ts` appends
+  `remark-filetree-icons-browser.ts` after the shared `remarkPlugins`. That plugin lazily
+  `import()`s `file-icons-browser.ts` ONLY when a plan contains a `<FileTree>`, so the 324 KB icon
+  manifest is a code-split chunk no other page pays for. The SVGs are loaded PER ICON via a non-eager
+  `import.meta.glob` over `material-icon-theme/icons/*.svg` (one tiny chunk each), so a plan fetches
+  only the icon types it uses, not the 5 MB set. Resolution is single-sourced through
+  `@visualplan/compile/icon-resolution`, so `/view` and the CLI pick identical icons.
 - `src/lib/render-plan.tsx` wraps the compiled component in the runtime shell (`MDXProvider` +
   `Layout` + `components` + `theme.css`), identical to the CLI's `mount`. The runtime `ShareButton`
   self-hides here (no `__VP_SHARE__`).

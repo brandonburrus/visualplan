@@ -4,6 +4,7 @@ import { assertPlanIsSafe, baseExpressiveCodeOptions, remarkPlugins } from '@vis
 import type { ComponentType } from 'react'
 import * as runtime from 'react/jsx-runtime'
 import rehypeExpressiveCode from 'rehype-expressive-code'
+import { remarkFileTreeIconsBrowser } from './remark-filetree-icons-browser'
 
 /**
  * Compile a plan's MDX source to a React component IN THE BROWSER, mirroring the CLI's Node render
@@ -26,7 +27,10 @@ export async function compilePlan(source: string): Promise<ComponentType> {
   const mdxModule = await evaluate(source, {
     ...runtime,
     useMDXComponents,
-    remarkPlugins,
+    // remarkFileTreeIconsBrowser is appended AFTER the shared list (so it sees the serialized
+    // FileTree `files` prop) and lazily code-splits the Material icon set, fetched only when a plan
+    // contains a FileTree. Mirrors the CLI's remarkFileTreeIcons but per-icon lazy in the browser.
+    remarkPlugins: [...remarkPlugins, remarkFileTreeIconsBrowser],
     rehypePlugins: [
       [rehypeExpressiveCode, { ...baseExpressiveCodeOptions, shiki: { engine: 'javascript' } }],
     ],
