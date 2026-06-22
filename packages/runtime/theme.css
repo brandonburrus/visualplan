@@ -785,6 +785,92 @@ body {
   text-decoration: line-through;
 }
 
+/* Stat */
+.vp-stat {
+  margin: 1.4rem 0;
+}
+
+/* Small uppercase label, identical to the Checklist title. */
+.vp-stat__title {
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--vp-muted);
+  margin-bottom: 0.55rem;
+}
+
+.vp-stat__grid {
+  display: grid;
+  /* Cards reflow into as many columns as fit, dropping to one on narrow screens. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: 0.7rem;
+}
+
+.vp-stat__card {
+  border: 1px solid var(--vp-border);
+  border-radius: 10px;
+  padding: 0.9rem 1rem;
+  background: var(--vp-surface);
+}
+
+/* Intent tints reuse the callout color vars: good maps to the green "tip" palette. */
+.vp-stat__card[data-intent="note"] {
+  background: var(--vp-note-tint);
+  border-color: var(--vp-note-border);
+}
+
+.vp-stat__card[data-intent="good"] {
+  background: var(--vp-tip-tint);
+  border-color: var(--vp-tip-border);
+}
+
+.vp-stat__card[data-intent="warn"] {
+  background: var(--vp-warn-tint);
+  border-color: var(--vp-warn-border);
+}
+
+.vp-stat__card[data-intent="risk"] {
+  background: var(--vp-risk-tint);
+  border-color: var(--vp-risk-border);
+}
+
+.vp-stat__value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--vp-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.vp-stat__card[data-intent="note"] .vp-stat__value {
+  color: var(--vp-note);
+}
+
+.vp-stat__card[data-intent="good"] .vp-stat__value {
+  color: var(--vp-tip);
+}
+
+.vp-stat__card[data-intent="warn"] .vp-stat__value {
+  color: var(--vp-warn);
+}
+
+.vp-stat__card[data-intent="risk"] .vp-stat__value {
+  color: var(--vp-risk);
+}
+
+.vp-stat__label {
+  margin-top: 0.3rem;
+  font-size: 0.82rem;
+  color: var(--vp-muted);
+}
+
+.vp-stat__caption {
+  margin-top: 0.35rem;
+  font-size: 0.74rem;
+  color: var(--vp-faint);
+}
+
 /* Mermaid */
 .vp-mermaid {
   margin: 1.4rem 0;

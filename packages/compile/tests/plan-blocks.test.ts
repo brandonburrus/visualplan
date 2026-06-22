@@ -212,6 +212,45 @@ describe('Questions block', () => {
   })
 })
 
+describe('Stat block', () => {
+  it('parses "- label: value (intent) -- caption" into a stat item (golden)', () => {
+    const { value, issues } = parseBlock(
+      'Stat',
+      '<Stat>\n- Est. uptime: 99.9% (good) -- rolling avg\n</Stat>\n',
+    )
+    expect(issues).toEqual([])
+    expect(value).toEqual([
+      { label: 'Est. uptime', value: '99.9%', intent: 'good', caption: 'rolling avg' },
+    ])
+  })
+
+  it('flags an unknown intent word (error)', () => {
+    const { issues } = parseBlock('Stat', '<Stat>\n- RPO: 5 min (bogus)\n</Stat>\n')
+    expect(issues.some(issue => /must be one of: note, good, warn, risk/.test(issue.message))).toBe(
+      true,
+    )
+  })
+
+  it('flags a bullet with no colon (error)', () => {
+    const { issues } = parseBlock('Stat', '<Stat>\n- just a label\n</Stat>\n')
+    expect(issues.some(issue => /must be "label: value"/.test(issue.message))).toBe(true)
+  })
+
+  it('splits on the first colon so a value may contain one, with no intent (edge)', () => {
+    const { value, issues } = parseBlock(
+      'Stat',
+      '<Stat>\n- Deploy window: 5:00 -- nightly\n</Stat>\n',
+    )
+    expect(issues).toEqual([])
+    expect(value).toEqual([{ label: 'Deploy window', value: '5:00', caption: 'nightly' }])
+  })
+
+  it('flags a block with no list (edge)', () => {
+    const { issues } = parseBlock('Stat', '<Stat>\nno list here\n</Stat>\n')
+    expect(issues.some(issue => /needs a markdown list/.test(issue.message))).toBe(true)
+  })
+})
+
 describe('Compare block', () => {
   it('parses headings + pro/con bullets and marks the pick (golden)', () => {
     const { value, issues } = parseBlock(

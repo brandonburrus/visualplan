@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CATALOG, chartSchema, matrixSchema } from '../src/index.js'
+import { CATALOG, chartSchema, matrixSchema, statSchema } from '../src/index.js'
 
 describe('chartSchema', () => {
   it('accepts a valid bar spec (golden)', () => {
@@ -77,6 +77,26 @@ describe('matrixSchema', () => {
 
   it('rejects a grid with no rows (edge)', () => {
     const result = matrixSchema.safeParse({ columns: [{ name: 'A' }, { name: 'B' }], rows: [] })
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('statSchema', () => {
+  it('accepts an item with an intent and caption (golden)', () => {
+    const result = statSchema.safeParse({
+      title: 'Impact',
+      items: [{ label: 'Est. uptime', value: '99.9%', intent: 'good', caption: 'rolling avg' }],
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects empty items (error)', () => {
+    const result = statSchema.safeParse({ items: [] })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects an item missing its value (edge)', () => {
+    const result = statSchema.safeParse({ items: [{ label: 'Files changed' }] })
     expect(result.success).toBe(false)
   })
 })

@@ -10,6 +10,7 @@ import { Matrix } from '../components/Matrix.js'
 import { Phase } from '../components/Phase.js'
 import { Questions } from '../components/Questions.js'
 import { copyText, ShareButton } from '../components/ShareButton.js'
+import { Stat } from '../components/Stat.js'
 
 describe('Phase', () => {
   it('renders the title and a status badge for active/done (golden)', () => {
@@ -420,6 +421,50 @@ describe('Chart', () => {
         <Chart type='donut' data={chartData(['value'], [{ label: 'x', values: [1] }])} />,
       ),
     ).toThrow(/invalid props/)
+  })
+})
+
+describe('Stat', () => {
+  // The Stat receives its parsed items as a JSON string in the `items` prop (the
+  // remark-plan-blocks decode path).
+  const statItems = (items: unknown) => JSON.stringify(items)
+
+  it('renders a grid of stat cards with their values, labels, and captions (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Stat
+        title='Impact'
+        items={statItems([
+          { label: 'Files changed', value: '12' },
+          { label: 'RPO', value: '5 min', intent: 'risk', caption: 'worst-case data loss' },
+        ])}
+      />,
+    )
+    expect(html).toContain('vp-stat')
+    expect(html).toContain('vp-stat__card')
+    expect(html).toContain('Impact')
+    expect(html).toContain('Files changed')
+    expect(html).toContain('12')
+    expect(html).toContain('5 min')
+    expect(html).toContain('worst-case data loss')
+  })
+
+  it('carries the matching data-intent on a card with an intent (edge)', () => {
+    const html = renderToStaticMarkup(
+      <Stat items={statItems([{ label: 'Est. uptime', value: '99.9%', intent: 'good' }])} />,
+    )
+    expect(html).toContain('data-intent="good"')
+  })
+
+  it('mounts a minimal single-item stat without throwing (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Stat items={statItems([{ label: 'Files changed', value: '12' }])} />,
+    )
+    expect(html).toContain('vp-stat')
+    expect(html).toContain('Files changed')
+  })
+
+  it('throws on an empty item list (error)', () => {
+    expect(() => renderToStaticMarkup(<Stat items={statItems([])} />)).toThrow(/at least one item/)
   })
 })
 

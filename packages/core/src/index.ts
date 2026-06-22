@@ -23,6 +23,7 @@ export const CHART_TYPE_VALUES = [
   'pie',
 ] as const
 export const CALLOUT_TYPE_VALUES = ['note', 'tip', 'risk', 'decision', 'warn'] as const
+export const STAT_INTENT_VALUES = ['note', 'good', 'warn', 'risk'] as const
 
 export const phaseSchema = z.object({
   title: z.string().min(1, 'title is required'),
@@ -107,6 +108,20 @@ export const checklistSchema = z.object({
     .min(1, 'checklist needs at least one item'),
 })
 
+export const statSchema = z.object({
+  title: z.string().optional(),
+  items: z
+    .array(
+      z.object({
+        label: z.string().min(1, 'each stat needs a label'),
+        value: z.string().min(1, 'each stat needs a value'),
+        intent: z.enum(STAT_INTENT_VALUES).optional(),
+        caption: z.string().optional(),
+      }),
+    )
+    .min(1, 'stat needs at least one item'),
+})
+
 /** Describes a component for the `components` printer and the static checker. */
 export interface CatalogEntry {
   name: string
@@ -176,6 +191,14 @@ export const CATALOG: readonly CatalogEntry[] = [
     staticEnums: {},
     example:
       '<Checklist title="Done when">\n- [x] Returns 429 over the limit\n- [ ] Dashboards live\n</Checklist>',
+  },
+  {
+    name: 'Stat',
+    summary:
+      'Headline plan metrics as a grid of cards. Write a markdown list, one "- <label>: <value> (<intent>) -- <caption>" per stat; value is free text, intent (good/warn/risk/note) and the "-- caption" are optional.',
+    staticEnums: {},
+    example:
+      '<Stat>\n- Files changed: 12\n- Est. uptime: 99.9% (good)\n- RPO: 5 min (risk) -- worst-case data loss\n</Stat>',
   },
   {
     name: 'mermaid (code fence)',
