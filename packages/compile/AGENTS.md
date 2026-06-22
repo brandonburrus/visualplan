@@ -43,12 +43,25 @@ through the workspace.
   `(intent)` is validated against `STAT_INTENT_VALUES`). `parseChart` adds shape guards:
   `SINGLE_SERIES_CHARTS` (`pie`, `gauge`, `funnel`, `treemap`) reject a multi-series table, and
   `scatter` requires a table with exactly two value columns (the list form is rejected).
+  `parseFileTree` splits a trailing `' -- <note>'` (or a dangling `' --'`) into an optional
+  `comment` BEFORE the change/path/move parse, so a comment containing `->` is never read as a move
+  arrow; icons are NOT resolved here (that is the CLI-only `remark-filetree-icons` pass).
 - `src/remark-plan-blocks.ts` / `remark-mermaid.ts` / `remark-math.ts` — the three custom remark
   plugins. `remark-math` converts LaTeX to MathML with `temml` at build time (isomorphic).
 - `src/expressive-code.ts` — `baseExpressiveCodeOptions` (themes, frames, ink styling, color
   chips). NO file-icons plugin (Node-only).
+- `src/icon-resolution.ts` — the **isomorphic** Material-icon resolution core
+  (`@visualplan/compile/icon-resolution` subpath): a pure `resolveIconName(manifest, ...)` over a
+  passed-in manifest, no fs. Single-sources the resolution order for the Node `file-icons.ts` AND
+  the app's browser `/view` icon chunk, so both pick identical icons.
 - `src/file-icons.ts` — the Node-only Material file-icons EC plugin (`@visualplan/compile/file-icons`
-  subpath). Reads `material-icon-theme`'s manifest + SVGs from disk; `iconNameForFile` is exported
-  for tests. CLI-only.
+  subpath). Loads `material-icon-theme`'s manifest from disk and delegates to `resolveIconName`;
+  `iconNameForFile` (resolution) and `fileIconSvg` (resolution + raw SVG markup, cached) are
+  exported. CLI-only.
+- `src/remark-filetree-icons.ts` — the Node-only `remarkFileTreeIcons` plugin
+  (`@visualplan/compile/filetree-icons` subpath). Runs AFTER `remark-plan-blocks` and inlines a
+  `fileIconSvg(basename)` per FileTree entry onto the serialized `files` prop (skipping `/`
+  directories). Appended only by the CLI's remark chain, never in the isomorphic `remarkPlugins`,
+  so the browser bundle never pulls in `material-icon-theme`.
 - `src/safety-gate.ts` — `assertPlanIsSafe(source)`; throws `UnsafePlanError` (carries line/column).
 - `tests/` — `plan-blocks`, `file-icons`, and `safety-gate` (node environment).

@@ -94,7 +94,7 @@ function rowCells(row: MdNode): string[] {
 
 function parseFileTree(node: MdNode): BlockResult {
   const issues: BlockIssue[] = []
-  const files: Array<{ path: string; change: string; from?: string }> = []
+  const files: Array<{ path: string; change: string; from?: string; comment?: string }> = []
   const list = firstList(node)
   if (!list) {
     issues.push({
@@ -104,7 +104,19 @@ function parseFileTree(node: MdNode): BlockResult {
     return { value: files, issues }
   }
   for (const item of list.children ?? []) {
-    const text = toText(item).trim()
+    const raw = toText(item).trim()
+    // A " -- <note>" trailer is split off first so the change/path/move parse below never sees it
+    // (and a comment containing "->" cannot be mistaken for a move arrow). A dangling " --" (an
+    // empty note, whose trailing space markdown already trimmed) is stripped so the path stays clean.
+    const dash = raw.indexOf(' -- ')
+    let text = raw
+    let comment: string | undefined
+    if (dash !== -1) {
+      text = raw.slice(0, dash).trim()
+      comment = raw.slice(dash + 4).trim() || undefined
+    } else if (raw.endsWith(' --')) {
+      text = raw.slice(0, -3).trim()
+    }
     const space = text.indexOf(' ')
     const change = space === -1 ? text : text.slice(0, space)
     let path = space === -1 ? '' : text.slice(space + 1).trim()
@@ -132,7 +144,7 @@ function parseFileTree(node: MdNode): BlockResult {
     } else if (!path) {
       issues.push({ ...pos(item), message: `<FileTree> item "${text}" is missing a file path.` })
     }
-    files.push(from ? { path, change, from } : { path, change })
+    files.push({ path, change, ...(from ? { from } : {}), ...(comment ? { comment } : {}) })
   }
   return { value: files, issues }
 }

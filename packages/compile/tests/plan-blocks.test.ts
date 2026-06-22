@@ -71,6 +71,35 @@ describe('FileTree block', () => {
     expect(issues).toEqual([])
     expect(value).toEqual([{ path: 'src/legacy/', change: 'delete' }])
   })
+
+  it('splits a " -- " trailer into an inline comment (golden)', () => {
+    const { value, issues } = parseBlock(
+      'FileTree',
+      '<FileTree>\n- modify src/b.ts -- tighten validation\n</FileTree>\n',
+    )
+    expect(issues).toEqual([])
+    expect(value).toEqual([{ path: 'src/b.ts', change: 'modify', comment: 'tighten validation' }])
+  })
+
+  it('keeps a comment on a move and never reads its "->" as the arrow (edge)', () => {
+    const { value, issues } = parseBlock(
+      'FileTree',
+      '<FileTree>\n- move src/old.ts -> src/new.ts -- renamed; old -> new\n</FileTree>\n',
+    )
+    expect(issues).toEqual([])
+    expect(value).toEqual([
+      { path: 'src/new.ts', change: 'move', from: 'src/old.ts', comment: 'renamed; old -> new' },
+    ])
+  })
+
+  it('drops an empty comment after a dangling " -- " (edge)', () => {
+    const { value, issues } = parseBlock(
+      'FileTree',
+      '<FileTree>\n- add src/a.ts -- \n</FileTree>\n',
+    )
+    expect(issues).toEqual([])
+    expect(value).toEqual([{ path: 'src/a.ts', change: 'add' }])
+  })
 })
 
 describe('Chart block', () => {

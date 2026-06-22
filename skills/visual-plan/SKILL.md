@@ -62,12 +62,14 @@ brace errors that break a render.
 - `<FileTree>` — file-change map. One bullet per file, `- <change> <path>`, where `change` is
   `add|modify|delete|move`. A move needs both ends, `- move <from> -> <to>` (the file renders at
   its destination with the origin shown). A path ending in `/` marks a whole directory (e.g.
-  `- delete src/legacy/`).
+  `- delete src/legacy/`). A colored file-type icon is added automatically from the path's
+  extension. Append ` -- <note>` to any line for a short inline comment on that change (what it does
+  or why); keep it to a phrase, since it shares the row with the file name.
 
   ```mdx
   <FileTree>
-  - add src/gateway/rate-limiter.ts
-  - modify src/gateway/middleware.ts
+  - add src/gateway/rate-limiter.ts -- sliding-window check against Redis
+  - modify src/gateway/middleware.ts -- mount the limiter behind the flag
   - delete src/gateway/legacy/
   </FileTree>
   ```
@@ -236,6 +238,10 @@ it in paragraphs. Prose is the connective tissue between visuals, never the subs
 - **`<Matrix>` cells do not wrap.** A long sentence in one cell forces a horizontal scrollbar and
   pushes the other columns off-screen. Keep cells to a word or a short score; put rationale in prose
   or a `<Callout>`, not in a cell.
+- **Avoid `-- comments` on `<FileTree>` `move` rows.** A move already shows its origin path (the
+  `← <from>` annotation), which eats most of the row width, so a comment on the same row gets crowded
+  out. Leave move rows uncommented and put any explanation in prose or a `<Callout>`; reserve `--
+  comments` for add/modify/delete rows, which have the space.
 - **Wide mermaid diagrams shrink to illegibility.** Prefer top-down (`flowchart TD`) once a diagram
   has many nodes; a long left-to-right (`LR`) chain shrinks to fit the page and becomes effectively
   unreadable inline. Split a large flow into a few smaller diagrams instead of one sprawling one.

@@ -5,6 +5,7 @@ import type { ExpressiveCodePlugin } from '@expressive-code/core'
 import { addClassName, getClassNames, select, setProperty } from '@expressive-code/core/hast'
 import type { Element, ElementContent } from 'hast'
 import { fromHtml } from 'hast-util-from-html'
+import { type IconManifest, resolveIconName } from './icon-resolution.js'
 
 /**
  * An Expressive Code plugin that prepends a Material Icon Theme file-type icon to a code block's
@@ -19,15 +20,6 @@ import { fromHtml } from 'hast-util-from-html'
 const require = createRequire(import.meta.url)
 const packageRoot = dirname(require.resolve('material-icon-theme/package.json'))
 
-interface IconManifest {
-  iconDefinitions: Record<string, { iconPath: string }>
-  fileNames: Record<string, string>
-  fileExtensions: Record<string, string>
-  languageIds: Record<string, string>
-  /** The icon name used for any file that matches nothing more specific. */
-  file: string
-}
-
 const manifest: IconManifest = JSON.parse(
   readFileSync(join(packageRoot, 'dist', 'material-icons.json'), 'utf8'),
 )
@@ -36,26 +28,36 @@ const manifest: IconManifest = JSON.parse(
 const iconCache = new Map<string, Element | null>()
 
 /**
- * Resolve a title's filename (with an optional Expressive Code language id and explicit override)
- * to a Material icon name: an exact filename wins, then the longest matching extension, then the
- * language, then the default file icon.
+ * Resolve a title's filename to a Material icon name through this package's disk-loaded manifest,
+ * delegating the resolution order to the isomorphic `resolveIconName`.
  */
 export function iconNameForFile(
   fileName: string,
   language?: string,
   iconOverride?: string,
 ): string {
-  if (iconOverride && manifest.iconDefinitions[iconOverride]) return iconOverride
-  const name = fileName.toLowerCase()
-  if (manifest.fileNames[name]) return manifest.fileNames[name]
-  // Try compound extensions before simple ones, e.g. "d.ts" before "ts", "test.tsx" before "tsx".
-  const segments = name.split('.')
-  for (let i = 1; i < segments.length; i++) {
-    const extension = segments.slice(i).join('.')
-    if (manifest.fileExtensions[extension]) return manifest.fileExtensions[extension]
-  }
-  if (language && manifest.languageIds[language]) return manifest.languageIds[language]
-  return manifest.file
+  return resolveIconName(manifest, fileName, language, iconOverride)
+}
+
+/** Resolved raw icon SVG markup, keyed by icon name (`null` marks a name with no usable icon). */
+const svgCache = new Map<string, string | null>()
+
+/**
+ * Resolve a file name to its Material Icon Theme SVG markup, or `null` if none resolves. Used by
+ * the CLI's remark-filetree-icons pass to inline a per-file icon into the FileTree data prop, so
+ * the self-contained page needs no external asset. Pass a basename, not a full path, so an exact
+ * filename match (e.g. `package.json`) wins over its extension.
+ */
+export function fileIconSvg(fileName: string): string | null {
+  const iconName = iconNameForFile(fileName)
+  const cached = svgCache.get(iconName)
+  if (cached !== undefined) return cached
+  const definition = manifest.iconDefinitions[iconName]
+  const svg = definition
+    ? readFileSync(join(packageRoot, 'dist', definition.iconPath), 'utf8')
+    : null
+  svgCache.set(iconName, svg)
+  return svg
 }
 
 /** Read and parse an icon SVG into a hast element once, caching by icon name. */
