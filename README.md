@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/banner.jpg" alt="Visual Plan: render an AI agent's plans as scannable visual pages instead of walls of text" width="100%">
+</p>
+
 # Visual Plan
 
 Turn an AI agent's implementation and design plans into polished, visual web pages instead of
