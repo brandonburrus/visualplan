@@ -1,4 +1,5 @@
 import { type IconManifest, resolveIconName } from '@visualplan/compile/icon-resolution'
+import clones from 'virtual:material-icon-clones'
 import manifest from 'material-icon-theme/dist/material-icons.json'
 
 /**
@@ -11,6 +12,10 @@ import manifest from 'material-icon-theme/dist/material-icons.json'
  * tiny chunk per `.svg`, so a rendered plan fetches only the handful of icon types it uses, not the
  * full 5 MB set. Resolution order is single-sourced through `@visualplan/compile`'s isomorphic
  * `resolveIconName`, so `/view` and the CLI pick identical icons.
+ *
+ * An icon's SVG file is `<iconName>.svg` except for the ~72 `.clone.svg` icons, which the
+ * build-time `virtual:material-icon-clones` map covers. Deriving the basename this way keeps the
+ * manifest's 71 KB `iconDefinitions` table out of this code-split chunk (Vite tree-shakes it).
  */
 const typedManifest = manifest as unknown as IconManifest
 
@@ -34,8 +39,8 @@ export async function fileIconSvg(fileName: string): Promise<string | null> {
   const iconName = resolveIconName(typedManifest, fileName)
   const cached = svgCache.get(iconName)
   if (cached !== undefined) return cached
-  const basename = typedManifest.iconDefinitions[iconName]?.iconPath.split('/').pop()
-  const loader = basename ? loaderByBasename.get(basename) : undefined
+  const basename = clones[iconName] ?? `${iconName}.svg`
+  const loader = loaderByBasename.get(basename)
   const svg = loader ? await loader() : null
   svgCache.set(iconName, svg)
   return svg
