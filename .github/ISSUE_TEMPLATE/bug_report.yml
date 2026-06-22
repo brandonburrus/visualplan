@@ -1,0 +1,51 @@
+name: Bug report
+description: Report something in vplan that is broken or behaves unexpectedly
+labels: ["bug"]
+body:
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you do, and what went wrong?
+      placeholder: I ran `vplan plan.mdx` and ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+      description: What should have happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: The exact command(s), and a minimal plan (.mdx) if relevant.
+      placeholder: |
+        1. `vplan check example.mdx`
+        2. ...
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: vplan-version
+    attributes:
+      label: vplan version
+      description: Output of `vplan --version` (shown in the page footer too).
+    validations:
+      required: true
+  - type: input
+    id: node-version
+    attributes:
+      label: Node version
+      description: Output of `node --version`. vplan requires Node >= 20.
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: OS
+      placeholder: macOS 15.3, Ubuntu 24.04, Windows 11, ...
+    validations:
+      required: true
