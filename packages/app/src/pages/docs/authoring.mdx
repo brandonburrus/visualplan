@@ -11,6 +11,7 @@ import { FileTree } from '@visualplan/runtime/components/FileTree'
 import { Chart } from '@visualplan/runtime/components/Chart'
 import { Compare } from '@visualplan/runtime/components/Compare'
 import { Matrix } from '@visualplan/runtime/components/Matrix'
+import { Stat } from '@visualplan/runtime/components/Stat'
 import { Questions } from '@visualplan/runtime/components/Questions'
 import { Checklist } from '@visualplan/runtime/components/Checklist'
 import { Mermaid } from '@visualplan/runtime/components/Mermaid'
@@ -90,7 +91,8 @@ single line.
 ## Charts: the numbers
 
 When a plan involves quantities, effort, latency, traffic, rows, a small chart shows the shape of
-the data better than a list of figures. Plans render real bar, line, and pie charts.
+the data better than a list of figures. Plans render nine chart types, bar, line, area, scatter,
+radar, gauge, funnel, treemap, and pie, with multi-series bar and area able to stack.
 
 <Demo>
   <Chart client:only="react" type="bar" title="Effort (days)" data={{ series: ['value'], data: [{ label: 'Limiter', values: [2] }, { label: 'Dashboards', values: [1] }, { label: 'Tests', values: [1.5] }] }} />
@@ -102,6 +104,23 @@ the data better than a list of figures. Plans render real bar, line, and pie cha
 
 <Demo>
   <Chart client:only="react" type="pie" title="Traffic by client" data={{ series: ['value'], data: [{ label: 'Web', values: [62] }, { label: 'Mobile', values: [28] }, { label: 'API', values: [10] }] }} />
+</Demo>
+
+<Demo>
+  <Chart client:only="react" type="gauge" title="Error budget remaining (%)" data={{ series: ['value'], data: [{ label: 'Remaining', values: [78] }] }} />
+</Demo>
+
+## Headline metrics
+
+When the most important facts are a handful of numbers, files changed, expected uptime, the rollout
+plan, a stat grid puts them up front as cards, each optionally colored by how good or risky it is.
+
+<Demo>
+  <Stat items={[
+    { label: 'Files changed', value: '4' },
+    { label: 'Added latency', value: '~1 ms', intent: 'good' },
+    { label: 'Rollout', value: '1% to 100%', intent: 'warn', caption: 'ramp while watching reject rates' },
+  ]} />
 </Demo>
 
 ## Comparing options

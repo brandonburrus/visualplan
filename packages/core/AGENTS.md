@@ -31,6 +31,11 @@ CLI's `check` and `components` commands. One file: `src/index.ts`.
 
 ## Adding to the vocabulary
 
+`CHART_TYPE_VALUES` has nine members (`bar`, `line`, `area`, `scatter`, `radar`, `gauge`,
+`funnel`, `treemap`, `pie`); `chartSchema.stacked` is an optional boolean (bar/area only). `Stat`
+is a data component with `statSchema` and `STAT_INTENT_VALUES` (`note`, `good`, `warn`, `risk`);
+its item `value` is a free-text string (so "5 min", "99.9%" validate), unlike `Chart`'s numbers.
+
 A new component needs a schema, its enum constants, and a `CATALOG` entry (with `staticEnums`
 and an `example`) here, plus a component in `@visualplan/runtime`. `staticEnums` is what
 the CLI's AST checker validates statically; everything else is validated at render time by zod.
