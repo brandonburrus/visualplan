@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.jpg" alt="Visual Plan: render an AI agent's plans as scannable visual pages instead of walls of text" width="100%">
+  <img src="https://raw.githubusercontent.com/brandonburrus/visualplan/main/assets/banner.jpg" alt="Visual Plan: render an AI agent's plans as scannable visual pages instead of walls of text" width="100%">
 </p>
 
 Turn an AI agent's implementation and design plans into polished, visual web pages instead of
