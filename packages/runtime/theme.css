@@ -422,6 +422,9 @@ body {
   background: var(--vp-surface);
   font-family: var(--vp-mono);
   font-size: 0.84rem;
+  /* A pathologically long, unbroken path (a non-wrapping file name) scrolls within the card
+     rather than widening the whole page. Wrapping comments still wrap to the card width. */
+  overflow-x: auto;
 }
 
 .vp-filetree__row {
