@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url'
 import mdx from '@mdx-js/rollup'
 import { baseExpressiveCodeOptions, remarkPlugins } from '@visualplan/compile'
 import { pluginFileIcons } from '@visualplan/compile/file-icons'
+import { remarkFileTreeIcons } from '@visualplan/compile/filetree-icons'
 import { encodePlan } from '@visualplan/core/share'
 import rehypeExpressiveCode, { type RehypeExpressiveCodeOptions } from 'rehype-expressive-code'
 import { build, createServer, type InlineConfig, type Plugin } from 'vite'
@@ -65,7 +66,10 @@ function mdxPlugin(): Plugin {
       providerImportSource: '@mdx-js/react',
       // The ordered list (frontmatter, gfm, plan-blocks, mermaid, math) is shared with the
       // /view browser compiler via @visualplan/compile so both render plans identically.
-      remarkPlugins,
+      // remarkFileTreeIcons is appended CLI-only: it inlines Material file icons (Node-only,
+      // reads SVGs from disk) after plan-blocks serializes the FileTree data, so the browser
+      // bundle never pulls in material-icon-theme and /view falls back to a generic icon.
+      remarkPlugins: [...remarkPlugins, remarkFileTreeIcons],
       rehypePlugins: [[rehypeExpressiveCode, expressiveCodeOptions]],
     }),
   }

@@ -10,6 +10,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./file-icons": "./src/file-icons.ts",
+    "./filetree-icons": "./src/remark-filetree-icons.ts",
     "./package.json": "./package.json"
   },
   "scripts": {

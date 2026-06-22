@@ -58,6 +58,27 @@ export function iconNameForFile(
   return manifest.file
 }
 
+/** Resolved raw icon SVG markup, keyed by icon name (`null` marks a name with no usable icon). */
+const svgCache = new Map<string, string | null>()
+
+/**
+ * Resolve a file name to its Material Icon Theme SVG markup, or `null` if none resolves. Used by
+ * the CLI's remark-filetree-icons pass to inline a per-file icon into the FileTree data prop, so
+ * the self-contained page needs no external asset. Pass a basename, not a full path, so an exact
+ * filename match (e.g. `package.json`) wins over its extension.
+ */
+export function fileIconSvg(fileName: string): string | null {
+  const iconName = iconNameForFile(fileName)
+  const cached = svgCache.get(iconName)
+  if (cached !== undefined) return cached
+  const definition = manifest.iconDefinitions[iconName]
+  const svg = definition
+    ? readFileSync(join(packageRoot, 'dist', definition.iconPath), 'utf8')
+    : null
+  svgCache.set(iconName, svg)
+  return svg
+}
+
 /** Read and parse an icon SVG into a hast element once, caching by icon name. */
 function loadIcon(iconName: string): Element | null {
   const cached = iconCache.get(iconName)

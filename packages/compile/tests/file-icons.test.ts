@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { describe, expect, it } from 'vitest'
-import { iconNameForFile } from '../src/file-icons.js'
+import { fileIconSvg, iconNameForFile } from '../src/file-icons.js'
 
 // iconNameForFile resolves a title's filename to a Material Icon Theme icon name through the
 // package's published manifest, so these assertions pin the resolution order against real data.
@@ -31,5 +31,17 @@ describe('iconNameForFile', () => {
   it('falls back to the language id, then the default file icon (error)', () => {
     expect(iconNameForFile('extensionless', 'typescript')).toBe('typescript')
     expect(iconNameForFile('mystery.zzznope')).toBe('file')
+  })
+})
+
+describe('fileIconSvg', () => {
+  it('returns the resolved icon SVG markup for a known type (golden)', () => {
+    const svg = fileIconSvg('routes.ts')
+    expect(svg).toMatch(/^<svg[\s>]/)
+  })
+
+  it('returns the default file icon SVG for an unknown extension (edge)', () => {
+    // iconNameForFile resolves "mystery.zzznope" to the "file" default, which has an SVG.
+    expect(fileIconSvg('mystery.zzznope')).toMatch(/<svg/)
   })
 })

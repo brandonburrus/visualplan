@@ -60,8 +60,8 @@ flowchart LR
   2. Return `429` with a `Retry-After` header when the window is exceeded.
 
   <FileTree>
-  - add src/gateway/rate-limiter.ts
-  - modify src/gateway/middleware.ts
+  - add src/gateway/rate-limiter.ts -- sliding-window check against Redis
+  - modify src/gateway/middleware.ts -- mount the limiter behind the flag
   - move src/gateway/throttle.ts -> src/gateway/rate-limiter-legacy.ts
   - delete src/gateway/legacy/
   </FileTree>

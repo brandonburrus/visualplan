@@ -1,6 +1,7 @@
 import {
   IconArrowLeft,
   IconArrowRight,
+  IconFile,
   IconFolder,
   IconMinus,
   IconPencil,
@@ -21,13 +22,24 @@ const MARKER: Record<string, ReactNode> = {
   move: <IconArrowRight size={15} stroke={2} />,
 }
 
+interface FileLeaf {
+  name: string
+  change: string
+  from?: string
+  comment?: string
+  /** Build-time-injected file-type icon SVG markup (Material Icon Theme); absent on /view. */
+  icon?: string
+}
+
 interface DirNode {
   dirs: Map<string, DirNode>
-  files: Array<{ name: string; change: string; from?: string }>
+  files: FileLeaf[]
   /** A change applied to the directory itself, from a path written with a trailing slash. */
   change?: string
   /** For a directory move, the origin path. */
   from?: string
+  /** An inline note authored after a " -- " trailer on a directory row. */
+  comment?: string
 }
 
 /** The muted "moved from <origin>" annotation shown on a move row. */
@@ -40,15 +52,34 @@ function MovedFrom({ from }: { from: string }) {
   )
 }
 
+/** The leading file-type icon: the build-time Material SVG when present, else a generic glyph
+ * (the /view path, which cannot resolve Material icons). The SVG is from a trusted build-time
+ * dependency, never plan input, so injecting it as markup is safe. */
+function FileIcon({ icon }: { icon?: string }) {
+  if (icon) {
+    return (
+      <span
+        className='vp-filetree__icon'
+        aria-hidden='true'
+        // biome-ignore lint/security/noDangerouslySetInnerHtml: trusted build-time Material icon SVG
+        dangerouslySetInnerHTML={{ __html: icon }}
+      />
+    )
+  }
+  return <IconFile size={15} stroke={2} className='vp-filetree__icon-fallback' aria-hidden='true' />
+}
+
 function emptyDir(): DirNode {
   return { dirs: new Map(), files: [] }
 }
 
 /** Group flat `{path}` entries into a nested directory tree. A path ending in `/` marks a
  * change on the directory itself rather than adding a file leaf. */
-function buildTree(files: Array<{ path: string; change: string; from?: string }>): DirNode {
+function buildTree(
+  files: Array<{ path: string; change: string; from?: string; comment?: string; icon?: string }>,
+): DirNode {
   const root = emptyDir()
-  for (const { path, change, from } of files) {
+  for (const { path, change, from, comment, icon } of files) {
     const isDir = path.endsWith('/')
     const segments = path.split('/').filter(Boolean)
     // A directory entry consumes every segment; a file entry leaves the last as the file name.
@@ -67,7 +98,9 @@ function buildTree(files: Array<{ path: string; change: string; from?: string }>
     if (isDir) {
       node.change = change
       node.from = from
-    } else node.files.push({ name: segments[segments.length - 1] ?? path, change, from })
+      node.comment = comment
+    } else
+      node.files.push({ name: segments[segments.length - 1] ?? path, change, from, comment, icon })
   }
   return root
 }
@@ -94,6 +127,7 @@ function renderDir(node: DirNode, depth: number): ReactNode[] {
     const collapsed = collapse(name, child)
     const change = collapsed.node.change
     const from = collapsed.node.from
+    const comment = collapsed.node.comment
     rows.push(
       <li
         key={`dir:${depth}:${collapsed.label}`}
@@ -110,6 +144,7 @@ function renderDir(node: DirNode, depth: number): ReactNode[] {
         )}
         <span className='vp-filetree__dir'>{collapsed.label}/</span>
         {from ? <MovedFrom from={from} /> : null}
+        {comment ? <span className='vp-filetree__comment'>{comment}</span> : null}
         {change ? <span className='vp-filetree__change'>{change}</span> : null}
       </li>,
     )
@@ -126,8 +161,10 @@ function renderDir(node: DirNode, depth: number): ReactNode[] {
         <span className='vp-filetree__marker' aria-hidden='true'>
           {MARKER[file.change]}
         </span>
+        <FileIcon icon={file.icon} />
         <span className='vp-filetree__name'>{file.name}</span>
         {file.from ? <MovedFrom from={file.from} /> : null}
+        {file.comment ? <span className='vp-filetree__comment'>{file.comment}</span> : null}
         <span className='vp-filetree__change'>{file.change}</span>
       </li>,
     )

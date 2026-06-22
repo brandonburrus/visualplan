@@ -62,12 +62,14 @@ brace errors that break a render.
 - `<FileTree>` — file-change map. One bullet per file, `- <change> <path>`, where `change` is
   `add|modify|delete|move`. A move needs both ends, `- move <from> -> <to>` (the file renders at
   its destination with the origin shown). A path ending in `/` marks a whole directory (e.g.
-  `- delete src/legacy/`).
+  `- delete src/legacy/`). A colored file-type icon is added automatically from the path's
+  extension. Append ` -- <note>` to any line for a short inline comment on that change (what it does
+  or why); keep it to a phrase, since it shares the row with the file name.
 
   ```mdx
   <FileTree>
-  - add src/gateway/rate-limiter.ts
-  - modify src/gateway/middleware.ts
+  - add src/gateway/rate-limiter.ts -- sliding-window check against Redis
+  - modify src/gateway/middleware.ts -- mount the limiter behind the flag
   - delete src/gateway/legacy/
   </FileTree>
   ```

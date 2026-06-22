@@ -442,6 +442,24 @@ body {
   flex: 0 0 auto;
 }
 
+.vp-filetree__icon {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  margin-left: -0.2rem;
+}
+
+.vp-filetree__icon svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.vp-filetree__icon-fallback {
+  color: var(--vp-faint);
+  flex: 0 0 auto;
+  margin-left: -0.2rem;
+}
+
 .vp-filetree__row[data-change="add"] .vp-filetree__marker {
   color: var(--vp-done);
 }
@@ -476,8 +494,20 @@ body {
   font-size: 0.78rem;
 }
 
+.vp-filetree__comment {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--vp-muted);
+  font-family: var(--vp-font);
+  font-size: 0.78rem;
+  font-style: italic;
+}
+
 .vp-filetree__change {
   margin-left: auto;
+  padding-left: 0.6rem;
   font-size: 0.68rem;
   color: var(--vp-faint);
   text-transform: uppercase;

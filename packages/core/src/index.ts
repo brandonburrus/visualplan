@@ -38,6 +38,12 @@ export const fileTreeSchema = z.object({
         change: z.enum(CHANGE_VALUES),
         // For a move, the origin path; the entry is placed at `path` (its destination).
         from: z.string().optional(),
+        // An optional inline note, authored after a " -- " trailer, shown muted on the row.
+        comment: z.string().optional(),
+        // The file-type icon SVG, injected at build time by the CLI's remark-filetree-icons pass
+        // (Material Icon Theme), never authored. Absent on the /view path, where the component
+        // falls back to a generic icon.
+        icon: z.string().optional(),
       }),
     )
     .min(1, 'files must list at least one entry'),
@@ -141,10 +147,10 @@ export const CATALOG: readonly CatalogEntry[] = [
   {
     name: 'FileTree',
     summary:
-      'A nested directory tree of file changes. Write a markdown list, one "- <change> <path>" per file; change is add/modify/delete/move.',
+      'A nested directory tree of file changes. Write a markdown list, one "- <change> <path>" per file; change is add/modify/delete/move. Append " -- <note>" for an inline comment.',
     staticEnums: {},
     example:
-      '<FileTree>\n- add src/api/routes.ts\n- modify src/api/db.ts\n- delete src/legacy.ts\n</FileTree>',
+      '<FileTree>\n- add src/api/routes.ts -- new sliding-window limiter\n- modify src/api/db.ts\n- delete src/legacy.ts\n</FileTree>',
   },
   {
     name: 'Chart',

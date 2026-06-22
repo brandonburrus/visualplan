@@ -120,6 +120,29 @@ describe('FileTree', () => {
     expect(html).toContain('src/billing.ts')
     expect(html).toContain('data-change="move"')
   })
+
+  it('renders an inline comment on a file row (golden)', () => {
+    const html = renderToStaticMarkup(
+      <FileTree files={[{ path: 'src/a.ts', change: 'modify', comment: 'add a retry loop' }]} />,
+    )
+    expect(html).toContain('vp-filetree__comment')
+    expect(html).toContain('add a retry loop')
+  })
+
+  it('injects a build-time icon SVG when present (edge)', () => {
+    const html = renderToStaticMarkup(
+      <FileTree files={[{ path: 'src/a.ts', change: 'add', icon: '<svg id="ts-icon"></svg>' }]} />,
+    )
+    expect(html).toContain('vp-filetree__icon')
+    expect(html).toContain('<svg id="ts-icon">')
+    // With an icon present the generic fallback glyph is not rendered.
+    expect(html).not.toContain('vp-filetree__icon-fallback')
+  })
+
+  it('falls back to a generic icon when no icon is resolved (edge)', () => {
+    const html = renderToStaticMarkup(<FileTree files={[{ path: 'src/a.ts', change: 'add' }]} />)
+    expect(html).toContain('vp-filetree__icon-fallback')
+  })
 })
 
 describe('Matrix', () => {

@@ -52,7 +52,13 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   path ending in `/` sets `change` on the `DirNode` and renders the marker on the directory row. A
   `move` carries an optional `from` (origin) on the entry; the file renders at its destination with
   a muted `MovedFrom` annotation (`← <from>`) so the rename is visible (the CLI parser requires the
-  `-> <to>` arrow and keeps `from`, rather than discarding the origin).
+  `-> <to>` arrow and keeps `from`, rather than discarding the origin). Each entry also takes an
+  optional `comment` (an inline `- <change> <path> -- <note>` trailer, rendered muted) and an
+  optional `icon` (Material Icon Theme SVG markup). The `icon` is **never authored**: it is injected
+  at build time by the CLI's `remark-filetree-icons` pass and inlined via `dangerouslySetInnerHTML`
+  (trusted build-time dependency, not plan input). When `icon` is absent (the `/view` path, which
+  cannot resolve Material icons), `FileIcon` falls back to a generic Tabler `IconFile`; directories
+  keep their folder icon and are never given a file-type icon.
 
 ## Gotchas
 

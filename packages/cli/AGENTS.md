@@ -15,7 +15,9 @@ renders a plan to a self-contained HTML page). Built with tsup to `dist/index.js
   `baseExpressiveCodeOptions` from `@visualplan/compile` (so the CLI and `/view` highlight
   identically), and appends the Node-only `@visualplan/compile/file-icons` plugin (a Material Icon
   Theme file-type icon in a titled block's header, `iconClass: 'vp-file-icon'` so `theme.css` can
-  size it). Color chips and file icons both inline their output at build time, so the single-file
+  size it). It also appends the Node-only `remarkFileTreeIcons` (`@visualplan/compile/filetree-icons`)
+  to the remark chain, which inlines a Material file-type icon per `<FileTree>` entry; both are
+  CLI-only so the browser bundle never loads `material-icon-theme`. Color chips and file icons both inline their output at build time, so the single-file
   invariant holds. `src/build/check.ts` — the static AST
   validator. It also runs each ` ```math ` block through Temml and each ` ```mermaid ` block through
   `beautiful-mermaid`'s `renderMermaidSVG` (the same renderer the runtime `Mermaid` component calls)
