@@ -88,6 +88,10 @@ A release is cut by creating a GitHub release; the tag is the published version 
   runs `tsc` in every package. `pnpm test` runs one vitest config with a project per package.
   `pnpm check` runs biome. `pnpm build` builds the CLI.
 - No emojis or em/en dashes in code, output, or docs.
+- When a change adds or alters the component vocabulary (a new component, a chart type, or an
+  authoring syntax), update `skills/visual-plan/SKILL.md` to match: it is the agent-facing source
+  of truth for how a plan is written. Do this only when the change genuinely adds author-facing
+  substance; skip purely internal refactors that do not change how a plan is authored.
 
 ## Critical Constraints
 
