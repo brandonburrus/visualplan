@@ -11,7 +11,7 @@ import { z } from 'zod'
 
 export const STATUS_VALUES = ['planned', 'active', 'done'] as const
 export const CHANGE_VALUES = ['add', 'modify', 'delete', 'move'] as const
-export const CHART_TYPE_VALUES = ['bar', 'line', 'pie'] as const
+export const CHART_TYPE_VALUES = ['bar', 'line', 'area', 'pie'] as const
 export const CALLOUT_TYPE_VALUES = ['note', 'tip', 'risk', 'decision', 'warn'] as const
 
 export const phaseSchema = z.object({
@@ -122,7 +122,7 @@ export const CATALOG: readonly CatalogEntry[] = [
   {
     name: 'Chart',
     summary:
-      'A bar/line/pie chart for estimates or metrics. Single series: a markdown list of "- <label>: <value>". Multiple series (bar/line): a markdown table with a "category | series1 | series2" header.',
+      'A bar/line/area/pie chart for estimates or metrics. Single series: a markdown list of "- <label>: <value>". Multiple series (bar/line/area): a markdown table with a "category | series1 | series2" header.',
     staticEnums: { type: CHART_TYPE_VALUES },
     example:
       '<Chart type="bar" title="Effort (days)">\n- API: 3\n- UI: 2\n</Chart>\n\n<Chart type="line" title="Latency by stage (ms)">\n| Stage | p50 | p95 |\n|-------|-----|-----|\n| Auth  | 12  | 30  |\n| DB    | 40  | 120 |\n</Chart>',

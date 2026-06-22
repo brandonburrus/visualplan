@@ -11,6 +11,15 @@ describe('chartSchema', () => {
     expect(result.success).toBe(true)
   })
 
+  it('accepts a valid area spec (golden)', () => {
+    const result = chartSchema.safeParse({
+      type: 'area',
+      series: ['value'],
+      data: [{ label: 'x', values: [1] }],
+    })
+    expect(result.success).toBe(true)
+  })
+
   it('rejects an unknown chart type (error)', () => {
     const result = chartSchema.safeParse({
       type: 'donut',

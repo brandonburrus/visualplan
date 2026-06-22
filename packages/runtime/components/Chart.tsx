@@ -1,4 +1,6 @@
 import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
@@ -54,8 +56,118 @@ const TOOLTIP_STYLE = {
 const LEGEND_STYLE = { fontSize: 12, color: 'var(--vp-muted)' }
 const MARGIN = { top: 4, right: 8, bottom: 0, left: -16 }
 
-/** A bar/line/pie chart for estimates or metrics, backed by recharts. Single series comes from a
- * `- label: value` list; multiple series from a table with one column per series. */
+interface ChartBody {
+  rows: Array<Record<string, string | number>>
+  keys: string[]
+  multi: boolean
+  pieData: Array<{ label: string; value: number }>
+}
+
+function renderBar({ rows, keys, multi }: ChartBody) {
+  return (
+    <BarChart data={rows} margin={MARGIN}>
+      <CartesianGrid strokeDasharray='3 3' stroke='var(--vp-border)' vertical={false} />
+      <XAxis dataKey='label' tick={AXIS_TICK} stroke='var(--vp-border)' />
+      <YAxis allowDecimals tick={AXIS_TICK} stroke='var(--vp-border)' tickFormatter={formatTick} />
+      <Tooltip cursor={{ fill: 'var(--vp-surface-2)' }} contentStyle={TOOLTIP_STYLE} />
+      {multi ? <Legend wrapperStyle={LEGEND_STYLE} /> : null}
+      {keys.map((key, seriesIndex) => (
+        <Bar
+          key={key}
+          dataKey={key}
+          radius={[4, 4, 0, 0]}
+          maxBarSize={64}
+          fill={COLORS[seriesIndex % COLORS.length]}
+          isAnimationActive={false}
+        >
+          {multi
+            ? null
+            : rows.map((row, index) => (
+                <Cell key={String(row.label)} fill={COLORS[index % COLORS.length]} />
+              ))}
+        </Bar>
+      ))}
+    </BarChart>
+  )
+}
+
+function renderLine({ rows, keys, multi }: ChartBody) {
+  return (
+    <LineChart data={rows} margin={MARGIN}>
+      <CartesianGrid strokeDasharray='3 3' stroke='var(--vp-border)' vertical={false} />
+      <XAxis dataKey='label' tick={AXIS_TICK} stroke='var(--vp-border)' />
+      <YAxis allowDecimals tick={AXIS_TICK} stroke='var(--vp-border)' tickFormatter={formatTick} />
+      <Tooltip contentStyle={TOOLTIP_STYLE} />
+      {multi ? <Legend wrapperStyle={LEGEND_STYLE} /> : null}
+      {keys.map((key, seriesIndex) => (
+        <Line
+          key={key}
+          type='monotone'
+          dataKey={key}
+          stroke={COLORS[seriesIndex % COLORS.length]}
+          strokeWidth={2.5}
+          dot={{ fill: COLORS[seriesIndex % COLORS.length], r: 3 }}
+          isAnimationActive={false}
+        />
+      ))}
+    </LineChart>
+  )
+}
+
+function renderArea({ rows, keys, multi }: ChartBody) {
+  return (
+    <AreaChart data={rows} margin={MARGIN}>
+      <CartesianGrid strokeDasharray='3 3' stroke='var(--vp-border)' vertical={false} />
+      <XAxis dataKey='label' tick={AXIS_TICK} stroke='var(--vp-border)' />
+      <YAxis allowDecimals tick={AXIS_TICK} stroke='var(--vp-border)' tickFormatter={formatTick} />
+      <Tooltip contentStyle={TOOLTIP_STYLE} />
+      {multi ? <Legend wrapperStyle={LEGEND_STYLE} /> : null}
+      {keys.map((key, seriesIndex) => (
+        <Area
+          key={key}
+          type='monotone'
+          dataKey={key}
+          stroke={COLORS[seriesIndex % COLORS.length]}
+          fill={COLORS[seriesIndex % COLORS.length]}
+          fillOpacity={0.2}
+          strokeWidth={2.5}
+          dot={{ fill: COLORS[seriesIndex % COLORS.length], r: 3 }}
+          isAnimationActive={false}
+        />
+      ))}
+    </AreaChart>
+  )
+}
+
+function renderPie({ pieData }: ChartBody) {
+  return (
+    <PieChart>
+      <Tooltip contentStyle={TOOLTIP_STYLE} />
+      <Pie
+        data={pieData}
+        dataKey='value'
+        nameKey='label'
+        outerRadius={88}
+        stroke='none'
+        isAnimationActive={false}
+      >
+        {pieData.map((point, index) => (
+          <Cell key={point.label} fill={COLORS[index % COLORS.length]} />
+        ))}
+      </Pie>
+    </PieChart>
+  )
+}
+
+const CHART_BODIES = {
+  bar: renderBar,
+  line: renderLine,
+  area: renderArea,
+  pie: renderPie,
+}
+
+/** A bar/line/area/pie chart for estimates or metrics, backed by recharts. Single series comes
+ * from a `- label: value` list; multiple series from a table with one column per series. */
 export function Chart(props: ChartProps) {
   const decoded = (decodeJson(props.data) ?? {}) as { series?: unknown; data?: unknown }
   const { type, title, series, data } = validateProps('Chart', chartSchema, {
@@ -77,81 +189,13 @@ export function Chart(props: ChartProps) {
   })
   const pieData = data.map(point => ({ label: point.label, value: point.values[0] ?? 0 }))
   const pieTotal = pieData.reduce((sum, point) => sum + point.value, 0)
+  const renderBody = CHART_BODIES[type]
   return (
     <figure className='vp-chart vp-expandable'>
       {title ? <figcaption className='vp-chart__title'>{title}</figcaption> : null}
       <div className='vp-chart__canvas' data-type={type}>
         <ResponsiveContainer width='100%' height='100%'>
-          {type === 'bar' ? (
-            <BarChart data={rows} margin={MARGIN}>
-              <CartesianGrid strokeDasharray='3 3' stroke='var(--vp-border)' vertical={false} />
-              <XAxis dataKey='label' tick={AXIS_TICK} stroke='var(--vp-border)' />
-              <YAxis
-                allowDecimals
-                tick={AXIS_TICK}
-                stroke='var(--vp-border)'
-                tickFormatter={formatTick}
-              />
-              <Tooltip cursor={{ fill: 'var(--vp-surface-2)' }} contentStyle={TOOLTIP_STYLE} />
-              {multi ? <Legend wrapperStyle={LEGEND_STYLE} /> : null}
-              {keys.map((key, seriesIndex) => (
-                <Bar
-                  key={key}
-                  dataKey={key}
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={64}
-                  fill={COLORS[seriesIndex % COLORS.length]}
-                  isAnimationActive={false}
-                >
-                  {multi
-                    ? null
-                    : rows.map((row, index) => (
-                        <Cell key={String(row.label)} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                </Bar>
-              ))}
-            </BarChart>
-          ) : type === 'line' ? (
-            <LineChart data={rows} margin={MARGIN}>
-              <CartesianGrid strokeDasharray='3 3' stroke='var(--vp-border)' vertical={false} />
-              <XAxis dataKey='label' tick={AXIS_TICK} stroke='var(--vp-border)' />
-              <YAxis
-                allowDecimals
-                tick={AXIS_TICK}
-                stroke='var(--vp-border)'
-                tickFormatter={formatTick}
-              />
-              <Tooltip contentStyle={TOOLTIP_STYLE} />
-              {multi ? <Legend wrapperStyle={LEGEND_STYLE} /> : null}
-              {keys.map((key, seriesIndex) => (
-                <Line
-                  key={key}
-                  type='monotone'
-                  dataKey={key}
-                  stroke={COLORS[seriesIndex % COLORS.length]}
-                  strokeWidth={2.5}
-                  dot={{ fill: COLORS[seriesIndex % COLORS.length], r: 3 }}
-                  isAnimationActive={false}
-                />
-              ))}
-            </LineChart>
-          ) : (
-            <PieChart>
-              <Tooltip contentStyle={TOOLTIP_STYLE} />
-              <Pie
-                data={pieData}
-                dataKey='value'
-                nameKey='label'
-                outerRadius={88}
-                stroke='none'
-                isAnimationActive={false}
-              >
-                {pieData.map((point, index) => (
-                  <Cell key={point.label} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-            </PieChart>
-          )}
+          {renderBody({ rows, keys, multi, pieData })}
         </ResponsiveContainer>
       </div>
       {type === 'pie' ? (
