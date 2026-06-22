@@ -41,8 +41,8 @@ Begin the file with a single `# Heading`; it becomes the plan title. There is no
 
 ## Components
 
-The data components (`FileTree`, `Chart`, `Compare`, `Matrix`, `Questions`, `Checklist`) take
-their data as **markdown children**, not props: write a normal markdown list (or, for `Matrix`
+The data components (`FileTree`, `Chart`, `Stat`, `Compare`, `Matrix`, `Questions`, `Checklist`)
+take their data as **markdown children**, not props: write a normal markdown list (or, for `Matrix`
 and a multi-series `Chart`, a markdown table) between the tags. Only the scalar settings
 (`title`, `type`, `status`) are attributes. This is fewer tokens and avoids the `{[{ ... }]}`
 brace errors that break a render.
@@ -71,11 +71,21 @@ brace errors that break a render.
   - delete src/gateway/legacy/
   </FileTree>
   ```
-- `<Chart type="bar|line|pie" title="...">` — estimates/metrics. For a single series, one bullet
-  per point, `- <label>: <value>` (value is a number). For multiple series (bar/line only), write
-  a table whose header is `category | series1 | series2`; the header cells after the first name the
-  series (they become the legend), and the first column is the category axis. `pie` is always
-  single-series, so use the list form for it (a table is rejected).
+- `<Chart type="bar|line|area|scatter|radar|gauge|funnel|treemap|pie" title="...">` —
+  estimates/metrics. For a single series, one bullet per point, `- <label>: <value>` (value is a
+  number). For multiple series (`bar`/`line`/`area`/`radar`), write a table whose header is
+  `category | series1 | series2`; the header cells after the first name the series (they become the
+  legend), and the first column is the category axis. The new types take these shapes:
+  - `area` — like `line`: a single-series list or a multi-series table.
+  - `scatter` — a table with exactly **two** value columns, read as x and y: `| point | x | y |`.
+  - `radar` — a multi-series options-by-dimensions table, same shape as a multi-series `bar`.
+  - `gauge` — a single-series list of values on a 0-100 scale.
+  - `funnel` — a single-series list of descending stage values.
+  - `treemap` — a single-series list of `- <label>: <value>`.
+
+  `pie`/`gauge`/`funnel`/`treemap` are always single-series, so use the list form (a table is
+  rejected). Add the `stacked` attribute to a multi-series `bar` or `area`
+  (`<Chart type="bar" stacked>`) to stack the series instead of grouping them.
 
   ```mdx
   <Chart type="bar" title="Effort (days)">
@@ -88,6 +98,10 @@ brace errors that break a render.
   |-------|-----|-----|
   | Auth  | 12  | 30  |
   | DB    | 40  | 120 |
+  </Chart>
+
+  <Chart type="gauge" title="Error budget remaining (%)">
+  - Remaining: 78
   </Chart>
   ```
 - `<Compare>` — weigh approaches side by side as pros/cons cards. Each option is a `## Name`
@@ -138,6 +152,20 @@ brace errors that break a render.
   - [ ] Dashboards live
   </Checklist>
   ```
+- `<Stat>` — headline plan metrics as a grid of cards (files changed, estimated uptime, rollout).
+  One card per bullet, `- <label>: <value> (<intent>) -- <caption>`, where intent is one of
+  `note|good|warn|risk` and both `(intent)` and `-- caption` are optional. The value is free text
+  (`5 min`, `99.9%`), not a number. Use this for static facts, not time series (use `<Chart>` for
+  those). Only add a `<Stat>` when the plan genuinely has standout numbers worth surfacing; most
+  plans have none, and an invented or filler metric is worse than omitting the component entirely.
+
+  ```mdx
+  <Stat>
+  - Files changed: 12
+  - Est. uptime: 99.9% (good)
+  - RPO: 5 min (risk) -- worst-case data loss
+  </Stat>
+  ```
 - Fenced code blocks are syntax-highlighted (Expressive Code): write ` ```ts ` (or js, json, bash,
   python, go, rust, sql, yaml, etc.) to show a key snippet. Add a file name with
   ` ```ts title="src/path/file.ts" ` to render a filename header on the block.
@@ -170,6 +198,8 @@ it in paragraphs. Prose is the connective tissue between visuals, never the subs
   two-or-three-file change may need only a short `<FileTree>` and a `<Checklist>`. Do not add a
   diagram or phase that carries no information: an empty 2-node flowchart shows nothing and is worse
   than one plain sentence. Show when there is structure to show; otherwise a tight sentence is fine.
+  The same applies to `<Stat>`: reach for it only when the plan has genuinely meaningful headline
+  numbers, not as a default header on every plan.
 
 ## Composing a plan
 

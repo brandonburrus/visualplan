@@ -1,4 +1,4 @@
-import { CHANGE_VALUES } from '@visualplan/core'
+import { CHANGE_VALUES, STAT_INTENT_VALUES } from '@visualplan/core'
 
 /**
  * Parses the markdown-list children of the list-shaped plan components into the
@@ -19,6 +19,7 @@ export const CHILD_BLOCK_COMPONENTS = [
   'Chart',
   'Compare',
   'Matrix',
+  'Stat',
 ] as const
 
 /** The prop each block component receives its parsed data on (a JSON string at render). */
@@ -29,6 +30,7 @@ export const BLOCK_DATA_ATTR: Record<string, string> = {
   Chart: 'data',
   Compare: 'options',
   Matrix: 'data',
+  Stat: 'items',
 }
 
 export interface BlockIssue {
@@ -59,6 +61,7 @@ interface MdNode {
 }
 
 const CHANGES: readonly string[] = CHANGE_VALUES
+const STAT_INTENTS: readonly string[] = STAT_INTENT_VALUES
 
 function pos(node: MdNode): { line: number; column: number } {
   return node.position?.start ?? { line: 1, column: 1 }
@@ -145,9 +148,13 @@ function toNumber(raw: string, label: string, at: MdNode, issues: BlockIssue[]):
   return value
 }
 
+/** Chart types that visualize one value per category; a multi-series table is an authoring error. */
+const SINGLE_SERIES_CHARTS: readonly string[] = ['pie', 'gauge', 'funnel', 'treemap']
+
 function parseChart(node: MdNode): BlockResult {
   const issues: BlockIssue[] = []
   const data: Array<{ label: string; values: unknown[] }> = []
+  const type = attrValue(node, 'type')
 
   // Table form = multiple series: header is "category | series1 | series2 ...".
   const table = firstTable(node)
@@ -160,13 +167,29 @@ function parseChart(node: MdNode): BlockResult {
       const values = series.map((_, i) => toNumber(cells[i + 1] ?? '', label, row, issues))
       data.push({ label, values })
     }
-    if (attrValue(node, 'type') === 'pie' && series.length > 1) {
+    if (type && SINGLE_SERIES_CHARTS.includes(type) && series.length > 1) {
       issues.push({
         ...pos(node),
-        message: '<Chart type="pie"> shows a single series; use a "- label: value" list.',
+        message: `<Chart type="${type}"> shows a single series; use a "- label: value" list.`,
+      })
+    }
+    // Scatter plots x against y, so a table must carry exactly two value columns.
+    if (type === 'scatter' && series.length !== 2) {
+      issues.push({
+        ...pos(node),
+        message: '<Chart type="scatter"> needs exactly two value columns (x, y).',
       })
     }
     return { value: { series, data }, issues }
+  }
+
+  // Scatter has no single-series list form: it always needs an x/y table.
+  if (type === 'scatter') {
+    issues.push({
+      ...pos(node),
+      message: '<Chart type="scatter"> needs a table with x and y columns.',
+    })
+    return { value: { series: ['value'], data }, issues }
   }
 
   // List form = a single series of "- label: value".
@@ -298,6 +321,70 @@ function parseCompare(node: MdNode): BlockResult {
   return { value: options, issues }
 }
 
+interface StatItem {
+  label: string
+  value: string
+  intent?: string
+  caption?: string
+}
+
+function parseStat(node: MdNode): BlockResult {
+  const issues: BlockIssue[] = []
+  const items: StatItem[] = []
+  const list = firstList(node)
+  if (!list) {
+    issues.push({
+      ...pos(node),
+      message: '<Stat> needs a markdown list of "- label: value" items.',
+    })
+    return { value: items, issues }
+  }
+  for (const item of list.children ?? []) {
+    const text = toText(item).trim()
+    // A "-- caption" trailer is split off first so the colon split below sees only "label: value".
+    let left = text
+    let caption: string | undefined
+    const dash = text.indexOf(' -- ')
+    if (dash !== -1) {
+      left = text.slice(0, dash)
+      caption = text.slice(dash + 4).trim()
+    }
+    // Split on the FIRST colon: stat values like "5:00" contain colons, labels do not.
+    const colon = left.indexOf(':')
+    if (colon === -1) {
+      issues.push({ ...pos(item), message: `<Stat> item "${text}" must be "label: value".` })
+      items.push({ label: left.trim(), value: '', ...(caption ? { caption } : {}) })
+      continue
+    }
+    const label = left.slice(0, colon).trim()
+    let value = left.slice(colon + 1).trim()
+    let intent: string | undefined
+    const match = value.match(/\s*\(([a-z]+)\)\s*$/i)
+    if (match) {
+      const word = (match[1] ?? '').toLowerCase()
+      if (STAT_INTENTS.includes(word)) {
+        intent = word
+        value = value.slice(0, match.index).trim()
+      } else {
+        issues.push({
+          ...pos(item),
+          message: `<Stat> intent "(${match[1]})" must be one of: note, good, warn, risk.`,
+        })
+      }
+    }
+    if (!label || !value) {
+      issues.push({ ...pos(item), message: `<Stat> item "${text}" must be "label: value".` })
+    }
+    items.push({
+      label,
+      value,
+      ...(intent ? { intent } : {}),
+      ...(caption ? { caption } : {}),
+    })
+  }
+  return { value: items, issues }
+}
+
 const PARSERS: Record<string, (node: MdNode) => BlockResult> = {
   FileTree: parseFileTree,
   Checklist: parseChecklist,
@@ -305,6 +392,7 @@ const PARSERS: Record<string, (node: MdNode) => BlockResult> = {
   Chart: parseChart,
   Compare: parseCompare,
   Matrix: parseMatrix,
+  Stat: parseStat,
 }
 
 /**

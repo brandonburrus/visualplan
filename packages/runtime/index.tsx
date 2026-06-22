@@ -11,6 +11,7 @@ import { Matrix } from './components/Matrix.js'
 import { Mermaid } from './components/Mermaid.js'
 import { Phase } from './components/Phase.js'
 import { Questions } from './components/Questions.js'
+import { Stat } from './components/Stat.js'
 import { Layout } from './Layout.js'
 import './theme.css'
 
@@ -28,6 +29,7 @@ export const components = {
   Callout,
   Questions,
   Checklist,
+  Stat,
   Mermaid,
   Math: MathBlock,
 }

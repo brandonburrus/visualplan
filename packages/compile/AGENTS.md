@@ -38,7 +38,11 @@ through the workspace.
   BEFORE the rehype highlighter.
 - `src/plan-blocks.ts` — `parseBlockChildren`: markdown children of the data components ->
   structured props + positioned `issues`. Shared by `remark-plan-blocks.ts` (render, uses `value`)
-  and the CLI's `check.ts` (uses `issues`), so render and check agree.
+  and the CLI's `check.ts` (uses `issues`), so render and check agree. `parseStat` parses the `Stat`
+  block (one `- label: value (intent) -- caption` per item; caption splits on `' -- '`, the trailing
+  `(intent)` is validated against `STAT_INTENT_VALUES`). `parseChart` adds shape guards:
+  `SINGLE_SERIES_CHARTS` (`pie`, `gauge`, `funnel`, `treemap`) reject a multi-series table, and
+  `scatter` requires a table with exactly two value columns (the list form is rejected).
 - `src/remark-plan-blocks.ts` / `remark-mermaid.ts` / `remark-math.ts` — the three custom remark
   plugins. `remark-math` converts LaTeX to MathML with `temml` at build time (isomorphic).
 - `src/expressive-code.ts` — `baseExpressiveCodeOptions` (themes, frames, ink styling, color

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { CATALOG, chartSchema, matrixSchema } from '../src/index.js'
+import { CATALOG, chartSchema, matrixSchema, statSchema } from '../src/index.js'
 
 describe('chartSchema', () => {
   it('accepts a valid bar spec (golden)', () => {
@@ -9,6 +9,37 @@ describe('chartSchema', () => {
       data: [{ label: 'x', values: [1] }],
     })
     expect(result.success).toBe(true)
+  })
+
+  it('accepts a valid area spec (golden)', () => {
+    const result = chartSchema.safeParse({
+      type: 'area',
+      series: ['value'],
+      data: [{ label: 'x', values: [1] }],
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts each new chart type (golden)', () => {
+    for (const type of ['scatter', 'radar', 'gauge', 'funnel', 'treemap']) {
+      const result = chartSchema.safeParse({
+        type,
+        series: ['value'],
+        data: [{ label: 'x', values: [1] }],
+      })
+      expect(result.success).toBe(true)
+    }
+  })
+
+  it('accepts the stacked attribute and keeps it on the parsed object (golden)', () => {
+    const result = chartSchema.safeParse({
+      type: 'bar',
+      stacked: true,
+      series: ['a', 'b'],
+      data: [{ label: 'x', values: [1, 2] }],
+    })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.stacked).toBe(true)
   })
 
   it('rejects an unknown chart type (error)', () => {
@@ -46,6 +77,26 @@ describe('matrixSchema', () => {
 
   it('rejects a grid with no rows (edge)', () => {
     const result = matrixSchema.safeParse({ columns: [{ name: 'A' }, { name: 'B' }], rows: [] })
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('statSchema', () => {
+  it('accepts an item with an intent and caption (golden)', () => {
+    const result = statSchema.safeParse({
+      title: 'Impact',
+      items: [{ label: 'Est. uptime', value: '99.9%', intent: 'good', caption: 'rolling avg' }],
+    })
+    expect(result.success).toBe(true)
+  })
+
+  it('rejects empty items (error)', () => {
+    const result = statSchema.safeParse({ items: [] })
+    expect(result.success).toBe(false)
+  })
+
+  it('rejects an item missing its value (edge)', () => {
+    const result = statSchema.safeParse({ items: [{ label: 'Files changed' }] })
     expect(result.success).toBe(false)
   })
 })

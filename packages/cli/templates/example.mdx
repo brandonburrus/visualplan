@@ -9,6 +9,12 @@ the edge, observable, and safe to roll out behind a flag.
   starve the fleet by spreading requests across endpoints.
 </Callout>
 
+<Stat>
+- Files changed: 4
+- Added latency: ~1 ms (good)
+- Rollout: 1% to 100% (warn) -- ramp while watching reject rates
+</Stat>
+
 ## Architecture
 
 ```mermaid
@@ -86,12 +92,16 @@ flowchart LR
   - Dashboards: 1
   </Chart>
 
-  <Chart type='bar' title='Requests/s by ramp step'>
+  <Chart type='area' title='Requests/s by ramp step' stacked>
   | Step | Allowed | Rejected |
   |------|---------|----------|
   | 1%   | 50      | 2        |
   | 10%  | 480     | 15       |
   | 100% | 4800    | 120      |
+  </Chart>
+
+  <Chart type='gauge' title='Error budget remaining (%)'>
+  - Remaining: 78
   </Chart>
 </Phase>
 

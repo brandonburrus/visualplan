@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Callout } from '../components/Callout.js'
+import { Chart } from '../components/Chart.js'
 import { Checklist } from '../components/Checklist.js'
 import { Compare } from '../components/Compare.js'
 import { FileTree } from '../components/FileTree.js'
@@ -9,6 +10,7 @@ import { Matrix } from '../components/Matrix.js'
 import { Phase } from '../components/Phase.js'
 import { Questions } from '../components/Questions.js'
 import { copyText, ShareButton } from '../components/ShareButton.js'
+import { Stat } from '../components/Stat.js'
 
 describe('Phase', () => {
   it('renders the title and a status badge for active/done (golden)', () => {
@@ -277,6 +279,192 @@ describe('Checklist', () => {
   it('defaults an item to not done (edge)', () => {
     const html = renderToStaticMarkup(<Checklist items={[{ text: 'only' }]} />)
     expect(html).toContain('data-done="false"')
+  })
+})
+
+describe('Chart', () => {
+  // The Chart receives its parsed spec as a JSON string in the `data` prop (the
+  // remark-plan-blocks decode path), with `series` and `data` inside.
+  const chartData = (series: string[], data: Array<{ label: string; values: number[] }>) =>
+    JSON.stringify({ series, data })
+
+  it('renders a single-series bar chart and its title (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Chart
+        type='bar'
+        title='Effort'
+        data={chartData(['value'], [{ label: 'API', values: [3] }])}
+      />,
+    )
+    expect(html).toContain('vp-chart')
+    expect(html).toContain('data-type="bar"')
+    expect(html).toContain('Effort')
+  })
+
+  it('renders a line chart (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Chart type='line' data={chartData(['value'], [{ label: 'Auth', values: [12] }])} />,
+    )
+    expect(html).toContain('vp-chart')
+    expect(html).toContain('data-type="line"')
+  })
+
+  it('renders a pie chart with its percentage legend list (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Chart
+        type='pie'
+        data={chartData(
+          ['value'],
+          [
+            { label: 'A', values: [3] },
+            { label: 'B', values: [1] },
+          ],
+        )}
+      />,
+    )
+    expect(html).toContain('data-type="pie"')
+    expect(html).toContain('vp-chart__legend')
+    expect(html).toContain('75%')
+  })
+
+  it('renders an area chart without throwing and emits the vp-chart markup (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Chart
+        type='area'
+        title='Traffic'
+        data={chartData(['value'], [{ label: 'Jan', values: [10] }])}
+      />,
+    )
+    expect(html).toContain('vp-chart')
+    expect(html).toContain('data-type="area"')
+    expect(html).toContain('Traffic')
+    // area is a cartesian chart, not a pie, so the pie percentage legend must not render.
+    expect(html).not.toContain('vp-chart__legend')
+  })
+
+  it('mounts a scatter chart and emits the vp-chart markup (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Chart type='scatter' data={chartData(['x', 'y'], [{ label: 'A', values: [1, 2] }])} />,
+    )
+    expect(html).toContain('vp-chart')
+    expect(html).toContain('data-type="scatter"')
+  })
+
+  it('mounts a radar chart and emits the vp-chart markup (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Chart
+        type='radar'
+        data={chartData(
+          ['p50', 'p95'],
+          [
+            { label: 'Auth', values: [1, 2] },
+            { label: 'DB', values: [3, 4] },
+          ],
+        )}
+      />,
+    )
+    expect(html).toContain('vp-chart')
+    expect(html).toContain('data-type="radar"')
+  })
+
+  it('mounts a gauge chart and emits its legend list (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Chart type='gauge' data={chartData(['value'], [{ label: 'Done', values: [80] }])} />,
+    )
+    expect(html).toContain('vp-chart')
+    expect(html).toContain('data-type="gauge"')
+    expect(html).toContain('vp-chart__legend')
+  })
+
+  it('mounts a funnel chart and emits the vp-chart markup (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Chart type='funnel' data={chartData(['value'], [{ label: 'Visit', values: [100] }])} />,
+    )
+    expect(html).toContain('vp-chart')
+    expect(html).toContain('data-type="funnel"')
+  })
+
+  it('mounts a treemap chart and emits the vp-chart markup (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Chart type='treemap' data={chartData(['value'], [{ label: 'API', values: [60] }])} />,
+    )
+    expect(html).toContain('vp-chart')
+    expect(html).toContain('data-type="treemap"')
+  })
+
+  it('mounts a stacked multi-series bar chart (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Chart
+        type='bar'
+        stacked
+        data={chartData(['p50', 'p95'], [{ label: 'Auth', values: [12, 30] }])}
+      />,
+    )
+    expect(html).toContain('vp-chart')
+    expect(html).toContain('data-type="bar"')
+  })
+
+  it('accepts the string form of the stacked attribute (edge)', () => {
+    const html = renderToStaticMarkup(
+      <Chart
+        type='area'
+        stacked='true'
+        data={chartData(['a', 'b'], [{ label: 'x', values: [1, 2] }])}
+      />,
+    )
+    expect(html).toContain('data-type="area"')
+  })
+
+  it('throws on an unknown chart type (error)', () => {
+    expect(() =>
+      renderToStaticMarkup(
+        <Chart type='donut' data={chartData(['value'], [{ label: 'x', values: [1] }])} />,
+      ),
+    ).toThrow(/invalid props/)
+  })
+})
+
+describe('Stat', () => {
+  // The Stat receives its parsed items as a JSON string in the `items` prop (the
+  // remark-plan-blocks decode path).
+  const statItems = (items: unknown) => JSON.stringify(items)
+
+  it('renders a grid of stat cards with their values, labels, and captions (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Stat
+        title='Impact'
+        items={statItems([
+          { label: 'Files changed', value: '12' },
+          { label: 'RPO', value: '5 min', intent: 'risk', caption: 'worst-case data loss' },
+        ])}
+      />,
+    )
+    expect(html).toContain('vp-stat')
+    expect(html).toContain('vp-stat__card')
+    expect(html).toContain('Impact')
+    expect(html).toContain('Files changed')
+    expect(html).toContain('12')
+    expect(html).toContain('5 min')
+    expect(html).toContain('worst-case data loss')
+  })
+
+  it('carries the matching data-intent on a card with an intent (edge)', () => {
+    const html = renderToStaticMarkup(
+      <Stat items={statItems([{ label: 'Est. uptime', value: '99.9%', intent: 'good' }])} />,
+    )
+    expect(html).toContain('data-intent="good"')
+  })
+
+  it('mounts a minimal single-item stat without throwing (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Stat items={statItems([{ label: 'Files changed', value: '12' }])} />,
+    )
+    expect(html).toContain('vp-stat')
+    expect(html).toContain('Files changed')
+  })
+
+  it('throws on an empty item list (error)', () => {
+    expect(() => renderToStaticMarkup(<Stat items={statItems([])} />)).toThrow(/at least one item/)
   })
 })
 

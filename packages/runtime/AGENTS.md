@@ -26,16 +26,16 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   (`counter-reset: vp-phase` on `.vp-main`, `counter-increment` on `.vp-phase`, number drawn by
   `.vp-phase__node::before`), so phases self-number in document order with no index prop. The
   connector line is a `.vp-phase__rail::after` pseudo-element omitted on the last step.
-- `components/` holds the components (Phase, FileTree, Chart, Compare, Matrix, Callout, Questions,
-  Checklist, Mermaid, Math). `Math` (exported as `MathBlock` to avoid shadowing the global `Math`,
+- `components/` holds the components (Phase, FileTree, Chart, Stat, Compare, Matrix, Callout,
+  Questions, Checklist, Mermaid, Math). `Math` (exported as `MathBlock` to avoid shadowing the global `Math`,
   registered under the `Math` scope key) just injects MathML the CLI's `remark-math` produced from
   a ` ```math ` fence at build time; no math library runs in the browser. `FileTree` builds a nested directory tree from flat `{path}` entries
   (collapsing single-child dir chains); `Checklist` renders done/todo acceptance criteria. Each
   validates its props through `validate.ts`
   against the matching zod schema in `@visualplan/core`, throwing a readable, component-named
   error on invalid input (this surfaces in the page and is the render-time half of validation).
-- **The data components (FileTree, Chart, Compare, Matrix, Questions, Checklist) are authored as
-  markdown children, not props.** The CLI's `remark-plan-blocks` plugin parses those children
+- **The data components (FileTree, Chart, Stat, Compare, Matrix, Questions, Checklist) are authored
+  as markdown children, not props.** The CLI's `remark-plan-blocks` plugin parses those children
   into the structured data and passes it as a JSON string on the component's data prop
   (`files`/`data`/`options`/`items`); the component calls `decodeJson` (in `validate.ts`) to
   parse it before `validateProps`. `decodeJson` passes a non-string through unchanged, so the
@@ -44,7 +44,11 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   horizontal-scroll wrapper); a column header ending in `(pick)` highlights that column. **Chart**
   is single- or multi-series: its data is `{ series, data: [{ label, values[] }] }`; one
   `<Bar>`/`<Line>` per series, a `<Legend>` only when there is more than one, and the per-point
-  `<Cell>` coloring only for a single series. **FileTree** supports a directory-level change: a
+  `<Cell>` coloring only for a single series. `Chart` dispatches on `type` across nine recharts
+  branches (`bar`, `line`, `area`, `scatter`, `radar`, `gauge`, `funnel`, `treemap`, `pie`);
+  `stacked` applies a shared `stackId` to the `<Bar>`/`<Area>` series. **Stat** renders a responsive
+  grid of metric cards (`.vp-stat__card` with `data-intent`), one per item, value + label + optional
+  caption; the intent tints reuse the `--vp-*-tint` vars. **FileTree** supports a directory-level change: a
   path ending in `/` sets `change` on the `DirNode` and renders the marker on the directory row. A
   `move` carries an optional `from` (origin) on the entry; the file renders at its destination with
   a muted `MovedFrom` annotation (`← <from>`) so the rename is visible (the CLI parser requires the
