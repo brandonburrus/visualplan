@@ -156,7 +156,8 @@ brace errors that break a render.
   One card per bullet, `- <label>: <value> (<intent>) -- <caption>`, where intent is one of
   `note|good|warn|risk` and both `(intent)` and `-- caption` are optional. The value is free text
   (`5 min`, `99.9%`), not a number. Use this for static facts, not time series (use `<Chart>` for
-  those).
+  those). Only add a `<Stat>` when the plan genuinely has standout numbers worth surfacing; most
+  plans have none, and an invented or filler metric is worse than omitting the component entirely.
 
   ```mdx
   <Stat>
@@ -197,6 +198,8 @@ it in paragraphs. Prose is the connective tissue between visuals, never the subs
   two-or-three-file change may need only a short `<FileTree>` and a `<Checklist>`. Do not add a
   diagram or phase that carries no information: an empty 2-node flowchart shows nothing and is worse
   than one plain sentence. Show when there is structure to show; otherwise a tight sentence is fine.
+  The same applies to `<Stat>`: reach for it only when the plan has genuinely meaningful headline
+  numbers, not as a default header on every plan.
 
 ## Composing a plan
 
