@@ -4,8 +4,8 @@
 
 Turn an AI agent's implementation and design plans into polished, visual web pages instead of
 walls of text. A plan is written as MDX and compiled to a single self-contained HTML page:
-architecture diagrams, charts, file-change trees, option comparisons, callouts, math, and a
-numbered phase timeline.
+architecture diagrams, charts, metric cards, file-change trees, option comparisons, callouts,
+math, and a numbered phase timeline.
 
 **Documentation and live examples: [visualplan.dev](https://visualplan.dev)**
 
@@ -75,7 +75,8 @@ flowchart LR
  - ` ```math ` (LaTeX, typeset as MathML)
  - `Phase` (timeline/execution/planning steps)
  - `FileTree` (file-change maps)
- - `Chart` (bar/line/pie graphs)
+ - `Chart` (bar, line, area, scatter, radar, gauge, funnel, treemap, and pie graphs, with optional stacking)
+ - `Stat` (headline metric cards)
  - `Compare` (option tradeoffs)
  - `Matrix` (scorecards)
  - `Callout` (note/tip/risk/decision/warning)
