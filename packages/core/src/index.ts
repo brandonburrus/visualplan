@@ -137,87 +137,113 @@ export interface CatalogEntry {
   example: string
 }
 
+// Each entry is its own named export so a consumer of the programmatic API can import a single
+// component's descriptor (`import { chart } from 'vplan'`). The const name is the export
+// identifier; the `name` field stays the human label used by `check` and the components printer
+// (so `mermaid`/`math` keep their "(code fence)" labels). CATALOG is composed from them below.
+export const phase: CatalogEntry = {
+  name: 'Phase',
+  summary: 'A numbered vertical-timeline step with a status badge. Wraps markdown.',
+  staticEnums: { status: STATUS_VALUES },
+  example: '<Phase title="Build the API" status="active">\n  1. Define routes\n</Phase>',
+}
+
+export const fileTree: CatalogEntry = {
+  name: 'FileTree',
+  summary:
+    'A nested directory tree of file changes. Write a markdown list, one "- <change> <path>" per file; change is add/modify/delete/move. Append " -- <note>" for an inline comment.',
+  staticEnums: {},
+  example:
+    '<FileTree>\n- add src/api/routes.ts -- new sliding-window limiter\n- modify src/api/db.ts\n- delete src/legacy.ts\n</FileTree>',
+}
+
+export const chart: CatalogEntry = {
+  name: 'Chart',
+  summary:
+    'A bar/line/area/scatter/radar/gauge/funnel/treemap/pie chart for estimates or metrics. Single series (bar/line/area/gauge/funnel/treemap/pie): a markdown list of "- <label>: <value>". Multiple series (bar/line/area/radar): a markdown table with a "category | series1 | series2" header. Scatter needs a table with exactly two value columns (x, y). Add the "stacked" attribute to a multi-series bar/area to stack the series.',
+  staticEnums: { type: CHART_TYPE_VALUES },
+  example:
+    '<Chart type="bar" title="Effort (days)">\n- API: 3\n- UI: 2\n</Chart>\n\n<Chart type="line" title="Latency by stage (ms)">\n| Stage | p50 | p95 |\n|-------|-----|-----|\n| Auth  | 12  | 30  |\n| DB    | 40  | 120 |\n</Chart>\n\n<Chart type="bar" stacked title="Effort by area (days)">\n| Phase | API | UI |\n|-------|-----|----|\n| Build | 3   | 2  |\n| Test  | 1   | 1  |\n</Chart>',
+}
+
+export const compare: CatalogEntry = {
+  name: 'Compare',
+  summary:
+    'Side-by-side option cards for weighing approaches. Each option is a "## Name" heading (add "(pick)" to recommend one) with as many "- pro:" / "- con:" bullets as you need.',
+  staticEnums: {},
+  example:
+    '<Compare>\n## Postgres (pick)\n- pro: ACID\n- pro: mature tooling\n- con: vertical scaling\n\n## SQLite\n- pro: simple\n- con: single-writer\n</Compare>',
+}
+
+export const matrix: CatalogEntry = {
+  name: 'Matrix',
+  summary:
+    'A comparison grid (options x dimensions) for weighing several choices across several criteria. Write a markdown table; the first column is the row labels, append "(pick)" to one column header to highlight it. Use Compare for pros/cons, Matrix for a scorecard.',
+  staticEnums: {},
+  example:
+    '<Matrix>\n| Dimension | Postgres (pick) | ClickHouse | DynamoDB |\n|-----------|-----------------|------------|----------|\n| Writes    | medium          | high       | high     |\n| Querying  | high            | medium     | low      |\n| Ops cost  | low             | medium     | low      |\n</Matrix>',
+}
+
+export const callout: CatalogEntry = {
+  name: 'Callout',
+  summary: 'A highlighted note/tip/risk/decision/warning block. Wraps markdown.',
+  staticEnums: { type: CALLOUT_TYPE_VALUES },
+  example: '<Callout type="tip">\n  Use ins=/regex/ to mark code as inserted.\n</Callout>',
+}
+
+export const questions: CatalogEntry = {
+  name: 'Questions',
+  summary:
+    'Open questions you want the reader to weigh in on before building, as a highlighted panel. Write a markdown list. Title defaults to "Open questions"; override with title.',
+  staticEnums: {},
+  example:
+    '<Questions>\n- Should refresh tokens rotate on every use?\n- Is a 15-minute access-token TTL acceptable?\n</Questions>',
+}
+
+export const checklist: CatalogEntry = {
+  name: 'Checklist',
+  summary:
+    'Acceptance criteria / definition of done. Write a markdown task list ("- [x]" done, "- [ ]" todo).',
+  staticEnums: {},
+  example:
+    '<Checklist title="Done when">\n- [x] Returns 429 over the limit\n- [ ] Dashboards live\n</Checklist>',
+}
+
+export const stat: CatalogEntry = {
+  name: 'Stat',
+  summary:
+    'Headline plan metrics as a grid of cards. Write a markdown list, one "- <label>: <value> (<intent>) -- <caption>" per stat; value is free text, intent (good/warn/risk/note) and the "-- caption" are optional.',
+  staticEnums: {},
+  example:
+    '<Stat>\n- Files changed: 12\n- Est. uptime: 99.9% (good)\n- RPO: 5 min (risk) -- worst-case data loss\n</Stat>',
+}
+
+export const mermaid: CatalogEntry = {
+  name: 'mermaid (code fence)',
+  summary:
+    'A flowchart, sequence, state, class, ER, or XY-chart diagram. Write a ```mermaid fenced block. (gantt/pie are not supported by the renderer.)',
+  staticEnums: {},
+  example: '```mermaid\nflowchart LR\n  A[Client] --> B[API] --> C[(DB)]\n```',
+}
+
+export const math: CatalogEntry = {
+  name: 'math (code fence)',
+  summary:
+    'A display math formula. Write a ```math fenced block containing LaTeX; it is typeset as MathML.',
+  staticEnums: {},
+  example: '```math\n\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}\n```',
+}
+
 export const CATALOG: readonly CatalogEntry[] = [
-  {
-    name: 'Phase',
-    summary: 'A numbered vertical-timeline step with a status badge. Wraps markdown.',
-    staticEnums: { status: STATUS_VALUES },
-    example: '<Phase title="Build the API" status="active">\n  1. Define routes\n</Phase>',
-  },
-  {
-    name: 'FileTree',
-    summary:
-      'A nested directory tree of file changes. Write a markdown list, one "- <change> <path>" per file; change is add/modify/delete/move. Append " -- <note>" for an inline comment.',
-    staticEnums: {},
-    example:
-      '<FileTree>\n- add src/api/routes.ts -- new sliding-window limiter\n- modify src/api/db.ts\n- delete src/legacy.ts\n</FileTree>',
-  },
-  {
-    name: 'Chart',
-    summary:
-      'A bar/line/area/scatter/radar/gauge/funnel/treemap/pie chart for estimates or metrics. Single series (bar/line/area/gauge/funnel/treemap/pie): a markdown list of "- <label>: <value>". Multiple series (bar/line/area/radar): a markdown table with a "category | series1 | series2" header. Scatter needs a table with exactly two value columns (x, y). Add the "stacked" attribute to a multi-series bar/area to stack the series.',
-    staticEnums: { type: CHART_TYPE_VALUES },
-    example:
-      '<Chart type="bar" title="Effort (days)">\n- API: 3\n- UI: 2\n</Chart>\n\n<Chart type="line" title="Latency by stage (ms)">\n| Stage | p50 | p95 |\n|-------|-----|-----|\n| Auth  | 12  | 30  |\n| DB    | 40  | 120 |\n</Chart>\n\n<Chart type="bar" stacked title="Effort by area (days)">\n| Phase | API | UI |\n|-------|-----|----|\n| Build | 3   | 2  |\n| Test  | 1   | 1  |\n</Chart>',
-  },
-  {
-    name: 'Compare',
-    summary:
-      'Side-by-side option cards for weighing approaches. Each option is a "## Name" heading (add "(pick)" to recommend one) with as many "- pro:" / "- con:" bullets as you need.',
-    staticEnums: {},
-    example:
-      '<Compare>\n## Postgres (pick)\n- pro: ACID\n- pro: mature tooling\n- con: vertical scaling\n\n## SQLite\n- pro: simple\n- con: single-writer\n</Compare>',
-  },
-  {
-    name: 'Matrix',
-    summary:
-      'A comparison grid (options x dimensions) for weighing several choices across several criteria. Write a markdown table; the first column is the row labels, append "(pick)" to one column header to highlight it. Use Compare for pros/cons, Matrix for a scorecard.',
-    staticEnums: {},
-    example:
-      '<Matrix>\n| Dimension | Postgres (pick) | ClickHouse | DynamoDB |\n|-----------|-----------------|------------|----------|\n| Writes    | medium          | high       | high     |\n| Querying  | high            | medium     | low      |\n| Ops cost  | low             | medium     | low      |\n</Matrix>',
-  },
-  {
-    name: 'Callout',
-    summary: 'A highlighted note/tip/risk/decision/warning block. Wraps markdown.',
-    staticEnums: { type: CALLOUT_TYPE_VALUES },
-    example: '<Callout type="tip">\n  Use ins=/regex/ to mark code as inserted.\n</Callout>',
-  },
-  {
-    name: 'Questions',
-    summary:
-      'Open questions you want the reader to weigh in on before building, as a highlighted panel. Write a markdown list. Title defaults to "Open questions"; override with title.',
-    staticEnums: {},
-    example:
-      '<Questions>\n- Should refresh tokens rotate on every use?\n- Is a 15-minute access-token TTL acceptable?\n</Questions>',
-  },
-  {
-    name: 'Checklist',
-    summary:
-      'Acceptance criteria / definition of done. Write a markdown task list ("- [x]" done, "- [ ]" todo).',
-    staticEnums: {},
-    example:
-      '<Checklist title="Done when">\n- [x] Returns 429 over the limit\n- [ ] Dashboards live\n</Checklist>',
-  },
-  {
-    name: 'Stat',
-    summary:
-      'Headline plan metrics as a grid of cards. Write a markdown list, one "- <label>: <value> (<intent>) -- <caption>" per stat; value is free text, intent (good/warn/risk/note) and the "-- caption" are optional.',
-    staticEnums: {},
-    example:
-      '<Stat>\n- Files changed: 12\n- Est. uptime: 99.9% (good)\n- RPO: 5 min (risk) -- worst-case data loss\n</Stat>',
-  },
-  {
-    name: 'mermaid (code fence)',
-    summary:
-      'A flowchart, sequence, state, class, ER, or XY-chart diagram. Write a ```mermaid fenced block. (gantt/pie are not supported by the renderer.)',
-    staticEnums: {},
-    example: '```mermaid\nflowchart LR\n  A[Client] --> B[API] --> C[(DB)]\n```',
-  },
-  {
-    name: 'math (code fence)',
-    summary:
-      'A display math formula. Write a ```math fenced block containing LaTeX; it is typeset as MathML.',
-    staticEnums: {},
-    example: '```math\n\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}\n```',
-  },
+  phase,
+  fileTree,
+  chart,
+  compare,
+  matrix,
+  callout,
+  questions,
+  checklist,
+  stat,
+  mermaid,
+  math,
 ]
