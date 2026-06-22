@@ -18,8 +18,8 @@ package that is a web app rather than part of the CLI's render pipeline.
   `Footer.astro`.
 - `src/nav.ts` — `docLinks`, the single source of truth for the docs sidebar order.
 - `src/pages/index.astro` — the landing page (custom hero + feature grid, uses `Base` directly).
-- `src/pages/docs/*` — the docs content: `index.md`, `install.md`, `cli.md`, and `authoring.mdx`
-  (MDX, because it embeds live component demos).
+- `src/pages/docs/*` — the docs content: `index.md`, `install.md`, `cli.md`, `programmatic.md` (the
+  `vplan` Node API), and `authoring.mdx` (MDX, because it embeds live component demos).
 - `src/components/Demo.astro` — wraps a live runtime component as a "Renders to" stage (see below).
 - `src/nav.ts` — `docLinks` (the Guide sidebar group) and `exampleLinks` (the Examples group, which
   links straight to the rendered example HTML in a new tab).

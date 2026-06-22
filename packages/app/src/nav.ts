@@ -9,6 +9,7 @@ export const docLinks: DocLink[] = [
   { href: '/docs/install/', label: 'Installation' },
   { href: '/docs/authoring/', label: 'Authoring plans' },
   { href: '/docs/cli/', label: 'CLI reference' },
+  { href: '/docs/programmatic/', label: 'Programmatic interface' },
 ]
 
 /**
