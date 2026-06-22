@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 /**
- * Single source of truth for the VisualPlan component vocabulary.
+ * Single source of truth for the Visual Plan component vocabulary.
  *
  * This module is imported by BOTH the browser runtime (for render-time zod
  * validation) and the Node CLI (for static `check` and the `components`
