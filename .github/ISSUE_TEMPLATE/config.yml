@@ -1,0 +1,6 @@
+# Require issues to use one of the forms above; send open-ended questions to Discussions.
+blank_issues_enabled: false
+contact_links:
+  - name: Question or discussion
+    url: https://github.com/brandonburrus/visualplan/discussions
+    about: Ask a question or discuss an idea before filing an issue.
