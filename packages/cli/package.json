@@ -23,7 +23,7 @@
     "url": "git+https://github.com/brandonburrus/visualplan.git",
     "directory": "packages/cli"
   },
-  "homepage": "https://github.com/brandonburrus/visualplan#readme",
+  "homepage": "https://visualplan.dev",
   "bugs": "https://github.com/brandonburrus/visualplan/issues",
   "type": "module",
   "engines": {
