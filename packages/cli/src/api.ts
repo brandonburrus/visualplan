@@ -18,7 +18,9 @@ export interface RenderOptions {
 export class InvalidPlanError extends Error {
   readonly issues: CheckIssue[]
   constructor(issues: CheckIssue[]) {
-    const detail = issues.map(issue => `  ${issue.line}:${issue.column}  ${issue.message}`).join('\n')
+    const detail = issues
+      .map(issue => `  ${issue.line}:${issue.column}  ${issue.message}`)
+      .join('\n')
     super(`Plan has ${issues.length} issue(s):\n${detail}`)
     this.name = 'InvalidPlanError'
     this.issues = issues
