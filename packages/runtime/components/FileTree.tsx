@@ -136,7 +136,7 @@ function renderDir(node: DirNode, depth: number): ReactNode[] {
         style={{ paddingLeft: `${depth * 1.15}rem` }}
       >
         {change ? (
-          <span className='vp-filetree__marker' aria-hidden='true'>
+          <span className='vp-filetree__marker' role='img' aria-label={change}>
             {MARKER[change]}
           </span>
         ) : (
@@ -145,7 +145,6 @@ function renderDir(node: DirNode, depth: number): ReactNode[] {
         <span className='vp-filetree__dir'>{collapsed.label}/</span>
         {from ? <MovedFrom from={from} /> : null}
         {comment ? <span className='vp-filetree__comment'>{comment}</span> : null}
-        {change ? <span className='vp-filetree__change'>{change}</span> : null}
       </li>,
     )
     rows.push(...renderDir(collapsed.node, depth + 1))
@@ -158,14 +157,13 @@ function renderDir(node: DirNode, depth: number): ReactNode[] {
         data-change={file.change}
         style={{ paddingLeft: `${depth * 1.15}rem` }}
       >
-        <span className='vp-filetree__marker' aria-hidden='true'>
+        <span className='vp-filetree__marker' role='img' aria-label={file.change}>
           {MARKER[file.change]}
         </span>
         <FileIcon icon={file.icon} />
         <span className='vp-filetree__name'>{file.name}</span>
         {file.from ? <MovedFrom from={file.from} /> : null}
         {file.comment ? <span className='vp-filetree__comment'>{file.comment}</span> : null}
-        <span className='vp-filetree__change'>{file.change}</span>
       </li>,
     )
   }

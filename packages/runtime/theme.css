@@ -426,9 +426,10 @@ body {
 
 .vp-filetree__row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.65rem;
   padding: 0.22rem 0.45rem;
+  line-height: 1.5;
 }
 
 .vp-filetree__marker {
@@ -483,6 +484,8 @@ body {
 }
 
 .vp-filetree__name {
+  flex: 0 0 auto;
+  white-space: nowrap;
   color: var(--vp-text);
 }
 
@@ -490,28 +493,21 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
   color: var(--vp-faint);
   font-size: 0.78rem;
 }
 
 .vp-filetree__comment {
+  flex: 1 1 auto;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
   color: var(--vp-muted);
   font-family: var(--vp-font);
   font-size: 0.78rem;
-  font-style: italic;
-}
-
-.vp-filetree__change {
-  margin-left: auto;
-  padding-left: 0.6rem;
-  font-size: 0.68rem;
-  color: var(--vp-faint);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
 }
 
 /* Chart */
