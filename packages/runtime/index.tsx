@@ -35,7 +35,7 @@ export const components = {
 /** Mount a compiled MDX plan into the page shell. */
 export function mount(Plan: ComponentType) {
   const container = document.getElementById('root')
-  if (!container) throw new Error('VisualPlan: #root element not found')
+  if (!container) throw new Error('Visual Plan: #root element not found')
   createRoot(container).render(
     <MDXProvider components={components}>
       <Layout>

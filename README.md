@@ -1,4 +1,6 @@
-# Visual Plan
+<p align="center">
+  <img src="assets/banner.jpg" alt="Visual Plan: render an AI agent's plans as scannable visual pages instead of walls of text" width="100%">
+</p>
 
 Turn an AI agent's implementation and design plans into polished, visual web pages instead of
 walls of text. A plan is written as MDX and compiled to a single self-contained HTML page:

@@ -1,4 +1,4 @@
-# VisualPlan
+# Visual Plan
 
 A pnpm monorepo for `vplan`: a Node CLI that renders a plan written as MDX into a
 polished, self-contained HTML page, so an AI agent can present plans as scannable visuals
@@ -147,4 +147,4 @@ A release is cut by creating a GitHub release; the tag is the published version 
   catalog and React surface as their own units without three npm entries.
 - 2026-06-20: Published npm name and CLI command are `vplan`, not `visualplan`. Why: npm's
   similarity filter rejects `visualplan` as too close to the existing `visual-plan` package.
-  The product display name (VisualPlan) and the private `@visualplan/*` scope are unaffected.
+  The product display name (Visual Plan) and the private `@visualplan/*` scope are unaffected.

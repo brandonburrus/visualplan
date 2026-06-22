@@ -1,6 +1,6 @@
 # packages/core (@visualplan/core)
 
-The single source of truth for the VisualPlan component vocabulary: a zod schema per
+The single source of truth for the Visual Plan component vocabulary: a zod schema per
 component, the enum constants those schemas share, and the `CATALOG` metadata used by the
 CLI's `check` and `components` commands. One file: `src/index.ts`.
 

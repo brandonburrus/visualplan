@@ -29,7 +29,7 @@ export async function runRender(file: string, options: RenderOptions): Promise<v
   if (options.watch) {
     const server = await startDevServer(absMdx)
     process.stdout.write(
-      `VisualPlan watching ${file}\n  ${server.url}\n  (edit the file to hot-reload; Ctrl+C to stop)\n`,
+      `Visual Plan watching ${file}\n  ${server.url}\n  (edit the file to hot-reload; Ctrl+C to stop)\n`,
     )
     if (options.open !== false) await open(server.url)
     return

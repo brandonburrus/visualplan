@@ -3,7 +3,7 @@ import { CATALOG } from '@visualplan/core'
 /** `vplan components` — print the component vocabulary cheat-sheet. */
 export function runComponents(): void {
   const lines: string[] = [
-    'VisualPlan components — use these directly in a plan .mdx (no imports):',
+    'Visual Plan components — use these directly in a plan .mdx (no imports):',
     '',
   ]
   for (const entry of CATALOG) {
