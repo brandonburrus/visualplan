@@ -10,6 +10,10 @@ vocabulary is general: although the examples below are code-flavored, it fits an
 (a product launch, a research agenda, an incident response), not just software changes. Use the
 components that fit the plan and skip the ones that do not.
 
+Above all, **show, don't tell**: a reader should grasp the plan by scanning its diagrams, phases,
+and tables, with prose only connecting the visuals, not carrying the plan itself. The
+**Show, don't tell** section below is the heart of this skill.
+
 > **If the `vplan` command is not found**, install it globally first: `npm i -g vplan@latest`
 > (published on npm). Re-run the failed command afterward.
 
@@ -146,43 +150,62 @@ brace errors that break a render.
   - Inline text: ` ```ts "TokenBucket" `, a rename as ` ```ts del="oldName" ins="newName" `
   - Regex (and capture group): ` ```ts /\bTODO\b/ `, ` ```ts ins=/const (\w+) =/ ` (marks the group)
 
-## Guidance
+## Show, don't tell
 
-- Lead with structure: open with an optional one-paragraph context, then a mermaid architecture
-  diagram, then `<Phase>` sections. Put risks and key decisions in `<Callout>`s, not buried in prose.
-- Right-size the structure to the change. A large effort opens with a diagram and several phases;
-  a two-or-three-file change may need only a short `<FileTree>` and a `<Checklist>`. Do not add a
-  diagram or phases that carry no information, an empty 2-node flowchart is worse than no diagram.
-- Prefer a diagram or a `<FileTree>` over describing structure in sentences.
-- Keep prose tight inside phases; the visual is the point.
+The whole point of a visual plan is to replace a wall of prose with something the reader grasps by
+scanning. Default to a component over a sentence: if a fact has structure, show it; do not describe
+it in paragraphs. Prose is the connective tissue between visuals, never the substance.
+
+- **Lead with the structure.** Open with at most a one-paragraph context, then a ` ```mermaid `
+  architecture diagram, then the `<Phase>` timeline. The reader should understand the shape of the
+  plan before reading a single full sentence.
+- **Prefer a diagram or a `<FileTree>` to describing structure in words.** A flowchart of the data
+  path beats a paragraph tracing it; a file-change map beats sentences listing the files.
+- **Move the meaning out of prose into the component that carries it.** Risks and decisions go in
+  `<Callout>`s, open questions in `<Questions>`, tradeoffs in `<Compare>` / `<Matrix>`, acceptance
+  criteria in `<Checklist>`, not buried in paragraphs where they are easy to skim past.
+- **Keep prose tight inside phases.** A `<Phase>` is a step, not an essay: a line or two of intent,
+  then the visual. The visual is the point.
+- **Right-size what you show.** A large effort opens with a diagram and several phases; a
+  two-or-three-file change may need only a short `<FileTree>` and a `<Checklist>`. Do not add a
+  diagram or phase that carries no information: an empty 2-node flowchart shows nothing and is worse
+  than one plain sentence. Show when there is structure to show; otherwise a tight sentence is fine.
+
+## Composing a plan
+
 - `<Phase>` and `<Callout>` wrap arbitrary markdown and components: a `<FileTree>`, `<Chart>`,
   `<Matrix>`, a ` ```mermaid ` diagram, a code block, or a `- [ ]` task list all nest inside them.
   Nest freely to group related content under a step or a highlight.
-- In prose, `<`, `{`, and `}` are MDX syntax, so a bare `<Thing>` or `{value}` can break the
-  render. Wrap literal angle brackets, braces, generics (`List<T>`), or tag-like text in backticks
-  or a code fence, where every character is safe and literal.
-- No images or external assets. The page is a single self-contained file, so a markdown image
-  (`![](url)`) or any external asset cannot be embedded; `check` rejects markdown images. Use a
-  ` ```mermaid ` diagram for anything visual, or describe it in text.
-- Plain markdown works alongside the components: GFM tables (outside `<Matrix>`/`<Chart>`),
-  blockquotes, footnotes, `~~strikethrough~~`, autolinks, `- [ ]` task lists, and custom-start
-  ordered lists all render. Raw inline HTML tags (`<kbd>`, `<sub>`, `<sup>`, `<details>`) do NOT,
-  they are read as unknown components and fail `check`; use backticks or plain text instead.
-- Keep `<Chart>` labels short (a word or two). Long bar/line x-axis labels get dropped or
-  crowded; put the detail in the title or the surrounding prose, not the label. Charts show the
-  shape of the data, not exact figures (there are no on-bar value labels), so any number the reader
-  must know precisely belongs in prose too, not the chart alone.
-- Keep `<Matrix>` cells short (a word or a short score). Cells do not wrap, so a long sentence in
-  one cell forces a horizontal scrollbar and pushes the other columns off-screen. Put rationale in
-  prose or a `<Callout>`, not in a cell.
-- Do not put series of wildly different magnitudes on one `<Chart>` (e.g. a value near 50 beside
-  one near 2,000,000). They share a single y-axis, so the small series flattens to the zero line
-  and reads as nothing. Split them into separate charts or normalize to the same unit.
-- For mermaid, prefer top-down (`flowchart TD`) once a diagram has many nodes. A very wide
-  left-to-right (`LR`) chain shrinks to fit the page (a long single-row chain becomes effectively
-  illegible inline); split large flows into a few smaller diagrams instead of one sprawling one.
 - Diagrams and charts each render a hover "expand" button that opens a zoomable, pannable
-  fullscreen viewer, so a dense diagram stays legible even when shrunk inline. (Code blocks do
-  not.) You can lean on it for a necessarily-large diagram, but splitting is still better when the
-  inline view must read on its own.
-- Always `check` before presenting, so the user never sees a broken render.
+  fullscreen viewer, so a dense diagram stays legible even when shrunk inline (code blocks do not).
+  You can lean on it for a necessarily-large diagram, but splitting into smaller diagrams still
+  reads better when the inline view must stand on its own.
+
+## Rules
+
+- **Always `vplan check` before presenting, and fix every reported `file:line:col` issue first.**
+  The user should never see a broken render.
+- **No images or external assets.** The page is a single self-contained file, so a markdown image
+  (`![](url)`) or any external asset cannot be embedded, and `check` rejects markdown images. Use a
+  ` ```mermaid ` diagram for anything visual, or describe it in text.
+
+## Gotchas
+
+- **`<`, `{`, and `}` are MDX syntax in prose.** A bare `<Thing>` or `{value}` can break the render.
+  Wrap literal angle brackets, braces, generics (`List<T>`), or tag-like text in backticks or a code
+  fence, where every character is safe and literal.
+- **Raw inline HTML tags fail `check`.** `<kbd>`, `<sub>`, `<sup>`, `<details>` and the like are read
+  as unknown components and fail; use backticks or plain text instead. Plain markdown otherwise works
+  alongside the components: GFM tables (outside `<Matrix>` / `<Chart>`), blockquotes, footnotes,
+  `~~strikethrough~~`, autolinks, `- [ ]` task lists, and custom-start ordered lists all render.
+- **`<Chart>` shows the shape of the data, not exact figures.** There are no on-bar value labels, so
+  any number the reader must know precisely belongs in prose too. Keep labels to a word or two (long
+  bar/line x-axis labels get dropped or crowded), and never put series of wildly different magnitudes
+  on one chart: a value near 50 beside one near 2,000,000 shares a single y-axis and flattens the
+  small series to the zero line. Split into separate charts or normalize to the same unit.
+- **`<Matrix>` cells do not wrap.** A long sentence in one cell forces a horizontal scrollbar and
+  pushes the other columns off-screen. Keep cells to a word or a short score; put rationale in prose
+  or a `<Callout>`, not in a cell.
+- **Wide mermaid diagrams shrink to illegibility.** Prefer top-down (`flowchart TD`) once a diagram
+  has many nodes; a long left-to-right (`LR`) chain shrinks to fit the page and becomes effectively
+  unreadable inline. Split a large flow into a few smaller diagrams instead of one sprawling one.
