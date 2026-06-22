@@ -1,0 +1,46 @@
+name: PR Check
+
+# Run lint, format, typecheck, build, and tests on every PR into main. The steps
+# share a single checkout + install and run in order; a failing step stops the rest.
+on:
+  pull_request:
+    branches: [main]
+
+# Cancel an in-flight run when a new commit is pushed to the same PR or branch.
+concurrency:
+  group: pr-check-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # biome lint/format without --write: report problems, never mutate the tree.
+      - name: Lint
+        run: pnpm exec biome lint .
+
+      - name: Format
+        run: pnpm exec biome format .
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
