@@ -1,4 +1,4 @@
-# VisualPlan
+# Visual Plan
 
 Turn an AI agent's implementation and design plans into polished, visual web pages instead of
 walls of text. A plan is written as MDX and compiled to a single self-contained HTML page:
@@ -15,7 +15,7 @@ It comes in two parts that work together:
 
 ## Install
 
-### The agent skill
+### The Skill
 
 Installs the `visual-plan` skill into your coding agent so it authors plans visually:
 
@@ -46,6 +46,8 @@ vplan components         # print the component vocabulary
 A plan is an MDX file that starts with a `# Title` (no frontmatter) and uses a fixed set of
 components, always in scope (no imports):
 
+### Example Plan
+
 ````mdx
 # Add rate limiting to the API
 
@@ -65,28 +67,27 @@ flowchart LR
 </Callout>
 ````
 
-The full vocabulary: `Phase` (timeline steps), ` ```mermaid ` (flowchart, sequence, state, class,
-ER, and XY diagrams), `FileTree` (file-change maps), `Chart` (bar/line/pie), `Compare` (option
-tradeoffs), `Matrix` (scorecards), `Callout` (note/tip/risk/decision/warn), `Questions`,
-`Checklist`, ` ```math ` (LaTeX, typeset as MathML), and syntax-highlighted code blocks with file
-titles. Run `vplan components`, or read the [authoring guide](https://visualplan.dev/docs/authoring/),
-for the exact props.
+### All components
+
+ - ` ```mermaid ` (flowchart, sequence, state, class, ER, and XY diagrams)
+ - ` ```math ` (LaTeX, typeset as MathML)
+ - `Phase` (timeline/execution/planning steps)
+ - `FileTree` (file-change maps)
+ - `Chart` (bar/line/pie graphs)
+ - `Compare` (option tradeoffs)
+ - `Matrix` (scorecards)
+ - `Callout` (note/tip/risk/decision/warning)
+ - `Questions`
+ - `Checklist`
+ - syntax-highlighted code blocks with file titles
 
 ## Share a plan
 
-Every rendered plan has a share button that copies a link encoding the entire plan. Open it at
-[visualplan.dev/view](https://visualplan.dev/view) to view the plan in any browser, no install
-required, with nothing stored on a server: the whole plan travels inside the link.
+Every rendered plan has a share button that copies a link encoding the entire plan. The plan
+is base64url encoded into a query param where it is securely decompressed into a sandboxed iframe
+in the browser at [visualplan.dev](https://visualplan.dev). This means you can share a plan with
+anyone simply by sharing the URL, without having to send files or make any kind of account.
 
 ## Documentation
 
-Full docs, guides, and rendered examples live at [visualplan.dev](https://visualplan.dev):
-
-- [Getting started](https://visualplan.dev/docs/)
-- [Installing](https://visualplan.dev/docs/install/)
-- [Authoring plans](https://visualplan.dev/docs/authoring/) — the component vocabulary, with live examples
-- [CLI reference](https://visualplan.dev/docs/cli/)
-
-## License
-
-MIT
+Full docs, guides, and rendered examples live at [visualplan.dev](https://visualplan.dev).
