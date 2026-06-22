@@ -224,7 +224,9 @@ function renderRadar({ rows, keys, multi }: ChartBody) {
     <RadarChart data={rows}>
       <PolarGrid stroke='var(--vp-border)' />
       <PolarAngleAxis dataKey='label' tick={AXIS_TICK} />
-      <PolarRadiusAxis tick={AXIS_TICK} stroke='var(--vp-border)' />
+      {/* Hide the numeric radius scale: recharts renders its ticks rotated along the axis angle,
+          which reads as an illegible vertical strip. A plan radar compares shape, not exact radii. */}
+      <PolarRadiusAxis tick={false} axisLine={false} stroke='var(--vp-border)' />
       {multi ? <Legend wrapperStyle={LEGEND_STYLE} /> : null}
       {keys.map((key, seriesIndex) => (
         <Radar
@@ -249,10 +251,10 @@ function renderGauge({ data }: ChartBody) {
   return (
     <RadialBarChart
       data={points}
-      innerRadius='30%'
-      outerRadius='90%'
-      startAngle={90}
-      endAngle={-270}
+      innerRadius='45%'
+      outerRadius='100%'
+      startAngle={180}
+      endAngle={0}
     >
       <PolarAngleAxis type='number' domain={[0, 100]} tick={false} />
       <RadialBar dataKey='value' background cornerRadius={4} isAnimationActive={false} />

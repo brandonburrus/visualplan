@@ -911,12 +911,15 @@ body {
 .vp-chart__canvas[data-type="pie"] {
   height: 230px;
 }
-/* Radial, polar, and area-fill charts read better with a taller, squarer canvas. */
-.vp-chart__canvas[data-type="gauge"],
+/* Polar and treemap charts read better with a taller, squarer canvas. */
 .vp-chart__canvas[data-type="radar"],
 .vp-chart__canvas[data-type="treemap"],
 .vp-chart__canvas[data-type="funnel"] {
   height: 280px;
+}
+/* A gauge is a 180deg half-arc (wide, not tall), so a shorter canvas avoids dead space below it. */
+.vp-chart__canvas[data-type="gauge"] {
+  height: 180px;
 }
 
 /* Fullscreen affordance for code blocks, diagrams, and charts */
