@@ -22,9 +22,12 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
   returns the module whose default export is the MDX component, matching `runtime/virtual-plan.d.ts`.
   This single plugin replaced the old `virtual:plan` path alias AND `@mdx-js/rollup` (the plan is the
   only `.mdx`), so the one-shot build and `--watch` share ONE compile path and cannot drift. For
-  `--watch`, `startDevServer(path)` passes `{ path }`; the plugin re-reads the file in `load` and
-  calls `this.addWatchFile(path)` so an edit invalidates the module and Vite recompiles + reloads
-  (that registration, not @mdx-js/rollup's old watcher, is now what drives HMR). `planSharePlugin` encodes the plan's MDX
+  `--watch`, `startDevServer(path)` passes `{ path }`; the plugin re-reads the file in `load`.
+  **HMR gotcha:** the plan is now a virtual module backed by a file, not a real module Vite tracks by
+  path, so `addWatchFile` alone does NOT invalidate it on a save (verified: it only adds the file to
+  the watcher). The plugin's `handleHotUpdate` is what drives `--watch`: on a change to the plan it
+  invalidates the virtual module and sends a `full-reload`. Do not drop it, or editing a watched plan
+  silently stops reloading. `planSharePlugin` encodes the plan's MDX
   (`@visualplan/core/share` `encodePlan`) and injects it onto `globalThis.__VP_SHARE__` for the
   runtime share button; on the dev server it also serves `/__vp_share`, which re-encodes the file on
   each request so a watched plan shares its current state. Imports the shared remark plugins and

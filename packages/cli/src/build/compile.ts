@@ -88,12 +88,12 @@ const RESOLVED_VIRTUAL_PLAN_ID = '\0virtual:plan'
  * Serve the plan as the `virtual:plan` module the runtime imports. The source is compiled with
  * `@mdx-js/mdx` here (not via @mdx-js/rollup) so the plan can be an in-memory string with no file
  * on disk. The compiled module's default export is the MDX component, matching virtual-plan.d.ts.
- * For a `{ path }` input (the --watch dev server) the file is re-read and registered with
- * `addWatchFile`, so an edit invalidates this module and Vite recompiles + reloads.
+ * For a `{ path }` input (the --watch dev server) the file is re-read on each load and a save
+ * triggers a recompile + full reload via handleHotUpdate.
  */
 function virtualPlanPlugin(input: PlanInput): Plugin {
   const readSource = sourceReader(input)
-  const watchPath = typeof input === 'string' ? null : input.path
+  const watchPath = typeof input === 'string' ? null : resolve(input.path)
   return {
     name: 'visualplan:virtual-plan',
     enforce: 'pre',
@@ -105,6 +105,21 @@ function virtualPlanPlugin(input: PlanInput): Plugin {
       if (watchPath) this.addWatchFile(watchPath)
       const compiled = await compile(readSource(), mdxCompileOptions)
       return String(compiled)
+    },
+    // The plan is a virtual module backed by a file, not a module Vite tracks by path, so a save
+    // does NOT invalidate it on its own (addWatchFile adds the file to the watcher but does not
+    // trigger invalidation, verified). On a change to the watched plan, invalidate the virtual
+    // module and trigger a full reload so --watch reflects the edit. MDX has no HMR boundary, so a
+    // full reload is the right granularity.
+    handleHotUpdate(ctx) {
+      if (!watchPath || resolve(ctx.file) !== watchPath) return
+      const mod = ctx.server.moduleGraph.getModuleById(RESOLVED_VIRTUAL_PLAN_ID)
+      // Invalidate the compiled module if it has been loaded, then always reload: the reload must
+      // fire even before the browser has loaded virtual:plan (e.g. the very first edit), so it is
+      // unconditional, not gated on the module being in the graph.
+      if (mod) ctx.server.moduleGraph.invalidateModule(mod)
+      ctx.server.ws.send({ type: 'full-reload' })
+      return []
     },
   }
 }
