@@ -238,6 +238,10 @@ it in paragraphs. Prose is the connective tissue between visuals, never the subs
 - **`<Matrix>` cells do not wrap.** A long sentence in one cell forces a horizontal scrollbar and
   pushes the other columns off-screen. Keep cells to a word or a short score; put rationale in prose
   or a `<Callout>`, not in a cell.
+- **Avoid `-- comments` on `<FileTree>` `move` rows.** A move already shows its origin path (the
+  `← <from>` annotation), which eats most of the row width, so a comment on the same row gets crowded
+  out. Leave move rows uncommented and put any explanation in prose or a `<Callout>`; reserve `--
+  comments` for add/modify/delete rows, which have the space.
 - **Wide mermaid diagrams shrink to illegibility.** Prefer top-down (`flowchart TD`) once a diagram
   has many nodes; a long left-to-right (`LR`) chain shrinks to fit the page and becomes effectively
   unreadable inline. Split a large flow into a few smaller diagrams instead of one sprawling one.
