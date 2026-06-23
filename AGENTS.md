@@ -12,6 +12,8 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
 - `vplan check <file.mdx>` validates a plan without rendering (the self-correction
   loop): MDX compile errors plus static component checks, printed as `file:line:col`.
 - `vplan components` prints the component vocabulary cheat-sheet.
+- A programmatic API (`import { render, check } from 'vplan'`) renders/validates a plan from an
+  in-memory MDX string, with a named export per catalog entry. See `packages/cli/src/api.ts`.
 
 Plans use a fixed, tiny component vocabulary (`Phase`, `FileTree`, `Chart`, `Compare`, `Matrix`,
 `Callout`, `Questions`, `Checklist`, and ` ```mermaid ` / ` ```math ` fences) with no imports — the
@@ -26,9 +28,10 @@ a multi-series `Chart`), not inline object-array props; only scalar settings (`t
 
 `pnpm-workspace.yaml` globs `packages/*`. Five packages, one published:
 
-- `packages/cli` — **the only published package** (`vplan`). The Node CLI (commander
-  dispatch + Vite/MDX build), built with tsup to `dist/index.js` (the `bin`). Holds
-  `templates/example.mdx` (used by the integration tests) and `scripts/vendor.mjs`.
+- `packages/cli` — **the only published package** (`vplan`). Two entries built by tsup: the Node CLI
+  (commander dispatch + Vite/MDX build) at `dist/index.js` (the `bin`), and the programmatic API at
+  `dist/api.js` (the `import` entry, `src/api.ts`). Holds `templates/example.mdx` (used by the
+  integration tests) and `scripts/vendor.mjs`.
 - `packages/runtime` — `@visualplan/runtime` (private). The browser/React code, shipped as
   **source** and compiled at render time by Vite. Components, `Layout.tsx`, `main.tsx`,
   `index.tsx` (MDX scope + `mount`), `theme.css`, `fullscreen.ts`.

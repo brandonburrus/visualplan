@@ -36,8 +36,12 @@ CLI's `check` and `components` commands. One file: `src/index.ts`.
 is a data component with `statSchema` and `STAT_INTENT_VALUES` (`note`, `good`, `warn`, `risk`);
 its item `value` is a free-text string (so "5 min", "99.9%" validate), unlike `Chart`'s numbers.
 
-A new component needs a schema, its enum constants, and a `CATALOG` entry (with `staticEnums`
-and an `example`) here, plus a component in `@visualplan/runtime`. `staticEnums` is what
+Each `CATALOG` entry is its own named const (`phase`, `chart`, `fileTree`, ...) and `CATALOG` is
+composed from them, so the `vplan` programmatic API can re-export one descriptor per component. The
+const name is the export identifier; the entry's `name` field is the human label (`mermaid`/`math`
+keep their "(code fence)" labels). A new component needs a schema, its enum constants, and a named
+`CATALOG` entry (with `staticEnums` and an `example`) added to the `CATALOG` array here, plus a
+component in `@visualplan/runtime`. `staticEnums` is what
 the CLI's AST checker validates statically; everything else is validated at render time by zod.
 The schemas describe the **decoded** shape; for the data components the `example` shows the
 markdown-children authoring (a bullet/task list, `Compare` headings, or a GFM table for `Matrix`

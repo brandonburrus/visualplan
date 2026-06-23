@@ -1,14 +1,33 @@
 # packages/cli (vplan)
 
-The published package: the `vplan` Node CLI (commander dispatch + the Vite/MDX build that
-renders a plan to a self-contained HTML page). Built with tsup to `dist/index.js` (the `bin`).
+The published package. It ships two entrypoints: the `vplan` CLI (commander dispatch + the Vite/MDX
+build that renders a plan to a self-contained HTML page) at `dist/index.js` (the `bin`), and a
+programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["."]`).
 
 ## Structure
 
-- `src/index.ts` — commander dispatch. `src/commands/` — one file per command (render, check,
-  components).
-- `src/build/compile.ts` — Vite orchestration for `render` (single-file build via
-  `vite-plugin-singlefile`) and `--watch` (dev server). `planSharePlugin` encodes the plan's MDX
+- `src/index.ts` — commander dispatch (the `bin`). `src/commands/` — one file per command (render,
+  check, components).
+- `src/api.ts` — the programmatic API (the library entry): `render(source, { out? })` (returns the
+  HTML string, throws `InvalidPlanError` on an invalid plan, optional file write), `check(source)`,
+  and one named re-export per catalog entry from `@visualplan/core` (`phase`, `chart`, ...). It is
+  source-string based on purpose: rendering a file is `render(await readFile(path, 'utf8'))`, which
+  avoids a path-vs-source overload. It wraps the same `buildHtml`/`checkSource` the CLI uses.
+- `src/build/compile.ts` — Vite orchestration. `buildHtml(source)` is the shared core: it compiles
+  a plan from an in-memory MDX **string** and returns the self-contained HTML (single-file build via
+  `vite-plugin-singlefile`). `renderToFile(path, out)` reads the file once and delegates; the API's
+  `render` passes its source straight through, so nothing is written to disk except the optional
+  output. The plan is served as the `virtual:plan` module by `virtualPlanPlugin`, which compiles the
+  source with `@mdx-js/mdx` `compile()` (the shared remark/rehype config in `mdxCompileOptions`) and
+  returns the module whose default export is the MDX component, matching `runtime/virtual-plan.d.ts`.
+  This single plugin replaced the old `virtual:plan` path alias AND `@mdx-js/rollup` (the plan is the
+  only `.mdx`), so the one-shot build and `--watch` share ONE compile path and cannot drift. For
+  `--watch`, `startDevServer(path)` passes `{ path }`; the plugin re-reads the file in `load`.
+  **HMR gotcha:** the plan is now a virtual module backed by a file, not a real module Vite tracks by
+  path, so `addWatchFile` alone does NOT invalidate it on a save (verified: it only adds the file to
+  the watcher). The plugin's `handleHotUpdate` is what drives `--watch`: on a change to the plan it
+  invalidates the virtual module and sends a `full-reload`. Do not drop it, or editing a watched plan
+  silently stops reloading. `planSharePlugin` encodes the plan's MDX
   (`@visualplan/core/share` `encodePlan`) and injects it onto `globalThis.__VP_SHARE__` for the
   runtime share button; on the dev server it also serves `/__vp_share`, which re-encodes the file on
   each request so a watched plan shares its current state. Imports the shared remark plugins and
@@ -55,11 +74,11 @@ user's plan via `virtual:plan`. `server.fs.strict` is off because the runtime, c
 span sibling dirs in the monorepo.
 
 The build also aliases `react/jsx-runtime`, `react/jsx-dev-runtime`, and `@mdx-js/react` to the
-CLI's own copies (via `require.resolve`). The plan `.mdx` is an external absolute path, so
-@mdx-js/rollup's emitted imports would otherwise resolve relative to the plan's own directory,
-which usually has no `node_modules` (e.g. a global install rendering `~/plan.mdx`). Without these
-aliases, rendering a plan outside a node project fails with "failed to resolve react/jsx-runtime".
-Do not remove them.
+CLI's own copies (via `require.resolve`). The compiled `virtual:plan` module imports those, but it
+is a virtual module with no directory of its own (and a file plan often lives outside any node
+project, e.g. a global install rendering `~/plan.mdx`), so without these aliases they resolve
+relative to nothing and rendering fails with "failed to resolve react/jsx-runtime". Do not remove
+them. The `tests/compile.test.ts` "renders a plan outside any node project" case guards this.
 
 ## Constraints
 
@@ -73,6 +92,18 @@ Do not remove them.
   workspace source, so a stale copy silently shadows your runtime/core edits at render time. After
   changing the runtime or core, re-vendor (`pnpm --filter vplan vendor`) or remove `cli/runtime` +
   `cli/core` so renders pick up the workspace source again.
+- **`tsup.config.ts` is two configs, not one.** The CLI bin (`src/index.ts`) needs the
+  `#!/usr/bin/env node` shebang banner; the library entry (`src/api.ts`) must NOT carry it (it would
+  be a stray line atop an imported module) and needs `.d.ts` types the bin does not. They cannot
+  share one pass, so the bin config has the banner + `clean: true` and the library config has
+  `dts: { resolve: [/^@visualplan\//] }` + `clean: false`. The `dts.resolve` is load-bearing:
+  without it tsup leaves the catalog re-exports as `from '@visualplan/core'` (a private package a
+  consumer lacks), breaking the published types; `resolve` inlines the `@visualplan` types while
+  leaving third-party ones (zod) as ordinary imports. The library config must not clean, or it wipes
+  the bin tsup built first.
+- The package has an `exports` map (`"."` -> the library `dist/api.js` + `dist/api.d.ts`) alongside
+  the `bin`. Keep `"./package.json": "./package.json"` in it: an `exports` map blocks every unlisted
+  subpath, and dropping it would break tooling that resolves the package's `package.json`.
 - `tsup` `noExternal` is the regex `/^@visualplan\/(core|compile)/` (not a bare string) so it also
   bundles the `@visualplan/core/share` and `@visualplan/compile/file-icons` subpaths that
   `compile.ts` imports. The compile package's own third-party deps (rehype-expressive-code,
