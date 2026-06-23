@@ -12,6 +12,7 @@ import { encodePlan } from '@visualplan/core/share'
 import rehypeExpressiveCode, { type RehypeExpressiveCodeOptions } from 'rehype-expressive-code'
 import { build, createServer, type InlineConfig, type Plugin } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
+import type { Theme } from '../config.js'
 
 // The shared base options (themes, frames, color chips, ink styling) come from
 // `@visualplan/compile` so the CLI and the /view page highlight code identically; the CLI
@@ -207,7 +208,36 @@ function planSharePlugin(readSource: () => string): Plugin {
   }
 }
 
-function baseConfig(paths: RuntimePaths, input: PlanInput): InlineConfig {
+/**
+ * An inline `<head>` script that resolves the page's color scheme and sets `<html data-theme>`
+ * before the body paints, so a rendered plan honors the configured default with no flash. It runs
+ * as a plain (non-module) script during head parse, before the deferred app module. Precedence:
+ * the per-view `localStorage` override the runtime cog writes, then the injected config default,
+ * then `system` (the OS). It must stay in sync with the runtime's `theme.ts` (same key, same order).
+ */
+function themeBootstrap(theme: Theme): string {
+  const def = JSON.stringify(theme)
+  return `globalThis.__VP_CONFIG__=${JSON.stringify({ theme })};(function(){var d=${def},p;try{p=localStorage.getItem("vp-theme")}catch(e){}if(p!=="light"&&p!=="dark"&&p!=="system")p=d;var dark=p==="dark"||(p==="system"&&typeof matchMedia==="function"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=dark?"dark":"light"})()`
+}
+
+/**
+ * Inject the configured default theme (from `~/.vplan/config.json`) into the page: the
+ * `themeBootstrap` script seeds `globalThis.__VP_CONFIG__` and sets the initial `data-theme`. The
+ * runtime's cog can still override per-view via `localStorage`; this only sets the default.
+ */
+function planConfigPlugin(theme: Theme): Plugin {
+  return {
+    name: 'visualplan:config',
+    transformIndexHtml: {
+      order: 'pre',
+      handler() {
+        return [{ tag: 'script', injectTo: 'head', children: themeBootstrap(theme) }]
+      },
+    },
+  }
+}
+
+function baseConfig(paths: RuntimePaths, input: PlanInput, theme: Theme): InlineConfig {
   const readSource = sourceReader(input)
   return {
     root: paths.runtimeDir,
@@ -226,7 +256,12 @@ function baseConfig(paths: RuntimePaths, input: PlanInput): InlineConfig {
       },
     },
     esbuild: { jsx: 'automatic', jsxImportSource: 'react' },
-    plugins: [virtualPlanPlugin(input), htmlTitlePlugin(readSource), planSharePlugin(readSource)],
+    plugins: [
+      virtualPlanPlugin(input),
+      htmlTitlePlugin(readSource),
+      planSharePlugin(readSource),
+      planConfigPlugin(theme),
+    ],
     // The runtime, core, and (for a file input) the user's plan span sibling dirs (and a hoisted
     // node_modules) in the monorepo, so the dev server cannot use a single allow root. This is a
     // local tool rendering the user's own plan, so fs is unrestricted.
@@ -234,12 +269,16 @@ function baseConfig(paths: RuntimePaths, input: PlanInput): InlineConfig {
   }
 }
 
-/** Compile a plan's MDX source to a single self-contained HTML page, returned as a string. */
-export async function buildHtml(source: string): Promise<string> {
+/**
+ * Compile a plan's MDX source to a single self-contained HTML page, returned as a string. `theme`
+ * is the default scheme baked into the page (the programmatic API leaves it `system`; the CLI passes
+ * the configured value).
+ */
+export async function buildHtml(source: string, theme: Theme = 'system'): Promise<string> {
   const paths = findRuntimePaths()
   const outDir = await mkdtemp(join(tmpdir(), 'visualplan-build-'))
   try {
-    const config = baseConfig(paths, source)
+    const config = baseConfig(paths, source, theme)
     await build({
       ...config,
       plugins: [...(config.plugins ?? []), viteSingleFile()],
@@ -256,9 +295,13 @@ export async function buildHtml(source: string): Promise<string> {
 }
 
 /** Compile an MDX plan file to a single self-contained HTML file at `outPath`. */
-export async function renderToFile(mdxPath: string, outPath: string): Promise<void> {
+export async function renderToFile(
+  mdxPath: string,
+  outPath: string,
+  theme: Theme = 'system',
+): Promise<void> {
   const source = readFileSync(resolve(mdxPath), 'utf8').replace(/^\ufeff/, '')
-  await writeFile(resolve(outPath), await buildHtml(source))
+  await writeFile(resolve(outPath), await buildHtml(source, theme))
 }
 
 export interface DevServer {
@@ -267,9 +310,9 @@ export interface DevServer {
 }
 
 /** Start a hot-reloading dev server for an MDX plan file and return its local URL. */
-export async function startDevServer(mdxPath: string): Promise<DevServer> {
+export async function startDevServer(mdxPath: string, theme: Theme = 'system'): Promise<DevServer> {
   const paths = findRuntimePaths()
-  const server = await createServer(baseConfig(paths, { path: resolve(mdxPath) }))
+  const server = await createServer(baseConfig(paths, { path: resolve(mdxPath) }, theme))
   await server.listen()
   const url =
     server.resolvedUrls?.local[0] ?? `http://localhost:${server.config.server.port ?? 5173}`

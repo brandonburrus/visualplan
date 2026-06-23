@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { planTitle, renderToFile } from '../src/build/compile.js'
+import { buildHtml, planTitle, renderToFile } from '../src/build/compile.js'
 
 const examplePath = fileURLToPath(new URL('../templates/example.mdx', import.meta.url))
 let workDir: string
@@ -134,4 +134,20 @@ describe('planTitle', () => {
     await writeFile(path, '\ufeff# BOM Plan\n\nbody\n')
     expect(planTitle(path)).toBe('BOM Plan')
   })
+})
+
+describe('theme config injection', () => {
+  it('injects __VP_CONFIG__ and a data-theme bootstrap, defaulting to system (golden)', () => {
+    // The example render above uses the default theme (system).
+    expect(html).toContain('__VP_CONFIG__')
+    expect(html).toContain('"theme":"system"')
+    expect(html).toContain('document.documentElement.dataset.theme')
+  })
+
+  it('bakes a configured theme into the bootstrap default (golden)', async () => {
+    const dark = await buildHtml('# t\n\nbody\n', 'dark')
+    expect(dark).toContain('"theme":"dark"')
+    // The default feeds the resolver; localStorage still overrides it per-view.
+    expect(dark).toContain('localStorage.getItem("vp-theme")')
+  }, 60_000)
 })

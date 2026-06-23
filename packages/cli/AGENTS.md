@@ -8,6 +8,14 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
 
 - `src/index.ts` — commander dispatch (the `bin`). `src/commands/` — one file per command (render,
   check, components).
+- `src/config.ts` — the persistent CLI config at `~/.vplan/config.json` (literal path via
+  `homedir()`, deliberately NOT `env-paths`). Only setting today is `theme` (`light`|`dark`|
+  `system`). `readConfig` is tolerant (missing/malformed/unknown-theme -> `{ theme: 'system' }`) so a
+  hand-broken config never breaks a render; `writeConfig` exists for a future `vplan config` command
+  and the tests (nothing in the render path writes it). The render command reads it and passes the
+  theme into the build; the rendered plan's in-page cog overrides per-view via `localStorage` and
+  never writes back here. Both `readConfig`/`writeConfig` take an optional `dir` so tests point at a
+  temp directory instead of the real home.
 - `src/api.ts` — the programmatic API (the library entry): `renderPlan(source, { out? })` (returns
   the HTML string, throws `InvalidPlanError` on an invalid plan, optional file write),
   `checkPlan(source)`, and one named re-export per catalog entry from `@visualplan/core` (`phase`,
@@ -39,7 +47,12 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
   size it). It also appends the Node-only `remarkFileTreeIcons` (`@visualplan/compile/filetree-icons`)
   to the remark chain, which inlines a Material file-type icon per `<FileTree>` entry; both are
   CLI-only so the browser bundle never loads `material-icon-theme`. Color chips and file icons both inline their output at build time, so the single-file
-  invariant holds. `src/build/check.ts` — the static AST
+  invariant holds. `buildHtml(source, theme)` and `renderToFile`/`startDevServer` take the
+  configured `theme` (default `system`; the programmatic `renderPlan` leaves it default).
+  `planConfigPlugin` injects a tiny non-module `<head>` script (`themeBootstrap`) that seeds
+  `globalThis.__VP_CONFIG__` and sets `<html data-theme>` before first paint, so a configured dark
+  plan has no light flash. That script's resolution (localStorage `vp-theme` -> injected default ->
+  `system`) MUST stay in sync with the runtime's `theme.ts`. `src/build/check.ts` — the static AST
   validator. It also runs each ` ```math ` block through Temml and each ` ```mermaid ` block through
   `beautiful-mermaid`'s `renderMermaidSVG` (the same renderer the runtime `Mermaid` component calls)
   to report bad LaTeX / an unrenderable diagram as `file:line:col`, so `check` and render agree on

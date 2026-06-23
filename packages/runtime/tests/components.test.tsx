@@ -11,6 +11,7 @@ import { Phase } from '../components/Phase.js'
 import { Questions } from '../components/Questions.js'
 import { copyText, ShareButton } from '../components/ShareButton.js'
 import { Stat } from '../components/Stat.js'
+import { ThemeToggle } from '../components/ThemeToggle.js'
 
 describe('Phase', () => {
   it('renders the title and a status badge for active/done (golden)', () => {
@@ -518,6 +519,22 @@ describe('ShareButton', () => {
     const html = renderToStaticMarkup(<ShareButton />)
     expect(html).toContain('vp-share__note')
     expect(html).toContain('snapshot')
+  })
+})
+
+describe('ThemeToggle', () => {
+  it('renders the cog and a menu of the three theme options (golden)', () => {
+    const html = renderToStaticMarkup(<ThemeToggle />)
+    expect(html).toContain('aria-label="Theme settings"')
+    expect(html).toContain('System')
+    expect(html).toContain('Light')
+    expect(html).toContain('Dark')
+  })
+
+  it('marks system active before any choice is made (edge)', () => {
+    // useEffect does not run under static rendering, so the initial preference (system) shows.
+    const html = renderToStaticMarkup(<ThemeToggle />)
+    expect(html).toMatch(/aria-checked="true"[^>]*>\s*<span>System/)
   })
 })
 
