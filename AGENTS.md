@@ -16,7 +16,7 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
   an in-memory MDX string, with a named export per catalog entry. See `packages/cli/src/api.ts`.
 - A persistent CLI config at `~/.vplan/config.json` (`packages/cli/src/config.ts`) sets the default
   `theme` (`light`|`dark`|`system`) baked into a rendered plan; the plan's in-page cog overrides it
-  per-view via `localStorage`.
+  per-view via `localStorage`. `vplan config [get|set|path]` views and edits it.
 
 Plans use a fixed, tiny component vocabulary (`Phase`, `FileTree`, `Chart`, `Compare`, `Matrix`,
 `Callout`, `Questions`, `Checklist`, and ` ```mermaid ` / ` ```math ` fences) with no imports — the

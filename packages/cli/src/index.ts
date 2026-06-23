@@ -2,6 +2,7 @@ import { Command } from 'commander'
 import packageJson from '../package.json' with { type: 'json' }
 import { runCheck } from './commands/check.js'
 import { runComponents } from './commands/components.js'
+import { runConfigGet, runConfigPath, runConfigSet, runConfigShow } from './commands/config.js'
 import { runRender, type RenderOptions } from './commands/render.js'
 
 const program = new Command('vplan')
@@ -27,6 +28,29 @@ program
   .command('components')
   .description('Print the available plan components and their props')
   .action(() => runComponents())
+
+const config = program
+  .command('config')
+  .description('View or change persistent settings (stored in ~/.vplan/config.json)')
+  .action(() => runConfigShow())
+
+config
+  .command('get')
+  .description('Print a setting (theme)')
+  .argument('<key>', 'the setting to read')
+  .action((key: string) => runConfigGet(key))
+
+config
+  .command('set')
+  .description('Change a setting and persist it')
+  .argument('<key>', 'the setting to change (theme)')
+  .argument('<value>', 'the new value (theme: light | dark | system)')
+  .action((key: string, value: string) => runConfigSet(key, value))
+
+config
+  .command('path')
+  .description('Print the config file path')
+  .action(() => runConfigPath())
 
 program.parseAsync(process.argv).catch((error: unknown) => {
   process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`)

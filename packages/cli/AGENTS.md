@@ -7,15 +7,17 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
 ## Structure
 
 - `src/index.ts` — commander dispatch (the `bin`). `src/commands/` — one file per command (render,
-  check, components).
+  check, components, config). `config` is a parent command: bare `config` shows the settings + path,
+  `config get <key>` / `config set <key> <value>` / `config path` are subcommands. Invalid key/value
+  throws, which the top-level catch turns into a stderr message + exit 1.
 - `src/config.ts` — the persistent CLI config at `~/.vplan/config.json` (literal path via
   `homedir()`, deliberately NOT `env-paths`). Only setting today is `theme` (`light`|`dark`|
   `system`). `readConfig` is tolerant (missing/malformed/unknown-theme -> `{ theme: 'system' }`) so a
-  hand-broken config never breaks a render; `writeConfig` exists for a future `vplan config` command
-  and the tests (nothing in the render path writes it). The render command reads it and passes the
-  theme into the build; the rendered plan's in-page cog overrides per-view via `localStorage` and
-  never writes back here. Both `readConfig`/`writeConfig` take an optional `dir` so tests point at a
-  temp directory instead of the real home.
+  hand-broken config never breaks a render; `writeConfig` backs `config set`. The render command
+  reads it and passes the theme into the build; the rendered plan's in-page cog overrides per-view
+  via `localStorage` and never writes back here. `readConfig`/`writeConfig`/`configFilePath` and the
+  `runConfig*` command fns all take an optional `dir` so tests point at a temp directory instead of
+  the real home.
 - `src/api.ts` — the programmatic API (the library entry): `renderPlan(source, { out? })` (returns
   the HTML string, throws `InvalidPlanError` on an invalid plan, optional file write),
   `checkPlan(source)`, and one named re-export per catalog entry from `@visualplan/core` (`phase`,

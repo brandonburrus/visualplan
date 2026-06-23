@@ -2,7 +2,7 @@
  * The persistent CLI config, stored at `~/.vplan/config.json`. The only setting today is the
  * default `theme` (`light` | `dark` | `system`), which the render path bakes into a rendered plan
  * as its initial scheme. A rendered plan's in-page cog overrides this per-view via `localStorage`;
- * it never writes here. The file is changed by hand (or, later, a `vplan config` command).
+ * it never writes here. The file is changed by the `vplan config set` command (or by hand).
  */
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { homedir } from 'node:os'
@@ -14,13 +14,15 @@ export interface Config {
   theme: Theme
 }
 
-const THEMES: readonly Theme[] = ['light', 'dark', 'system']
+/** The valid `theme` values, in menu order. */
+export const THEMES: readonly Theme[] = ['light', 'dark', 'system']
 const DEFAULT_CONFIG: Config = { theme: 'system' }
 
 /** `~/.vplan` — the config directory. */
 export const configDir = join(homedir(), '.vplan')
 
-function configFile(dir: string): string {
+/** Path to the config file within `dir` (defaults to the real `~/.vplan`). */
+export function configFilePath(dir: string = configDir): string {
   return join(dir, 'config.json')
 }
 
@@ -35,7 +37,7 @@ function isTheme(value: unknown): value is Theme {
  */
 export async function readConfig(dir: string = configDir): Promise<Config> {
   try {
-    const parsed: unknown = JSON.parse(await readFile(configFile(dir), 'utf8'))
+    const parsed: unknown = JSON.parse(await readFile(configFilePath(dir), 'utf8'))
     const theme = (parsed as { theme?: unknown } | null)?.theme
     return { theme: isTheme(theme) ? theme : DEFAULT_CONFIG.theme }
   } catch {
@@ -44,10 +46,10 @@ export async function readConfig(dir: string = configDir): Promise<Config> {
 }
 
 /**
- * Write the config to `~/.vplan/config.json`, creating the directory if needed. Provided for a
- * future `vplan config` command (and the tests); the render path only reads.
+ * Write the config to `~/.vplan/config.json`, creating the directory if needed. Used by the
+ * `vplan config set` command; the render path only reads.
  */
 export async function writeConfig(config: Config, dir: string = configDir): Promise<void> {
   await mkdir(dir, { recursive: true })
-  await writeFile(configFile(dir), `${JSON.stringify(config, null, 2)}\n`)
+  await writeFile(configFilePath(dir), `${JSON.stringify(config, null, 2)}\n`)
 }

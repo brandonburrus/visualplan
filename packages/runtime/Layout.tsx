@@ -14,8 +14,8 @@ export function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className='vp-shell'>
-      <ThemeToggle />
       <ShareButton />
+      <ThemeToggle />
       <main className='vp-main'>{children}</main>
     </div>
   )

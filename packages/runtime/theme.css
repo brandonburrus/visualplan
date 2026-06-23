@@ -1122,11 +1122,11 @@ body {
 
 /* Share: a faint fixed top-right icon that brightens and opens a copy popover on
    hover/focus, so the affordance stays out of the way until wanted. */
-/* The theme cog sits just left of the share button (which is at right: 1rem, width 32px). */
+/* The theme cog sits in the top-right corner; the share button is just left of it (width 32px). */
 .vp-theme {
   position: fixed;
   top: 1rem;
-  right: calc(1rem + 40px);
+  right: 1rem;
   z-index: 20;
 }
 
@@ -1231,7 +1231,7 @@ body {
 .vp-share {
   position: fixed;
   top: 1rem;
-  right: 1rem;
+  right: calc(1rem + 40px);
   z-index: 20;
 }
 
