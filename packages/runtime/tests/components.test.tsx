@@ -12,6 +12,7 @@ import { Questions } from '../components/Questions.js'
 import { copyText, ShareButton } from '../components/ShareButton.js'
 import { Stat } from '../components/Stat.js'
 import { ThemeToggle } from '../components/ThemeToggle.js'
+import { Layout } from '../Layout.js'
 
 describe('Phase', () => {
   it('renders the title and a status badge for active/done (golden)', () => {
@@ -537,6 +538,32 @@ describe('ThemeToggle', () => {
     // useEffect does not run under static rendering, so the initial preference (system) shows.
     const html = renderToStaticMarkup(<ThemeToggle />)
     expect(html).toMatch(/<option value="system" selected=""?>System<\/option>/)
+  })
+})
+
+describe('Layout', () => {
+  const config = globalThis as { __VP_CONFIG__?: unknown }
+  afterEach(() => {
+    config.__VP_CONFIG__ = undefined
+  })
+
+  it('renders the theme cog when the theme is not locked (golden)', () => {
+    const html = renderToStaticMarkup(
+      <Layout>
+        <p>plan</p>
+      </Layout>,
+    )
+    expect(html).toContain('aria-label="Settings"')
+  })
+
+  it('hides the theme cog when the API locked the theme (edge)', () => {
+    config.__VP_CONFIG__ = { theme: 'dark', lockTheme: true }
+    const html = renderToStaticMarkup(
+      <Layout>
+        <p>plan</p>
+      </Layout>,
+    )
+    expect(html).not.toContain('aria-label="Settings"')
   })
 })
 

@@ -18,10 +18,13 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
   via `localStorage` and never writes back here. `readConfig`/`writeConfig`/`configFilePath` and the
   `runConfig*` command fns all take an optional `dir` so tests point at a temp directory instead of
   the real home.
-- `src/api.ts` — the programmatic API (the library entry): `renderPlan(source, { out? })` (returns
-  the HTML string, throws `InvalidPlanError` on an invalid plan, optional file write),
-  `checkPlan(source)`, and one named re-export per catalog entry from `@visualplan/core` (`phase`,
-  `chart`, ...). It is source-string based on purpose: rendering a file is
+- `src/api.ts` — the programmatic API (the library entry): `renderPlan(source, { out?, theme?,
+  enableSharing? })` (returns the HTML string, throws `InvalidPlanError` on an invalid plan, optional
+  file write), `checkPlan(source)`, and one named re-export per catalog entry from `@visualplan/core`
+  (`phase`, `chart`, ...). The API view options differ from the CLI defaults on purpose: a set
+  `theme` LOCKS the scheme (hides the cog, ignores the `localStorage` override) via `lockTheme`, and
+  `enableSharing` defaults to **false** (the CLI always shares). They map to `buildHtml`'s
+  `BuildOptions`. `Theme` is re-exported for consumers. It is source-string based on purpose: rendering a file is
   `renderPlan(await readFile(path, 'utf8'))`, which avoids a path-vs-source overload. It wraps the
   same `buildHtml`/`checkSource` the CLI uses. (NB: the API `checkPlan` is source-based; the internal
   `build/check.ts checkPlan` is the file-path-based wrapper, a different signature.)
@@ -49,12 +52,16 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
   size it). It also appends the Node-only `remarkFileTreeIcons` (`@visualplan/compile/filetree-icons`)
   to the remark chain, which inlines a Material file-type icon per `<FileTree>` entry; both are
   CLI-only so the browser bundle never loads `material-icon-theme`. Color chips and file icons both inline their output at build time, so the single-file
-  invariant holds. `buildHtml(source, theme)` and `renderToFile`/`startDevServer` take the
-  configured `theme` (default `system`; the programmatic `renderPlan` leaves it default).
-  `planConfigPlugin` injects a tiny non-module `<head>` script (`themeBootstrap`) that seeds
-  `globalThis.__VP_CONFIG__` and sets `<html data-theme>` before first paint, so a configured dark
-  plan has no light flash. That script's resolution (localStorage `vp-theme` -> injected default ->
-  `system`) MUST stay in sync with the runtime's `theme.ts`. `src/build/check.ts` — the static AST
+  invariant holds. `buildHtml(source, BuildOptions)` is the shared core; `BuildOptions` is `{ theme,
+  lockTheme, enableSharing }` (defaults `system` / false / true = the CLI's behavior).
+  `renderToFile`/`startDevServer` keep a `theme` param and pass `{ theme }`. `planConfigPlugin`
+  injects a tiny non-module `<head>` script (`themeBootstrap`) that seeds `globalThis.__VP_CONFIG__`
+  (`{ theme, lockTheme }`) and sets `<html data-theme>` before first paint, so a configured dark plan
+  has no light flash. When `lockTheme` the bootstrap uses the theme directly (ignores localStorage);
+  otherwise localStorage `vp-theme` -> injected default -> `system`. `planSharePlugin` is only added
+  when `enableSharing`, so omitting it leaves the runtime `ShareButton` with no data to render. The
+  bootstrap's resolution + lock behavior MUST stay in sync with the runtime's `theme.ts`.
+  `src/build/check.ts` — the static AST
   validator. It also runs each ` ```math ` block through Temml and each ` ```mermaid ` block through
   `beautiful-mermaid`'s `renderMermaidSVG` (the same renderer the runtime `Mermaid` component calls)
   to report bad LaTeX / an unrenderable diagram as `file:line:col`, so `check` and render agree on

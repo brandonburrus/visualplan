@@ -145,9 +145,9 @@ describe('theme config injection', () => {
   })
 
   it('bakes a configured theme into the bootstrap default (golden)', async () => {
-    const dark = await buildHtml('# t\n\nbody\n', 'dark')
+    const dark = await buildHtml('# t\n\nbody\n', { theme: 'dark' })
     expect(dark).toContain('"theme":"dark"')
-    // The default feeds the resolver; localStorage still overrides it per-view.
+    // Unlocked by default, so the resolver still reads the localStorage override per-view.
     expect(dark).toContain('localStorage.getItem("vp-theme")')
   }, 60_000)
 })

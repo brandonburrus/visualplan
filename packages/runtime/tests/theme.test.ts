@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   applyThemePreference,
   getThemePreference,
+  isThemeLocked,
   setThemePreference,
   watchSystemScheme,
 } from '../theme.js'
@@ -32,6 +33,20 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+})
+
+describe('isThemeLocked / locked getThemePreference', () => {
+  it('is unlocked with no injected config (golden)', () => {
+    expect(isThemeLocked()).toBe(false)
+  })
+
+  it('reports locked and ignores the localStorage override when locked (edge)', () => {
+    localStorage.setItem('vp-theme', 'light')
+    ;(globalThis as { __VP_CONFIG__?: unknown }).__VP_CONFIG__ = { theme: 'dark', lockTheme: true }
+    expect(isThemeLocked()).toBe(true)
+    // Locked: the injected theme wins over the stored override.
+    expect(getThemePreference()).toBe('dark')
+  })
 })
 
 describe('getThemePreference', () => {

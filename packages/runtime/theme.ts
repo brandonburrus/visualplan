@@ -13,20 +13,35 @@ const PREFERENCES: readonly ThemePreference[] = ['light', 'dark', 'system']
 
 interface InjectedConfig {
   theme?: ThemePreference
+  /** When true the theme is fixed: the cog is hidden and the `localStorage` override is ignored. */
+  lockTheme?: boolean
 }
 
 function isPreference(value: unknown): value is ThemePreference {
   return typeof value === 'string' && (PREFERENCES as readonly string[]).includes(value)
 }
 
-/** The render-time default the CLI injected from `~/.vplan/config.json` (absent in tests / `/view`). */
+function injectedConfig(): InjectedConfig {
+  return (globalThis as { __VP_CONFIG__?: InjectedConfig }).__VP_CONFIG__ ?? {}
+}
+
+/** The render-time default the CLI/API injected (absent in tests / `/view`). */
 function injectedDefault(): ThemePreference {
-  const theme = (globalThis as { __VP_CONFIG__?: InjectedConfig }).__VP_CONFIG__?.theme
+  const theme = injectedConfig().theme
   return isPreference(theme) ? theme : 'system'
 }
 
-/** The active preference: the stored per-view override, else the injected default, else `system`. */
+/** Whether the API locked the theme (cog hidden, no per-view override). */
+export function isThemeLocked(): boolean {
+  return injectedConfig().lockTheme === true
+}
+
+/**
+ * The active preference. A locked theme is the injected value verbatim; otherwise the stored
+ * per-view override wins, then the injected default, then `system`.
+ */
 export function getThemePreference(): ThemePreference {
+  if (isThemeLocked()) return injectedDefault()
   try {
     const stored = localStorage.getItem(STORAGE_KEY)
     if (isPreference(stored)) return stored

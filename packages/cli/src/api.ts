@@ -6,12 +6,25 @@
  */
 import { writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { buildHtml } from './build/compile.js'
 import { type CheckIssue, checkSource } from './build/check.js'
+import { buildHtml } from './build/compile.js'
+import type { Theme } from './config.js'
 
 export interface RenderOptions {
   /** Also write the rendered HTML to this path. The HTML string is returned regardless. */
   out?: string
+  /**
+   * Fix the page's color scheme (`light` | `dark` | `system`). When set, the in-page settings cog
+   * is hidden and the theme cannot be changed by the viewer. When omitted, the page defaults to
+   * `system` and shows the cog so the viewer can switch.
+   */
+  theme?: Theme
+  /**
+   * Show the share button (which copies a `visualplan.dev/view?data=...` link encoding the plan).
+   * Defaults to `false` for the programmatic API, so an embedded render does not expose sharing
+   * unless asked.
+   */
+  enableSharing?: boolean
 }
 
 /** Thrown by `renderPlan` when the plan fails validation, carrying the structured issues. */
@@ -35,7 +48,12 @@ export class InvalidPlanError extends Error {
 export async function renderPlan(source: string, options: RenderOptions = {}): Promise<string> {
   const issues = await checkSource(source)
   if (issues.length > 0) throw new InvalidPlanError(issues)
-  const html = await buildHtml(source)
+  const html = await buildHtml(source, {
+    theme: options.theme,
+    // A caller-set theme is fixed: hide the cog and ignore any per-view override.
+    lockTheme: options.theme !== undefined,
+    enableSharing: options.enableSharing ?? false,
+  })
   if (options.out) await writeFile(resolve(options.out), html)
   return html
 }
@@ -46,6 +64,7 @@ export async function checkPlan(source: string): Promise<CheckIssue[]> {
 }
 
 export type { CheckIssue } from './build/check.js'
+export type { Theme } from './config.js'
 export type { CatalogEntry } from '@visualplan/core'
 // The component vocabulary, one named descriptor per component, so a consumer can introspect a
 // single component's props and enums (`import { chart } from 'vplan'`).

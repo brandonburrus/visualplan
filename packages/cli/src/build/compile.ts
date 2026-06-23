@@ -208,37 +208,59 @@ function planSharePlugin(readSource: () => string): Plugin {
   }
 }
 
-/**
- * An inline `<head>` script that resolves the page's color scheme and sets `<html data-theme>`
- * before the body paints, so a rendered plan honors the configured default with no flash. It runs
- * as a plain (non-module) script during head parse, before the deferred app module. Precedence:
- * the per-view `localStorage` override the runtime cog writes, then the injected config default,
- * then `system` (the OS). It must stay in sync with the runtime's `theme.ts` (same key, same order).
- */
-function themeBootstrap(theme: Theme): string {
-  const def = JSON.stringify(theme)
-  return `globalThis.__VP_CONFIG__=${JSON.stringify({ theme })};(function(){var d=${def},p;try{p=localStorage.getItem("vp-theme")}catch(e){}if(p!=="light"&&p!=="dark"&&p!=="system")p=d;var dark=p==="dark"||(p==="system"&&typeof matchMedia==="function"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=dark?"dark":"light"})()`
+/** How a plan is rendered, beyond its source. Defaults match the CLI (cog + share both on). */
+export interface BuildOptions {
+  /** Default color scheme baked into the page. Default `system`. */
+  theme?: Theme
+  /** Lock the theme: hide the in-page cog and ignore the `localStorage` override, so the rendered
+   * theme is fixed. The programmatic API sets this when its caller passes a `theme`. Default false. */
+  lockTheme?: boolean
+  /** Inject the share button's data. The CLI shares; the programmatic API defaults this off. Default true. */
+  enableSharing?: boolean
 }
 
 /**
- * Inject the configured default theme (from `~/.vplan/config.json`) into the page: the
- * `themeBootstrap` script seeds `globalThis.__VP_CONFIG__` and sets the initial `data-theme`. The
- * runtime's cog can still override per-view via `localStorage`; this only sets the default.
+ * An inline `<head>` script that resolves the page's color scheme and sets `<html data-theme>`
+ * before the body paints, so a rendered plan honors the configured default with no flash. It runs
+ * as a plain (non-module) script during head parse, before the deferred app module. Precedence when
+ * unlocked: the per-view `localStorage` override the runtime cog writes, then the injected default,
+ * then `system` (the OS); when locked it uses the injected theme directly. It must stay in sync with
+ * the runtime's `theme.ts` (same key, same order, same lock behavior).
  */
-function planConfigPlugin(theme: Theme): Plugin {
+function themeBootstrap(theme: Theme, lockTheme: boolean): string {
+  const config = JSON.stringify({ theme, lockTheme })
+  return `globalThis.__VP_CONFIG__=${config};(function(){var c=globalThis.__VP_CONFIG__,d=c.theme,p;if(c.lockTheme){p=d}else{try{p=localStorage.getItem("vp-theme")}catch(e){}if(p!=="light"&&p!=="dark"&&p!=="system")p=d}var dark=p==="dark"||(p==="system"&&typeof matchMedia==="function"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=dark?"dark":"light"})()`
+}
+
+/**
+ * Inject the default theme and lock flag into the page: the `themeBootstrap` script seeds
+ * `globalThis.__VP_CONFIG__` and sets the initial `data-theme`. When unlocked, the runtime cog can
+ * override per-view via `localStorage`; when locked the cog is hidden and the theme is fixed.
+ */
+function planConfigPlugin(theme: Theme, lockTheme: boolean): Plugin {
   return {
     name: 'visualplan:config',
     transformIndexHtml: {
       order: 'pre',
       handler() {
-        return [{ tag: 'script', injectTo: 'head', children: themeBootstrap(theme) }]
+        return [{ tag: 'script', injectTo: 'head', children: themeBootstrap(theme, lockTheme) }]
       },
     },
   }
 }
 
-function baseConfig(paths: RuntimePaths, input: PlanInput, theme: Theme): InlineConfig {
+function baseConfig(paths: RuntimePaths, input: PlanInput, options: BuildOptions): InlineConfig {
   const readSource = sourceReader(input)
+  const theme = options.theme ?? 'system'
+  const lockTheme = options.lockTheme ?? false
+  const enableSharing = options.enableSharing ?? true
+  const plugins: Plugin[] = [
+    virtualPlanPlugin(input),
+    htmlTitlePlugin(readSource),
+    planConfigPlugin(theme, lockTheme),
+  ]
+  // The share button renders only when its data is injected, so omitting the plugin hides it.
+  if (enableSharing) plugins.push(planSharePlugin(readSource))
   return {
     root: paths.runtimeDir,
     configFile: false,
@@ -256,12 +278,7 @@ function baseConfig(paths: RuntimePaths, input: PlanInput, theme: Theme): Inline
       },
     },
     esbuild: { jsx: 'automatic', jsxImportSource: 'react' },
-    plugins: [
-      virtualPlanPlugin(input),
-      htmlTitlePlugin(readSource),
-      planSharePlugin(readSource),
-      planConfigPlugin(theme),
-    ],
+    plugins,
     // The runtime, core, and (for a file input) the user's plan span sibling dirs (and a hoisted
     // node_modules) in the monorepo, so the dev server cannot use a single allow root. This is a
     // local tool rendering the user's own plan, so fs is unrestricted.
@@ -270,15 +287,15 @@ function baseConfig(paths: RuntimePaths, input: PlanInput, theme: Theme): Inline
 }
 
 /**
- * Compile a plan's MDX source to a single self-contained HTML page, returned as a string. `theme`
- * is the default scheme baked into the page (the programmatic API leaves it `system`; the CLI passes
- * the configured value).
+ * Compile a plan's MDX source to a single self-contained HTML page, returned as a string.
+ * `options` control the baked theme, whether the theme is locked (cog hidden), and whether the
+ * share button is injected (see `BuildOptions`). Defaults match the CLI: `system`, unlocked, shared.
  */
-export async function buildHtml(source: string, theme: Theme = 'system'): Promise<string> {
+export async function buildHtml(source: string, options: BuildOptions = {}): Promise<string> {
   const paths = findRuntimePaths()
   const outDir = await mkdtemp(join(tmpdir(), 'visualplan-build-'))
   try {
-    const config = baseConfig(paths, source, theme)
+    const config = baseConfig(paths, source, options)
     await build({
       ...config,
       plugins: [...(config.plugins ?? []), viteSingleFile()],
@@ -301,7 +318,7 @@ export async function renderToFile(
   theme: Theme = 'system',
 ): Promise<void> {
   const source = readFileSync(resolve(mdxPath), 'utf8').replace(/^\ufeff/, '')
-  await writeFile(resolve(outPath), await buildHtml(source, theme))
+  await writeFile(resolve(outPath), await buildHtml(source, { theme }))
 }
 
 export interface DevServer {
@@ -312,7 +329,7 @@ export interface DevServer {
 /** Start a hot-reloading dev server for an MDX plan file and return its local URL. */
 export async function startDevServer(mdxPath: string, theme: Theme = 'system'): Promise<DevServer> {
   const paths = findRuntimePaths()
-  const server = await createServer(baseConfig(paths, { path: resolve(mdxPath) }, theme))
+  const server = await createServer(baseConfig(paths, { path: resolve(mdxPath) }, { theme }))
   await server.listen()
   const url =
     server.resolvedUrls?.local[0] ?? `http://localhost:${server.config.server.port ?? 5173}`
