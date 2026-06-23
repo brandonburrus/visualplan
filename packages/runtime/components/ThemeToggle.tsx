@@ -1,4 +1,4 @@
-import { IconCheck, IconSettings } from '@tabler/icons-react'
+import { IconSettings } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
 import {
   getThemePreference,
@@ -14,9 +14,9 @@ const OPTIONS: { value: ThemePreference; label: string }[] = [
 ]
 
 /**
- * A faint top-right cog (left of the share button) that opens a theme menu on hover or focus.
- * Choosing an option recolors the page live and remembers the choice in `localStorage` for this
- * plan; it never writes the CLI's `~/.vplan/config.json` (a static plan cannot reach the disk).
+ * A faint top-right cog (left of the share button) that opens a Settings menu on hover, focus, or
+ * click. The theme dropdown recolors the page live and remembers the choice in `localStorage` for
+ * this plan; it never writes the CLI's `~/.vplan/config.json` (a static plan cannot reach the disk).
  * The CLI's inline bootstrap already set the initial scheme, so this only re-applies on a change.
  */
 export function ThemeToggle() {
@@ -56,7 +56,6 @@ export function ThemeToggle() {
   const choose = (value: ThemePreference) => {
     setPreference(value)
     setThemePreference(value)
-    setOpen(false)
   }
 
   return (
@@ -64,29 +63,30 @@ export function ThemeToggle() {
       <button
         type='button'
         className='vp-theme__icon'
-        aria-label='Theme settings'
-        aria-haspopup='menu'
+        aria-label='Settings'
+        aria-haspopup='dialog'
         aria-expanded={open}
-        title='Theme settings'
+        title='Settings'
         onClick={() => setOpen(value => !value)}
       >
         <IconSettings size={17} />
       </button>
-      <div className='vp-theme__pop' role='menu'>
-        {OPTIONS.map(option => (
-          <button
-            key={option.value}
-            type='button'
-            className='vp-theme__opt'
-            role='menuitemradio'
-            aria-checked={preference === option.value}
-            data-active={preference === option.value}
-            onClick={() => choose(option.value)}
+      <div className='vp-theme__pop' role='dialog' aria-label='Settings'>
+        <p className='vp-theme__title'>Settings</p>
+        <label className='vp-theme__row'>
+          <span>Theme</span>
+          <select
+            className='vp-theme__select'
+            value={preference}
+            onChange={event => choose(event.target.value as ThemePreference)}
           >
-            <span>{option.label}</span>
-            {preference === option.value && <IconCheck size={15} />}
-          </button>
-        ))}
+            {OPTIONS.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
     </div>
   )

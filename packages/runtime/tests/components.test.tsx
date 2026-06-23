@@ -523,18 +523,20 @@ describe('ShareButton', () => {
 })
 
 describe('ThemeToggle', () => {
-  it('renders the cog and a menu of the three theme options (golden)', () => {
+  it('renders the cog, a Settings title, and a theme dropdown of the three options (golden)', () => {
     const html = renderToStaticMarkup(<ThemeToggle />)
-    expect(html).toContain('aria-label="Theme settings"')
-    expect(html).toContain('System')
-    expect(html).toContain('Light')
-    expect(html).toContain('Dark')
+    expect(html).toContain('aria-label="Settings"')
+    expect(html).toContain('Settings')
+    expect(html).toContain('<select')
+    expect(html).toContain('>System</option>')
+    expect(html).toContain('<option value="light">Light</option>')
+    expect(html).toContain('<option value="dark">Dark</option>')
   })
 
-  it('marks system active before any choice is made (edge)', () => {
+  it('selects system before any choice is made (edge)', () => {
     // useEffect does not run under static rendering, so the initial preference (system) shows.
     const html = renderToStaticMarkup(<ThemeToggle />)
-    expect(html).toMatch(/aria-checked="true"[^>]*>\s*<span>System/)
+    expect(html).toMatch(/<option value="system" selected=""?>System<\/option>/)
   })
 })
 
