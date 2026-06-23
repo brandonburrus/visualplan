@@ -5,8 +5,8 @@ import { join } from 'node:path'
 import { CATALOG } from '@visualplan/core'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import * as api from '../src/api.js'
-import { InvalidPlanError, check, render } from '../src/api.js'
-import { checkPlan } from '../src/build/check.js'
+import { InvalidPlanError, checkPlan, renderPlan } from '../src/api.js'
+import { checkPlan as checkPlanFile } from '../src/build/check.js'
 
 const VALID_PLAN = '# A plan\n\n<Phase title="Build">\n  1. Do the thing\n</Phase>\n'
 const INVALID_PLAN = '# Bad\n\n<Phase status="nope">x</Phase>\n'
@@ -27,7 +27,7 @@ describe('render', () => {
 
   beforeAll(async () => {
     const out = join(workDir, 'plan.html')
-    html = await render(VALID_PLAN, { out })
+    html = await renderPlan(VALID_PLAN, { out })
     written = await readFile(out, 'utf8')
   }, 60_000)
 
@@ -45,37 +45,37 @@ describe('render', () => {
   })
 
   it('throws InvalidPlanError carrying the issues for an invalid plan (error)', async () => {
-    await expect(render(INVALID_PLAN)).rejects.toBeInstanceOf(InvalidPlanError)
-    const error = await render(INVALID_PLAN).catch((caught: unknown) => caught)
+    await expect(renderPlan(INVALID_PLAN)).rejects.toBeInstanceOf(InvalidPlanError)
+    const error = await renderPlan(INVALID_PLAN).catch((caught: unknown) => caught)
     expect(error).toBeInstanceOf(InvalidPlanError)
     expect((error as InvalidPlanError).issues).toHaveLength(1)
     expect((error as InvalidPlanError).issues[0].message).toContain('status="nope"')
   })
 
   it('renders an effectively empty plan without throwing (edge)', async () => {
-    const empty = await render('   \n')
+    const empty = await renderPlan('   \n')
     expect(empty).toContain('<!doctype html>')
     expect(empty).toContain('id="root"')
   }, 60_000)
 })
 
-describe('check', () => {
+describe('checkPlan', () => {
   it('returns no issues for a valid plan (golden)', async () => {
-    expect(await check(VALID_PLAN)).toEqual([])
+    expect(await checkPlan(VALID_PLAN)).toEqual([])
   })
 
   it('returns issues with a line and column for an invalid plan (error)', async () => {
-    const issues = await check(INVALID_PLAN)
+    const issues = await checkPlan(INVALID_PLAN)
     expect(issues).toHaveLength(1)
     expect(issues[0].line).toBeGreaterThan(0)
     expect(issues[0].column).toBeGreaterThan(0)
     expect(issues[0].message).toContain('status="nope"')
   })
 
-  it('matches the file-based checkPlan on the same source (edge)', async () => {
+  it('matches the file-based checker on the same source (edge)', async () => {
     const path = join(workDir, 'parity.mdx')
     await writeFile(path, INVALID_PLAN)
-    expect(await check(INVALID_PLAN)).toEqual(await checkPlan(path))
+    expect(await checkPlan(INVALID_PLAN)).toEqual(await checkPlanFile(path))
   })
 })
 

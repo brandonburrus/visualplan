@@ -1,8 +1,8 @@
 /**
  * The programmatic interface for `vplan`: render and validate a plan from an in-memory MDX string,
- * and introspect the component vocabulary. This is the package's import entry (`import { render }
+ * and introspect the component vocabulary. This is the package's import entry (`import { renderPlan }
  * from 'vplan'`); the CLI bin is a separate entry. Nothing here touches the filesystem unless you
- * pass `render`'s `out` option.
+ * pass `renderPlan`'s `out` option.
  */
 import { writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
@@ -14,7 +14,7 @@ export interface RenderOptions {
   out?: string
 }
 
-/** Thrown by `render` when the plan fails validation, carrying the structured issues. */
+/** Thrown by `renderPlan` when the plan fails validation, carrying the structured issues. */
 export class InvalidPlanError extends Error {
   readonly issues: CheckIssue[]
   constructor(issues: CheckIssue[]) {
@@ -32,7 +32,7 @@ export class InvalidPlanError extends Error {
  * plan first and throws `InvalidPlanError` if it has any issues, so a programmatic caller gets the
  * same self-correction guarantee the CLI has. Pass `out` to also write the HTML to a file.
  */
-export async function render(source: string, options: RenderOptions = {}): Promise<string> {
+export async function renderPlan(source: string, options: RenderOptions = {}): Promise<string> {
   const issues = await checkSource(source)
   if (issues.length > 0) throw new InvalidPlanError(issues)
   const html = await buildHtml(source)
@@ -41,7 +41,7 @@ export async function render(source: string, options: RenderOptions = {}): Promi
 }
 
 /** Validate a plan's MDX source, returning the issues (an empty array when the plan is valid). */
-export async function check(source: string): Promise<CheckIssue[]> {
+export async function checkPlan(source: string): Promise<CheckIssue[]> {
   return checkSource(source)
 }
 

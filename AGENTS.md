@@ -12,8 +12,8 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
 - `vplan check <file.mdx>` validates a plan without rendering (the self-correction
   loop): MDX compile errors plus static component checks, printed as `file:line:col`.
 - `vplan components` prints the component vocabulary cheat-sheet.
-- A programmatic API (`import { render, check } from 'vplan'`) renders/validates a plan from an
-  in-memory MDX string, with a named export per catalog entry. See `packages/cli/src/api.ts`.
+- A programmatic API (`import { renderPlan, checkPlan } from 'vplan'`) renders/validates a plan from
+  an in-memory MDX string, with a named export per catalog entry. See `packages/cli/src/api.ts`.
 
 Plans use a fixed, tiny component vocabulary (`Phase`, `FileTree`, `Chart`, `Compare`, `Matrix`,
 `Callout`, `Questions`, `Checklist`, and ` ```mermaid ` / ` ```math ` fences) with no imports — the

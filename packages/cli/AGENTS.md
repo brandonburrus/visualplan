@@ -8,11 +8,13 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
 
 - `src/index.ts` — commander dispatch (the `bin`). `src/commands/` — one file per command (render,
   check, components).
-- `src/api.ts` — the programmatic API (the library entry): `render(source, { out? })` (returns the
-  HTML string, throws `InvalidPlanError` on an invalid plan, optional file write), `check(source)`,
-  and one named re-export per catalog entry from `@visualplan/core` (`phase`, `chart`, ...). It is
-  source-string based on purpose: rendering a file is `render(await readFile(path, 'utf8'))`, which
-  avoids a path-vs-source overload. It wraps the same `buildHtml`/`checkSource` the CLI uses.
+- `src/api.ts` — the programmatic API (the library entry): `renderPlan(source, { out? })` (returns
+  the HTML string, throws `InvalidPlanError` on an invalid plan, optional file write),
+  `checkPlan(source)`, and one named re-export per catalog entry from `@visualplan/core` (`phase`,
+  `chart`, ...). It is source-string based on purpose: rendering a file is
+  `renderPlan(await readFile(path, 'utf8'))`, which avoids a path-vs-source overload. It wraps the
+  same `buildHtml`/`checkSource` the CLI uses. (NB: the API `checkPlan` is source-based; the internal
+  `build/check.ts checkPlan` is the file-path-based wrapper, a different signature.)
 - `src/build/compile.ts` — Vite orchestration. `buildHtml(source)` is the shared core: it compiles
   a plan from an in-memory MDX **string** and returns the self-contained HTML (single-file build via
   `vite-plugin-singlefile`). `renderToFile(path, out)` reads the file once and delegates; the API's
