@@ -2,6 +2,7 @@ import { basename, dirname, extname, join, resolve } from 'node:path'
 import open from 'open'
 import { checkPlan } from '../build/check.js'
 import { renderToFile, startDevServer } from '../build/compile.js'
+import { readConfig } from '../config.js'
 import { printIssues, resolvePlanFile } from './check.js'
 
 export interface RenderOptions {
@@ -26,8 +27,10 @@ export async function runRender(file: string, options: RenderOptions): Promise<v
     return
   }
 
+  const { theme } = await readConfig()
+
   if (options.watch) {
-    const server = await startDevServer(absMdx)
+    const server = await startDevServer(absMdx, theme)
     process.stdout.write(
       `Visual Plan watching ${file}\n  ${server.url}\n  (edit the file to hot-reload; Ctrl+C to stop)\n`,
     )
@@ -36,7 +39,7 @@ export async function runRender(file: string, options: RenderOptions): Promise<v
   }
 
   const out = options.out ? resolve(options.out) : defaultOutPath(absMdx)
-  await renderToFile(absMdx, out)
+  await renderToFile(absMdx, out, theme)
   process.stdout.write(`Rendered ${out}\n`)
   if (options.open !== false) await open(out)
 }

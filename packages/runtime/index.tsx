@@ -13,6 +13,7 @@ import { Phase } from './components/Phase.js'
 import { Questions } from './components/Questions.js'
 import { Stat } from './components/Stat.js'
 import { Layout } from './Layout.js'
+import { applyThemePreference, getThemePreference } from './theme.js'
 import './theme.css'
 
 /**
@@ -38,6 +39,9 @@ export const components = {
 export function mount(Plan: ComponentType) {
   const container = document.getElementById('root')
   if (!container) throw new Error('Visual Plan: #root element not found')
+  // Resolve the scheme for paths without the CLI's inline bootstrap (e.g. /view); idempotent when
+  // the bootstrap already set it.
+  applyThemePreference(getThemePreference())
   createRoot(container).render(
     <MDXProvider components={components}>
       <Layout>

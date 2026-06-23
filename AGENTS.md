@@ -14,6 +14,9 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
 - `vplan components` prints the component vocabulary cheat-sheet.
 - A programmatic API (`import { renderPlan, checkPlan } from 'vplan'`) renders/validates a plan from
   an in-memory MDX string, with a named export per catalog entry. See `packages/cli/src/api.ts`.
+- A persistent CLI config at `~/.vplan/config.json` (`packages/cli/src/config.ts`) sets the default
+  `theme` (`light`|`dark`|`system`) baked into a rendered plan; the plan's in-page cog overrides it
+  per-view via `localStorage`. `vplan config [get|set|path]` views and edits it.
 
 Plans use a fixed, tiny component vocabulary (`Phase`, `FileTree`, `Chart`, `Compare`, `Matrix`,
 `Callout`, `Questions`, `Checklist`, and ` ```mermaid ` / ` ```math ` fences) with no imports — the
@@ -118,6 +121,10 @@ A release is cut by creating a GitHub release; the tag is the published version 
 
 ## Key Decisions
 
+- 2026-06-22: CLI config persists to `~/.vplan/config.json` (literal path via `homedir()`, NOT
+  `env-paths`); the only setting is the default `theme`. The in-page theme cog overrides per-view via
+  `localStorage` and never writes the file. Why: a static `file://` plan cannot reach the disk, so
+  the on-disk default and the in-page override are deliberately separate layers.
 - 2026-06-21: Plan sharing encodes the plan's **MDX source** (deflate + base64url) into a
   `visualplan.dev/view?data=...` link, not the compiled output. Why: the source is small, compresses
   well, and is the one form `/view` recompiles in-browser with the same plugins (`@visualplan/compile`);

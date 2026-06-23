@@ -12,6 +12,7 @@ import { encodePlan } from '@visualplan/core/share'
 import rehypeExpressiveCode, { type RehypeExpressiveCodeOptions } from 'rehype-expressive-code'
 import { build, createServer, type InlineConfig, type Plugin } from 'vite'
 import { viteSingleFile } from 'vite-plugin-singlefile'
+import type { Theme } from '../config.js'
 
 // The shared base options (themes, frames, color chips, ink styling) come from
 // `@visualplan/compile` so the CLI and the /view page highlight code identically; the CLI
@@ -207,8 +208,59 @@ function planSharePlugin(readSource: () => string): Plugin {
   }
 }
 
-function baseConfig(paths: RuntimePaths, input: PlanInput): InlineConfig {
+/** How a plan is rendered, beyond its source. Defaults match the CLI (cog + share both on). */
+export interface BuildOptions {
+  /** Default color scheme baked into the page. Default `system`. */
+  theme?: Theme
+  /** Lock the theme: hide the in-page cog and ignore the `localStorage` override, so the rendered
+   * theme is fixed. The programmatic API sets this when its caller passes a `theme`. Default false. */
+  lockTheme?: boolean
+  /** Inject the share button's data. The CLI shares; the programmatic API defaults this off. Default true. */
+  enableSharing?: boolean
+}
+
+/**
+ * An inline `<head>` script that resolves the page's color scheme and sets `<html data-theme>`
+ * before the body paints, so a rendered plan honors the configured default with no flash. It runs
+ * as a plain (non-module) script during head parse, before the deferred app module. Precedence when
+ * unlocked: the per-view `localStorage` override the runtime cog writes, then the injected default,
+ * then `system` (the OS); when locked it uses the injected theme directly. It must stay in sync with
+ * the runtime's `theme.ts` (same key, same order, same lock behavior).
+ */
+function themeBootstrap(theme: Theme, lockTheme: boolean): string {
+  const config = JSON.stringify({ theme, lockTheme })
+  return `globalThis.__VP_CONFIG__=${config};(function(){var c=globalThis.__VP_CONFIG__,d=c.theme,p;if(c.lockTheme){p=d}else{try{p=localStorage.getItem("vp-theme")}catch(e){}if(p!=="light"&&p!=="dark"&&p!=="system")p=d}var dark=p==="dark"||(p==="system"&&typeof matchMedia==="function"&&matchMedia("(prefers-color-scheme: dark)").matches);document.documentElement.dataset.theme=dark?"dark":"light"})()`
+}
+
+/**
+ * Inject the default theme and lock flag into the page: the `themeBootstrap` script seeds
+ * `globalThis.__VP_CONFIG__` and sets the initial `data-theme`. When unlocked, the runtime cog can
+ * override per-view via `localStorage`; when locked the cog is hidden and the theme is fixed.
+ */
+function planConfigPlugin(theme: Theme, lockTheme: boolean): Plugin {
+  return {
+    name: 'visualplan:config',
+    transformIndexHtml: {
+      order: 'pre',
+      handler() {
+        return [{ tag: 'script', injectTo: 'head', children: themeBootstrap(theme, lockTheme) }]
+      },
+    },
+  }
+}
+
+function baseConfig(paths: RuntimePaths, input: PlanInput, options: BuildOptions): InlineConfig {
   const readSource = sourceReader(input)
+  const theme = options.theme ?? 'system'
+  const lockTheme = options.lockTheme ?? false
+  const enableSharing = options.enableSharing ?? true
+  const plugins: Plugin[] = [
+    virtualPlanPlugin(input),
+    htmlTitlePlugin(readSource),
+    planConfigPlugin(theme, lockTheme),
+  ]
+  // The share button renders only when its data is injected, so omitting the plugin hides it.
+  if (enableSharing) plugins.push(planSharePlugin(readSource))
   return {
     root: paths.runtimeDir,
     configFile: false,
@@ -226,7 +278,7 @@ function baseConfig(paths: RuntimePaths, input: PlanInput): InlineConfig {
       },
     },
     esbuild: { jsx: 'automatic', jsxImportSource: 'react' },
-    plugins: [virtualPlanPlugin(input), htmlTitlePlugin(readSource), planSharePlugin(readSource)],
+    plugins,
     // The runtime, core, and (for a file input) the user's plan span sibling dirs (and a hoisted
     // node_modules) in the monorepo, so the dev server cannot use a single allow root. This is a
     // local tool rendering the user's own plan, so fs is unrestricted.
@@ -234,12 +286,16 @@ function baseConfig(paths: RuntimePaths, input: PlanInput): InlineConfig {
   }
 }
 
-/** Compile a plan's MDX source to a single self-contained HTML page, returned as a string. */
-export async function buildHtml(source: string): Promise<string> {
+/**
+ * Compile a plan's MDX source to a single self-contained HTML page, returned as a string.
+ * `options` control the baked theme, whether the theme is locked (cog hidden), and whether the
+ * share button is injected (see `BuildOptions`). Defaults match the CLI: `system`, unlocked, shared.
+ */
+export async function buildHtml(source: string, options: BuildOptions = {}): Promise<string> {
   const paths = findRuntimePaths()
   const outDir = await mkdtemp(join(tmpdir(), 'visualplan-build-'))
   try {
-    const config = baseConfig(paths, source)
+    const config = baseConfig(paths, source, options)
     await build({
       ...config,
       plugins: [...(config.plugins ?? []), viteSingleFile()],
@@ -256,9 +312,13 @@ export async function buildHtml(source: string): Promise<string> {
 }
 
 /** Compile an MDX plan file to a single self-contained HTML file at `outPath`. */
-export async function renderToFile(mdxPath: string, outPath: string): Promise<void> {
+export async function renderToFile(
+  mdxPath: string,
+  outPath: string,
+  theme: Theme = 'system',
+): Promise<void> {
   const source = readFileSync(resolve(mdxPath), 'utf8').replace(/^\ufeff/, '')
-  await writeFile(resolve(outPath), await buildHtml(source))
+  await writeFile(resolve(outPath), await buildHtml(source, { theme }))
 }
 
 export interface DevServer {
@@ -267,9 +327,9 @@ export interface DevServer {
 }
 
 /** Start a hot-reloading dev server for an MDX plan file and return its local URL. */
-export async function startDevServer(mdxPath: string): Promise<DevServer> {
+export async function startDevServer(mdxPath: string, theme: Theme = 'system'): Promise<DevServer> {
   const paths = findRuntimePaths()
-  const server = await createServer(baseConfig(paths, { path: resolve(mdxPath) }))
+  const server = await createServer(baseConfig(paths, { path: resolve(mdxPath) }, { theme }))
   await server.listen()
   const url =
     server.resolvedUrls?.local[0] ?? `http://localhost:${server.config.server.port ?? 5173}`

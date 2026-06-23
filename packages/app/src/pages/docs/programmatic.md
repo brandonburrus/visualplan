@@ -33,7 +33,11 @@ const html = await renderPlan(source) // a self-contained HTML string
 ## renderPlan
 
 ```ts
-renderPlan(source: string, options?: { out?: string }): Promise<string>
+renderPlan(source: string, options?: {
+  out?: string
+  theme?: 'light' | 'dark' | 'system'
+  enableSharing?: boolean
+}): Promise<string>
 ```
 
 Compiles a plan's MDX source to a self-contained HTML page and returns it as a string. Pass `out`
@@ -42,6 +46,26 @@ to also write the HTML to a file:
 ```ts
 const html = await renderPlan(source)              // string in, string out
 await renderPlan(source, { out: 'plan.html' })     // also write a file
+```
+
+### Controlling the rendered page
+
+By default the page shows the in-page settings cog (so the viewer can switch theme) and hides the
+share button. Two options change that:
+
+- **`theme`** fixes the color scheme. When set, the page renders in that scheme and the settings cog
+  is hidden, so the viewer cannot change it (a locked theme also ignores the per-view `localStorage`
+  override). When omitted, the page defaults to `system` and shows the cog.
+- **`enableSharing`** (default `false`) shows the share button, which copies a
+  `visualplan.dev/view?data=...` link encoding the plan. Leave it off for an embedded render that
+  should not expose sharing.
+
+```ts
+// A fixed dark page with no settings cog and no share button (both defaults for an embed):
+const html = await renderPlan(source, { theme: 'dark' })
+
+// Opt back into the share button:
+const shareable = await renderPlan(source, { enableSharing: true })
 ```
 
 `renderPlan` validates the plan first and **throws `InvalidPlanError` if it is invalid**, so a

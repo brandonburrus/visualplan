@@ -49,7 +49,11 @@ through the workspace.
 - `src/remark-plan-blocks.ts` / `remark-mermaid.ts` / `remark-math.ts` — the three custom remark
   plugins. `remark-math` converts LaTeX to MathML with `temml` at build time (isomorphic).
 - `src/expressive-code.ts` — `baseExpressiveCodeOptions` (themes, frames, ink styling, color
-  chips). NO file-icons plugin (Node-only).
+  chips). NO file-icons plugin (Node-only). `themeCssSelector` keys each syntax theme off the page's
+  `[data-theme="light"|"dark"]` (via the EC theme's `type`), so the code theme follows the runtime
+  cog / CLI config, not just the OS. `useDarkModeMediaQuery` stays on as the pre-`data-theme`
+  fallback. Both consumers set `<html data-theme>` (the CLI's inline bootstrap; the runtime `mount`),
+  so do not drop the attribute or the syntax theme stops following an explicit light/dark choice.
 - `src/icon-resolution.ts` — the **isomorphic** Material-icon resolution core
   (`@visualplan/compile/icon-resolution` subpath): a pure `resolveIconName(manifest, ...)` over a
   passed-in manifest, no fs. Single-sources the resolution order for the Node `file-icons.ts` AND

@@ -13,6 +13,12 @@ import type { RehypeExpressiveCodeOptions } from 'rehype-expressive-code'
 export const baseExpressiveCodeOptions: RehypeExpressiveCodeOptions = {
   themes: ['github-dark', 'github-light'],
   useDarkModeMediaQuery: true,
+  // Key each theme's CSS off the page's `data-theme` (the runtime cog and the CLI bootstrap set
+  // `<html data-theme="light|dark">`) so the syntax theme follows an explicit light/dark choice, not
+  // just the OS. Without this EC keys only off `prefers-color-scheme`, so forcing a theme that
+  // disagrees with the OS leaves code blocks on the wrong (unreadable) syntax theme.
+  // `useDarkModeMediaQuery` stays on as the fallback for any moment before `data-theme` is set.
+  themeCssSelector: theme => `[data-theme="${theme.type}"]`,
   plugins: [pluginColorChips()],
   // The copy-button script does not execute reliably in our client-rendered SPA;
   // frames (titles) are CSS-only, so keep those and drop the interactive button.

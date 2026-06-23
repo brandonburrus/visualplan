@@ -12,8 +12,28 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   own first `# Heading`, rendered as normal markdown.
 - `index.tsx` defines `mount` and the `components` map auto-injected into MDX via `MDXProvider`.
   No plan ever writes an `import` — every component resolves through this map.
-- `Layout.tsx` is a single centered content column — no header and no sidebar. It also mounts
-  `ShareButton`.
+- `Layout.tsx` is a single centered content column — no header and no sidebar. It mounts the
+  `ThemeToggle` cog and the `ShareButton` (both fixed to the top-right corner). The cog is omitted
+  when `isThemeLocked()` (the API's `renderPlan({ theme })` injects `lockTheme`), and the share
+  button self-hides when no `__VP_SHARE__` was injected (the API's `enableSharing: false` default).
+- `components/ThemeToggle.tsx` is the fixed top-right cog, just left of the share button. Its menu
+  picks `system` / `light` / `dark`; choosing one recolors the page live (all colors are CSS vars,
+  so flipping `<html data-theme>` repaints with no React re-render) and persists the choice in
+  `localStorage` under `vp-theme`. It NEVER writes the CLI's `~/.vplan/config.json` (a static
+  `file://` plan cannot reach the disk); the disk config is only the render-time default. The
+  preference logic lives in `theme.ts` (`getThemePreference`/`setThemePreference`/
+  `applyThemePreference`/`watchSystemScheme`); the cog is a thin view over it. The menu opens on
+  hover/focus-within AND an explicit click-toggle (`data-open`), because macOS Safari and touch
+  devices neither hover nor focus a button on tap.
+- `theme.ts` resolves the color scheme. Precedence: the `localStorage` override, then the injected
+  `globalThis.__VP_CONFIG__.theme` default (the CLI seeds it from `~/.vplan/config.json`), then
+  `system` (the OS via `matchMedia`). When `__VP_CONFIG__.lockTheme` is set (the API fixed the
+  theme), `isThemeLocked()` is true and the localStorage override is ignored (the injected theme is
+  used verbatim). `system` is resolved to a concrete `light`/`dark` and written
+  to `<html data-theme>`. This MUST stay in sync with the CLI's inline `themeBootstrap`
+  (`compile.ts`), which does the same resolution in a tiny `<head>` script before first paint (so a
+  configured dark plan has no light flash). `mount` also calls `applyThemePreference` for paths
+  without that bootstrap (e.g. `/view`).
 - `components/ShareButton.tsx` is the fixed top-right "Share" button. It reads the plan's encoded
   MDX off `globalThis.__VP_SHARE__` (`{ data, dev }`, injected by the CLI build's `planSharePlugin`)
   and copies a `https://visualplan.dev/view?data=...` link. It renders nothing when that global is
@@ -123,8 +143,13 @@ page. The rules below are deliberate; changing them needs a reason.
   not make `--vp-accent` itself a colored hue.
 - **No side-stripe accents.** Callouts use a flat tint plus a full 1px border and a colored label,
   never a `border-left` color stripe (a hard ban).
-- **Off-white / off-black only**, never pure `#fff` / `#000`. All colors are CSS vars with a
-  `prefers-color-scheme: dark` block; both schemes must stay legible.
+- **Off-white / off-black only**, never pure `#fff` / `#000`. All colors are CSS vars. The dark
+  palette is applied two ways that MUST change together: `:root[data-theme="dark"]` (forced dark,
+  set by the cog or the configured default) and `@media (prefers-color-scheme: dark)` on
+  `:root:not([data-theme="light"])` (the system default; also the pre-script no-flash fallback).
+  Plain CSS cannot share one declaration block across a selector and a media query, so the two var
+  lists are duplicated on purpose. Both schemes must stay legible. (Mermaid still reads the CSS vars
+  with no scheme detection of its own, so toggling `data-theme` recolors a diagram for free.)
 - **Mermaid colors come from our CSS vars** (passed to `beautiful-mermaid` as `bg`/`fg`/`line`/
   `accent`/`surface`/`border`), so the diagram tracks the theme automatically. Do not hard-code
   diagram colors or reintroduce scheme detection.

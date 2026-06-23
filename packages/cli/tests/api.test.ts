@@ -59,6 +59,27 @@ describe('render', () => {
   }, 60_000)
 })
 
+describe('render options', () => {
+  it('locks the theme and hides the cog when a theme is given (golden)', async () => {
+    const html = await renderPlan(VALID_PLAN, { theme: 'dark' })
+    // The runtime hides the cog and ignores localStorage when lockTheme is injected.
+    expect(html).toContain('"theme":"dark"')
+    expect(html).toContain('"lockTheme":true')
+  }, 60_000)
+
+  it('omits the share data by default, so the share button stays hidden (edge)', async () => {
+    // The component always reads globalThis.__VP_SHARE__; what gates the button is the injected
+    // assignment, which must be absent so the button renders null.
+    const html = await renderPlan(VALID_PLAN)
+    expect(html).not.toContain('globalThis.__VP_SHARE__=')
+  }, 60_000)
+
+  it('injects the share data when enableSharing is true (golden)', async () => {
+    const html = await renderPlan(VALID_PLAN, { enableSharing: true })
+    expect(html).toContain('globalThis.__VP_SHARE__=')
+  }, 60_000)
+})
+
 describe('checkPlan', () => {
   it('returns no issues for a valid plan (golden)', async () => {
     expect(await checkPlan(VALID_PLAN)).toEqual([])
