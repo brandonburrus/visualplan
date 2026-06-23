@@ -18,7 +18,7 @@ Everything works on an in-memory MDX **string**, nothing touches the filesystem 
 to:
 
 ```ts
-import { render, check } from 'vplan'
+import { renderPlan, checkPlan } from 'vplan'
 
 const source = `# Add rate limiting
 
@@ -27,32 +27,32 @@ const source = `# Add rate limiting
 </Phase>
 `
 
-const html = await render(source) // a self-contained HTML string
+const html = await renderPlan(source) // a self-contained HTML string
 ```
 
-## render
+## renderPlan
 
 ```ts
-render(source: string, options?: { out?: string }): Promise<string>
+renderPlan(source: string, options?: { out?: string }): Promise<string>
 ```
 
 Compiles a plan's MDX source to a self-contained HTML page and returns it as a string. Pass `out`
 to also write the HTML to a file:
 
 ```ts
-const html = await render(source)              // string in, string out
-await render(source, { out: 'plan.html' })     // also write a file
+const html = await renderPlan(source)              // string in, string out
+await renderPlan(source, { out: 'plan.html' })     // also write a file
 ```
 
-`render` validates the plan first and **throws `InvalidPlanError` if it is invalid**, so a
+`renderPlan` validates the plan first and **throws `InvalidPlanError` if it is invalid**, so a
 programmatic caller gets the same self-correction guarantee the CLI has. The error carries the
 structured issues:
 
 ```ts
-import { render, InvalidPlanError } from 'vplan'
+import { renderPlan, InvalidPlanError } from 'vplan'
 
 try {
-  await render('# Bad\n\n<Phase status="nope">x</Phase>\n')
+  await renderPlan('# Bad\n\n<Phase status="nope">x</Phase>\n')
 } catch (error) {
   if (error instanceof InvalidPlanError) {
     for (const issue of error.issues) {
@@ -62,10 +62,10 @@ try {
 }
 ```
 
-## check
+## checkPlan
 
 ```ts
-check(source: string): Promise<CheckIssue[]>
+checkPlan(source: string): Promise<CheckIssue[]>
 ```
 
 Validates a plan's MDX source without rendering it, returning the issues (an empty array when the
@@ -73,7 +73,7 @@ plan is valid). Each issue has a `line`, `column`, and `message`, the same check
 `vplan check` runs:
 
 ```ts
-const issues = await check(source)
+const issues = await checkPlan(source)
 if (issues.length === 0) {
   // safe to render
 }
