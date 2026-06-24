@@ -8,6 +8,7 @@ import { compile, type CompileOptions } from '@mdx-js/mdx'
 import { baseExpressiveCodeOptions, remarkPlugins } from '@visualplan/compile'
 import { pluginFileIcons } from '@visualplan/compile/file-icons'
 import { remarkFileTreeIcons } from '@visualplan/compile/filetree-icons'
+import { type Feedback, feedbackSchema } from '@visualplan/core'
 import { encodePlan } from '@visualplan/core/share'
 import rehypeExpressiveCode, { type RehypeExpressiveCodeOptions } from 'rehype-expressive-code'
 import { build, createServer, type InlineConfig, type Plugin } from 'vite'
@@ -344,6 +345,98 @@ export async function startDevServer(
     server.resolvedUrls?.local[0] ?? `http://localhost:${server.config.server.port ?? port}`
   return {
     url,
+    close: () => server.close(),
+  }
+}
+
+/** Read a request body to a string, capped so a malformed client cannot stream unbounded data. */
+function readRequestBody(
+  req: import('node:http').IncomingMessage,
+  maxBytes = 1_000_000,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let raw = ''
+    req.on('data', (chunk: Buffer) => {
+      raw += chunk
+      if (raw.length > maxBytes) reject(new Error('feedback body too large'))
+    })
+    req.on('end', () => resolve(raw))
+    req.on('error', reject)
+  })
+}
+
+/**
+ * Serve the plan in review mode and add the `/__vp_feedback` endpoint. Injects `__VP_REVIEW__` so the
+ * runtime mounts its feedback layer (mirroring how `planSharePlugin` injects `__VP_SHARE__`), and on
+ * a POST validates the body against the shared `feedbackSchema` and resolves the session. `sendBeacon`
+ * from the page's unload handler hits this same endpoint, so it accepts any content type.
+ */
+function reviewPlugin(onFeedback: (feedback: Feedback) => void): Plugin {
+  return {
+    name: 'visualplan:review',
+    transformIndexHtml: {
+      order: 'pre',
+      handler() {
+        return [{ tag: 'script', injectTo: 'head', children: 'globalThis.__VP_REVIEW__=true' }]
+      },
+    },
+    configureServer(server) {
+      server.middlewares.use('/__vp_feedback', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405
+          res.end('method not allowed')
+          return
+        }
+        readRequestBody(req)
+          .then(raw => {
+            const feedback = feedbackSchema.parse(JSON.parse(raw))
+            res.statusCode = 200
+            res.setHeader('content-type', 'text/plain; charset=utf-8')
+            res.end('ok')
+            onFeedback(feedback)
+          })
+          .catch(() => {
+            res.statusCode = 400
+            res.end('invalid feedback')
+          })
+      })
+    },
+  }
+}
+
+export interface ReviewServer {
+  url: string
+  /** Resolves when the page submits a decision (via POST or an unload `sendBeacon`). */
+  feedback: Promise<Feedback>
+  close: () => Promise<void>
+}
+
+/**
+ * Start a one-shot review server for a plan's in-memory source. Unlike `startDevServer` it serves a
+ * frozen snapshot (a string input, so no watch file and no hot-reload), which is what lets the page
+ * collect comments without re-rendering underneath them. The returned `feedback` promise resolves
+ * with the reviewer's decision; the caller opens the URL, awaits it, then closes the server.
+ */
+export async function startReviewServer(
+  source: string,
+  theme: Theme = 'system',
+): Promise<ReviewServer> {
+  const paths = findRuntimePaths()
+  let resolveFeedback!: (feedback: Feedback) => void
+  const feedback = new Promise<Feedback>(resolve => {
+    resolveFeedback = resolve
+  })
+  const config = baseConfig(paths, source, { theme })
+  const server = await createServer({
+    ...config,
+    plugins: [...(config.plugins ?? []), reviewPlugin(resolveFeedback)],
+  })
+  await server.listen()
+  const url =
+    server.resolvedUrls?.local[0] ?? `http://localhost:${server.config.server.port ?? 5173}`
+  return {
+    url,
+    feedback,
     close: () => server.close(),
   }
 }

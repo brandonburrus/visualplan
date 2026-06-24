@@ -135,6 +135,9 @@ importers:
       material-icon-theme:
         specifier: ^5.35.0
         version: 5.35.0
+      ms:
+        specifier: ^2.1.3
+        version: 2.1.3
       open:
         specifier: ^11.0.0
         version: 11.0.0
@@ -187,6 +190,9 @@ importers:
       '@types/hast':
         specifier: ^3.0.4
         version: 3.0.4
+      '@types/ms':
+        specifier: ^2.1.0
+        version: 2.1.0
       '@visualplan/compile':
         specifier: workspace:*
         version: link:../compile

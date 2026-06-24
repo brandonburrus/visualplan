@@ -14,6 +14,30 @@ import { z } from 'zod'
  * it for the share button; the CLI's `buildShareUrl` reads it from here too. One source of truth. */
 export const SHARE_VIEW_URL = 'https://visualplan.dev/view'
 
+/** The reviewer's verdict in interactive review mode (`vplan render --review`). */
+export const REVIEW_DECISION_VALUES = ['approve', 'deny', 'iterate'] as const
+
+/** A single targeted comment from a review session: which section it is about, and the note. */
+export const reviewCommentSchema = z.object({
+  section: z.string().min(1),
+  body: z.string().min(1),
+})
+
+/**
+ * The feedback payload the review page POSTs to the CLI's `/__vp_feedback` endpoint. Isomorphic so
+ * the page (which constructs it) and the CLI (which validates it) share one contract and cannot
+ * drift; `comments` defaults to empty because Approve and Deny may carry none.
+ */
+export const feedbackSchema = z.object({
+  decision: z.enum(REVIEW_DECISION_VALUES),
+  comments: z.array(reviewCommentSchema).default([]),
+  note: z.string().optional(),
+})
+
+export type ReviewDecision = (typeof REVIEW_DECISION_VALUES)[number]
+export type ReviewComment = z.infer<typeof reviewCommentSchema>
+export type Feedback = z.infer<typeof feedbackSchema>
+
 export const STATUS_VALUES = ['planned', 'active', 'done'] as const
 export const CHANGE_VALUES = ['add', 'modify', 'delete', 'move'] as const
 export const CHART_TYPE_VALUES = [
