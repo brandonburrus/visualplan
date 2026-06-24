@@ -72,7 +72,11 @@ function DiffOverlay({ diff }: { diff: NonNullable<ReturnType<typeof readDiff>> 
   // A re-render of an identical plan has nothing to surface, so show no chrome at all.
   if (changedCount === 0 && removedCount === 0) return null
 
-  const overlays = diffOverlays(sections, diff, showChanges)
+  const allOverlays = diffOverlays(sections, diff, showChanges)
+  // In review mode the left gutter belongs to the phase timeline and the comment affordances, so the
+  // diff bars would pile up there; drop them and let the summary count + "Show changes" inline diff
+  // convey what changed. The scrims (which fade unchanged sections) stay.
+  const overlays = isReviewMode() ? allOverlays.filter(o => o.kind !== 'bar') : allOverlays
   // The toggle only does something when the bars are mapped (the diff and DOM section counts agree).
   const mapped = sections.length === diff.sections.length
 

@@ -135,10 +135,10 @@ body {
 }
 
 .vp-shell {
-  max-width: 800px;
+  max-width: 860px;
   margin: 0 auto;
   min-height: 100dvh;
-  padding: 3rem 1.5rem 6rem;
+  padding: 3rem 1.75rem 6rem;
 }
 
 .vp-main {
