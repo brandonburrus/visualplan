@@ -23,21 +23,22 @@
   animation: vp-diff-fade-in 0.12s var(--vp-ease);
 }
 
-/* Inline word-level diff inside an edited section's prose: insertions green, deletions red and struck
-   through, each on a light tinted background so the before -> after change is clearly visible. */
+/* Inline word-level diff inside an edited section's prose: the background tint signals add (green) vs
+   remove (red), while the text keeps its normal color so the words stay readable (green-on-green is
+   not). Deletions are struck through. */
 .vp-main ins.vp-diff-ins {
-  color: var(--vp-done);
+  color: var(--vp-text);
   text-decoration: none;
-  background: color-mix(in srgb, var(--vp-done) 16%, transparent);
+  background: color-mix(in srgb, var(--vp-done) 24%, transparent);
   border-radius: 2px;
   padding: 0 0.1em;
 }
 
 .vp-main del.vp-diff-del {
-  color: var(--vp-risk);
+  color: var(--vp-muted);
   text-decoration: line-through;
   text-decoration-thickness: 1px;
-  background: color-mix(in srgb, var(--vp-risk) 13%, transparent);
+  background: color-mix(in srgb, var(--vp-risk) 16%, transparent);
   border-radius: 2px;
   padding: 0 0.1em;
 }
