@@ -65,6 +65,78 @@ const x = 1
     expect(splitSections(source).map(s => s.type)).toEqual(['h1', 'mermaid'])
   })
 
+  // PARITY GOLDEN: this exact ordered type sequence is also asserted against the runtime's DOM-based
+  // `collectSections` in packages/runtime/tests/section-comments.test.ts ("full vocabulary parity").
+  // The two must agree, because the runtime maps a diff status onto a DOM section by document-order
+  // index. If you add or remove a section-starting component, update BOTH goldens together.
+  it('covers the full section-start vocabulary in order (parity golden)', () => {
+    const source = `# Title
+
+## Section two
+
+### Section three
+
+\`\`\`mermaid
+flowchart LR
+  A --> B
+\`\`\`
+
+<Phase title="Build">
+Do the thing.
+</Phase>
+
+<Callout type="risk">
+Watch out.
+</Callout>
+
+<FileTree>
+- add src/x.ts
+</FileTree>
+
+<Chart type="bar" title="Effort">
+- A: 1
+</Chart>
+
+<Matrix>
+| Dim | A | B |
+|-----|---|---|
+| x   | 1 | 2 |
+</Matrix>
+
+<Compare>
+## Option A
+- pro: fast
+</Compare>
+
+<Checklist title="Done when">
+- [ ] works
+</Checklist>
+
+<Stat>
+- Files: 3
+</Stat>
+
+<Questions>
+- Is it ready?
+</Questions>
+`
+    expect(splitSections(source).map(s => s.type)).toEqual([
+      'h1',
+      'h2',
+      'h3',
+      'mermaid',
+      'phase',
+      'callout',
+      'filetree',
+      'chart',
+      'matrix',
+      'compare',
+      'checklist',
+      'stat',
+      'questions',
+    ])
+  })
+
   it('gives titled sections a label-based key and titleless ones a content-based key', () => {
     const sections = splitSections(BASE)
     const phase = sections[1]

@@ -9,6 +9,9 @@ import { decodeJson, validateProps } from './validate.js'
  * before paint to avoid a flash at the wrong height. Pairs with `resize: none` in the CSS. */
 function AutoGrowTextarea(props: ComponentProps<'textarea'>) {
   const ref = useRef<HTMLTextAreaElement>(null)
+  // Re-measure whenever the value changes; the effect reads it via the DOM (scrollHeight), not
+  // directly, so the dependency is intentional even though biome cannot see the use.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: resize on every value change
   useLayoutEffect(() => {
     const el = ref.current
     if (!el) return

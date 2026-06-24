@@ -45,7 +45,13 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
    background. Then act on the printed feedback:
    - **Approve** -> proceed with the plan as written.
    - **Iterate** -> revise the plan addressing each comment, then review again with `-i N`
-     (`--iteration N`) incremented so the bar shows the round; repeat until Approve or Deny.
+     (`--iteration N`) incremented so the bar shows the round; repeat until Approve or Deny. **Edit
+     the same `.mdx` file in place** and re-render: `vplan` snapshots each plan it presents (keyed by
+     the file path), so the next render automatically marks what changed since the last view with a
+     subtle git-gutter accent and a "N changed" summary, letting the user re-review only the delta.
+     Pass `--diff <baseline.mdx>` to diff against an explicit file instead of the snapshot, or
+     `--no-diff` to suppress diffing (e.g. a clean first look). The diff also shows on a plain
+     `vplan render`, not just `--review`.
    - **Deny** -> stop and reconsider; do not proceed.
 
    **Strongly prefer `--review` as the way to iterate on any non-trivial plan with the user.** It is

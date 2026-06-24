@@ -1,0 +1,191 @@
+[
+  {
+    "name": "no-op-identical-plan",
+    "category": "no-op",
+    "baseline": "# Checkout redesign\n\nA short plan to redesign the checkout flow.\n\n<Phase title=\"Audit current funnel\">\nMap each step and where users drop off.\n</Phase>\n\n<Phase title=\"Rebuild the payment step\">\nReplace the legacy form with the new component.\n</Phase>\n",
+    "current": "# Checkout redesign\n\nA short plan to redesign the checkout flow.\n\n<Phase title=\"Audit current funnel\">\nMap each step and where users drop off.\n</Phase>\n\n<Phase title=\"Rebuild the payment step\">\nReplace the legacy form with the new component.\n</Phase>\n",
+    "expectedStatuses": ["unchanged", "unchanged", "unchanged"],
+    "expectedRemovedTypes": [],
+    "confidence": "core"
+  },
+  {
+    "name": "whitespace-only-indentation-and-blanks",
+    "category": "whitespace-only",
+    "baseline": "# Search relevance tuning\n\nImprove ranking quality for the product search index.\n\n<Phase title=\"Collect judgments\">\nGather labeled query/result pairs from the analytics team.\n</Phase>\n\n<Callout type=\"note\">\nUse the existing eval harness rather than building a new one.\n</Callout>\n",
+    "current": "# Search relevance tuning\n\n\nImprove ranking quality for the product search index.\n\n\n<Phase title=\"Collect judgments\">\nGather labeled query/result pairs from the analytics team.\n</Phase>\n\n\n<Callout type=\"note\">\nUse the existing eval harness rather than building a new one.\n</Callout>\n",
+    "expectedStatuses": ["unchanged", "unchanged", "unchanged"],
+    "expectedRemovedTypes": [],
+    "confidence": "core"
+  },
+  {
+    "name": "edit-phase-body-under-same-title",
+    "category": "edit-body",
+    "baseline": "# Notifications service\n\nStand up a service that fans out user notifications.\n\n<Phase title=\"Define the event schema\">\nAgree on a JSON envelope for every notification event.\n</Phase>\n\n<Phase title=\"Wire the delivery workers\">\nWorkers pull from the queue and call the email provider.\n</Phase>\n",
+    "current": "# Notifications service\n\nStand up a service that fans out user notifications.\n\n<Phase title=\"Define the event schema\">\nAgree on a versioned JSON envelope for every notification event, with a required type discriminator.\n</Phase>\n\n<Phase title=\"Wire the delivery workers\">\nWorkers pull from the queue and call the email provider.\n</Phase>\n",
+    "expectedStatuses": ["unchanged", "edited", "unchanged"],
+    "expectedRemovedTypes": [],
+    "confidence": "core"
+  },
+  {
+    "name": "edit-h2-body-under-same-heading",
+    "category": "edit-body",
+    "baseline": "# Q3 mobile launch\n\n## Goals\n\nShip the redesigned home screen to all iOS users.\n\n## Risks\n\nApp Store review can take up to a week.\n",
+    "current": "# Q3 mobile launch\n\n## Goals\n\nShip the redesigned home screen to all iOS users and start a 10 percent Android rollout.\n\n## Risks\n\nApp Store review can take up to a week.\n",
+    "expectedStatuses": ["unchanged", "edited", "unchanged"],
+    "expectedRemovedTypes": [],
+    "confidence": "core"
+  },
+  {
+    "name": "edit-chart-body-under-same-title",
+    "category": "edit-body",
+    "baseline": "# Capacity plan\n\nProject infrastructure spend for the next two quarters.\n\n<Chart type=\"bar\" title=\"Projected monthly cost\">\nQ1: 12000\nQ2: 14000\n</Chart>\n\n<Phase title=\"Reserve instances\">\nBuy one-year reserved instances for the steady-state baseline.\n</Phase>\n",
+    "current": "# Capacity plan\n\nProject infrastructure spend for the next two quarters.\n\n<Chart type=\"bar\" title=\"Projected monthly cost\">\nQ1: 12000\nQ2: 14000\nQ3: 15500\n</Chart>\n\n<Phase title=\"Reserve instances\">\nBuy one-year reserved instances for the steady-state baseline.\n</Phase>\n",
+    "expectedStatuses": ["unchanged", "edited", "unchanged"],
+    "expectedRemovedTypes": [],
+    "confidence": "core"
+  },
+  {
+    "name": "add-phase-in-middle",
+    "category": "add-section",
+    "baseline": "# Data warehouse migration\n\nMove reporting from the legacy MySQL replica to Snowflake.\n\n<Phase title=\"Stand up Snowflake\">\nCreate the account, warehouses, and role hierarchy.\n</Phase>\n\n<Phase title=\"Cut over dashboards\">\nRepoint the BI tool at the new warehouse.\n</Phase>\n",
+    "current": "# Data warehouse migration\n\nMove reporting from the legacy MySQL replica to Snowflake.\n\n<Phase title=\"Stand up Snowflake\">\nCreate the account, warehouses, and role hierarchy.\n</Phase>\n\n<Phase title=\"Backfill historical data\">\nLoad the last two years of fact tables and validate row counts.\n</Phase>\n\n<Phase title=\"Cut over dashboards\">\nRepoint the BI tool at the new warehouse.\n</Phase>\n",
+    "expectedStatuses": ["unchanged", "unchanged", "added", "unchanged"],
+    "expectedRemovedTypes": [],
+    "confidence": "core"
+  },
+  {
+    "name": "add-callout-and-checklist-at-end",
+    "category": "add-section",
+    "baseline": "# Feature flag cleanup\n\nRemove stale flags that have been fully rolled out.\n\n<Phase title=\"Inventory flags\">\nList every flag and its current rollout percentage.\n</Phase>\n",
+    "current": "# Feature flag cleanup\n\nRemove stale flags that have been fully rolled out.\n\n<Phase title=\"Inventory flags\">\nList every flag and its current rollout percentage.\n</Phase>\n\n<Callout type=\"risk\">\nDeleting a flag still referenced in code will break the build.\n</Callout>\n\n<Checklist title=\"Removal steps\">\n- Remove the flag check\n- Delete the flag definition\n- Drop the analytics event\n</Checklist>\n",
+    "expectedStatuses": ["unchanged", "unchanged", "added", "added"],
+    "expectedRemovedTypes": [],
+    "confidence": "core"
+  },
+  {
+    "name": "remove-callout-section",
+    "category": "remove-section",
+    "baseline": "# Password reset flow\n\nRebuild the forgotten-password experience.\n\n<Phase title=\"Token generation\">\nGenerate a single-use, time-boxed reset token.\n</Phase>\n\n<Callout type=\"warn\">\nNever log the reset token in plaintext.\n</Callout>\n\n<Phase title=\"Reset page\">\nServe the form that consumes the token and sets a new password.\n</Phase>\n",
+    "current": "# Password reset flow\n\nRebuild the forgotten-password experience.\n\n<Phase title=\"Token generation\">\nGenerate a single-use, time-boxed reset token.\n</Phase>\n\n<Phase title=\"Reset page\">\nServe the form that consumes the token and sets a new password.\n</Phase>\n",
+    "expectedStatuses": ["unchanged", "unchanged", "unchanged"],
+    "expectedRemovedTypes": ["callout"],
+    "confidence": "core"
+  },
+  {
+    "name": "remove-trailing-phase-and-stat",
+    "category": "remove-section",
+    "baseline": "# Onboarding revamp\n\nReduce time-to-first-value for new signups.\n\n<Phase title=\"Welcome tour\">\nAdd a dismissible three-step product tour.\n</Phase>\n\n<Stat title=\"Target activation\">\n45 percent within seven days\n</Stat>\n\n<Phase title=\"Sample data seeding\">\nSeed each new account with example projects.\n</Phase>\n",
+    "current": "# Onboarding revamp\n\nReduce time-to-first-value for new signups.\n\n<Phase title=\"Welcome tour\">\nAdd a dismissible three-step product tour.\n</Phase>\n",
+    "expectedStatuses": ["unchanged", "unchanged"],
+    "expectedRemovedTypes": ["stat", "phase"],
+    "confidence": "core"
+  },
+  {
+    "name": "rename-phase-title-body-unchanged",
+    "category": "rename-title",
+    "baseline": "# Billing integration\n\nIntegrate the Stripe billing API.\n\n<Phase title=\"Build the limiter\">\nImplement the per-customer rate limiter using a Redis sliding window and a fail-open fallback when Redis is unavailable.\n</Phase>\n\n<Phase title=\"Invoice sync\">\nMirror Stripe invoices into our database on webhook receipt.\n</Phase>\n",
+    "current": "# Billing integration\n\nIntegrate the Stripe billing API.\n\n<Phase title=\"Build the rate limiter\">\nImplement the per-customer rate limiter using a Redis sliding window and a fail-open fallback when Redis is unavailable.\n</Phase>\n\n<Phase title=\"Invoice sync\">\nMirror Stripe invoices into our database on webhook receipt.\n</Phase>\n",
+    "expectedStatuses": ["unchanged", "edited", "unchanged"],
+    "expectedRemovedTypes": [],
+    "confidence": "core"
+  },
+  {
+    "name": "rename-heading-body-mostly-unchanged",
+    "category": "rename-title",
+    "baseline": "# Incident runbook\n\n## Detection\n\nAlerts fire from the latency SLO burn-rate monitor and page the on-call engineer through PagerDuty within two minutes.\n\n## Mitigation\n\nDrain the unhealthy region and shift traffic to the standby.\n",
+    "current": "# Incident runbook\n\n## Detect the incident\n\nAlerts fire from the latency SLO burn-rate monitor and page the on-call engineer through PagerDuty within two minutes.\n\n## Mitigation\n\nDrain the unhealthy region and shift traffic to the standby.\n",
+    "expectedStatuses": ["unchanged", "edited", "unchanged"],
+    "expectedRemovedTypes": [],
+    "confidence": "core"
+  },
+  {
+    "name": "rename-checklist-title-body-unchanged",
+    "category": "rename-title",
+    "baseline": "# Release process\n\nStandardize how we cut a production release.\n\n<Checklist title=\"Pre-flight\">\n- Freeze the release branch\n- Run the full e2e suite\n- Verify migrations are reversible\n- Post the changelog to the channel\n</Checklist>\n",
+    "current": "# Release process\n\nStandardize how we cut a production release.\n\n<Checklist title=\"Pre-flight checks\">\n- Freeze the release branch\n- Run the full e2e suite\n- Verify migrations are reversible\n- Post the changelog to the channel\n</Checklist>\n",
+    "expectedStatuses": ["unchanged", "edited"],
+    "expectedRemovedTypes": [],
+    "confidence": "core"
+  },
+  {
+    "name": "rename-phase-title-borderline-half-rewrite",
+    "category": "rename-title",
+    "baseline": "# API gateway rollout\n\nPut every public endpoint behind a managed gateway.\n\n<Phase title=\"Pilot one service\">\nRoute the read-only catalog service through the gateway and watch p99 latency for a week before expanding.\n</Phase>\n\n<Phase title=\"Document the contract\">\nPublish the OpenAPI spec for partners.\n</Phase>\n",
+    "current": "# API gateway rollout\n\nPut every public endpoint behind a managed gateway.\n\n<Phase title=\"Initial limited rollout\">\nRoute the read-only catalog service through the gateway first, enable request logging and per-route quotas, then review error budgets before onboarding the write services.\n</Phase>\n\n<Phase title=\"Document the contract\">\nPublish the OpenAPI spec for partners.\n</Phase>\n",
+    "expectedStatuses": ["unchanged", "edited", "unchanged"],
+    "expectedRemovedTypes": [],
+    "confidence": "stretch"
+  },
+  {
+    "name": "rename-heading-borderline-heavy-reword",
+    "category": "rename-title",
+    "baseline": "# Cache layer\n\n## Eviction policy\n\nUse an LRU policy with a fixed memory ceiling and a sixty second TTL on every entry to bound staleness.\n",
+    "current": "# Cache layer\n\n## Memory management\n\nApply LRU eviction, cap the heap at a fixed ceiling, and expire keys after sixty seconds so reads never serve badly stale data while keeping the hit rate high.\n",
+    "expectedStatuses": ["unchanged", "edited"],
+    "expectedRemovedTypes": [],
+    "confidence": "stretch"
+  },
+  {
+    "name": "edit-callout-body-titleless",
+    "category": "edit-titleless",
+    "baseline": "# Webhook hardening\n\nMake inbound webhook handling resilient.\n\n<Callout type=\"risk\">\nUnsigned webhook payloads can be spoofed by anyone who knows the URL.\n</Callout>\n\n<Phase title=\"Verify signatures\">\nReject any request whose HMAC signature does not match.\n</Phase>\n",
+    "current": "# Webhook hardening\n\nMake inbound webhook handling resilient.\n\n<Callout type=\"risk\">\nUnsigned webhook payloads can be spoofed by anyone who knows the URL, and replayed payloads can double-charge customers.\n</Callout>\n\n<Phase title=\"Verify signatures\">\nReject any request whose HMAC signature does not match.\n</Phase>\n",
+    "expectedStatuses": ["unchanged", "edited", "unchanged"],
+    "expectedRemovedTypes": [],
+    "confidence": "core"
+  },
+  {
+    "name": "edit-filetree-entry-titleless",
+    "category": "edit-titleless",
+    "baseline": "# Module reorg\n\nSplit the monolithic utils file into focused modules.\n\n<FileTree>\n- src/\n  - utils.ts\n  - index.ts\n</FileTree>\n\n<Phase title=\"Move helpers\">\nRelocate each helper to its new home and update imports.\n</Phase>\n",
+    "current": "# Module reorg\n\nSplit the monolithic utils file into focused modules.\n\n<FileTree>\n- src/\n  - format.ts\n  - validate.ts\n  - index.ts\n</FileTree>\n\n<Phase title=\"Move helpers\">\nRelocate each helper to its new home and update imports.\n</Phase>\n",
+    "expectedStatuses": ["unchanged", "edited", "unchanged"],
+    "expectedRemovedTypes": [],
+    "confidence": "stretch"
+  },
+  {
+    "name": "edit-mermaid-diagram-titleless",
+    "category": "edit-titleless",
+    "baseline": "# Auth flow\n\nDocument the OAuth handshake.\n\n```mermaid\nflowchart LR\n  User --> App\n  App --> Provider\n```\n\n<Phase title=\"Implement callback\">\nExchange the code for tokens on the callback route.\n</Phase>\n",
+    "current": "# Auth flow\n\nDocument the OAuth handshake.\n\n```mermaid\nflowchart LR\n  User --> App\n  App --> Provider\n  Provider --> App\n```\n\n<Phase title=\"Implement callback\">\nExchange the code for tokens on the callback route.\n</Phase>\n",
+    "expectedStatuses": ["unchanged", "edited", "unchanged"],
+    "expectedRemovedTypes": [],
+    "confidence": "core"
+  },
+  {
+    "name": "reorder-two-phases",
+    "category": "reorder",
+    "baseline": "# Deploy pipeline\n\nFormalize the continuous deployment pipeline.\n\n<Phase title=\"Build and test\">\nCompile the project and run the unit and integration suites.\n</Phase>\n\n<Phase title=\"Deploy to staging\">\nPromote the artifact to the staging environment automatically.\n</Phase>\n",
+    "current": "# Deploy pipeline\n\nFormalize the continuous deployment pipeline.\n\n<Phase title=\"Deploy to staging\">\nPromote the artifact to the staging environment automatically.\n</Phase>\n\n<Phase title=\"Build and test\">\nCompile the project and run the unit and integration suites.\n</Phase>\n",
+    "expectedStatuses": ["unchanged", "unchanged", "unchanged"],
+    "expectedRemovedTypes": [],
+    "confidence": "stretch"
+  },
+  {
+    "name": "mixed-edit-add-remove",
+    "category": "mixed",
+    "baseline": "# Customer export feature\n\nLet customers download all their data on demand.\n\n<Phase title=\"Gather data\">\nQuery every table that holds customer-owned records.\n</Phase>\n\n<Callout type=\"note\">\nExports must complete within the request timeout.\n</Callout>\n\n<Phase title=\"Package the archive\">\nZip the JSON files and store them in a bucket.\n</Phase>\n",
+    "current": "# Customer export feature\n\nLet customers download all their data on demand.\n\n<Phase title=\"Gather data\">\nQuery every table that holds customer-owned records, including soft-deleted rows that the customer can still recover.\n</Phase>\n\n<Phase title=\"Package the archive\">\nZip the JSON files and store them in a bucket.\n</Phase>\n\n<Phase title=\"Email the download link\">\nSend a signed, expiring URL once the archive is ready.\n</Phase>\n",
+    "expectedStatuses": ["unchanged", "edited", "unchanged", "added"],
+    "expectedRemovedTypes": ["callout"],
+    "confidence": "core"
+  },
+  {
+    "name": "mixed-rename-edit-titleless-add",
+    "category": "mixed",
+    "baseline": "# Fraud detection rollout\n\nDeploy the real-time fraud scoring model.\n\n<Phase title=\"Shadow mode\">\nScore live transactions without acting on the result and compare against the current rules engine.\n</Phase>\n\n<Compare>\nRules engine vs ML model on the holdout set.\n</Compare>\n",
+    "current": "# Fraud detection rollout\n\nDeploy the real-time fraud scoring model.\n\n<Phase title=\"Run in shadow mode\">\nScore live transactions without acting on the result and compare against the current rules engine.\n</Phase>\n\n<Compare>\nRules engine vs ML model on the holdout set, broken down by transaction size band.\n</Compare>\n\n<Phase title=\"Enforce blocks\">\nStart declining transactions above the score threshold.\n</Phase>\n",
+    "expectedStatuses": ["unchanged", "edited", "edited", "added"],
+    "expectedRemovedTypes": [],
+    "confidence": "core"
+  },
+  {
+    "name": "edit-questions-body-under-same-title",
+    "category": "edit-body",
+    "baseline": "# Pricing experiment\n\nTest a usage-based pricing tier.\n\n<Questions title=\"Open questions\">\n- What is the unit of metering?\n- How do we handle overage?\n</Questions>\n\n<Phase title=\"Instrument usage\">\nEmit a metering event on every billable action.\n</Phase>\n",
+    "current": "# Pricing experiment\n\nTest a usage-based pricing tier.\n\n<Questions title=\"Open questions\">\n- What is the unit of metering?\n- How do we handle overage?\n- Do existing customers get grandfathered onto the old plan?\n</Questions>\n\n<Phase title=\"Instrument usage\">\nEmit a metering event on every billable action.\n</Phase>\n",
+    "expectedStatuses": ["unchanged", "edited", "unchanged"],
+    "expectedRemovedTypes": [],
+    "confidence": "core"
+  }
+]

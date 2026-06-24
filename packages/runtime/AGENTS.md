@@ -38,6 +38,17 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   `sendBeacon`, which is dropped on a real close (it only survived navigation). A `beforeunload` prompt
   while undecided is now just a courtesy, the actual Deny no longer depends on the page sending
   anything during unload.
+- `components/DiffCues.tsx` renders iteration diff cues when the CLI injected `__VP_DIFF__` (any
+  render/watch/review with a baseline, NOT review-gated). All fixed-position overlay (plan DOM
+  untouched): a git-gutter left edge-accent bar beside each added (`--vp-done`) / edited
+  (`--vp-modify`) section, a bottom-left summary chip, and an "only changes" toggle that scrims
+  unchanged sections. `components/review/diff.ts` reads the global and holds `diffOverlays`, a **pure**
+  helper (unit-tested in jsdom). **Parity contract:** the injected `__VP_DIFF__.sections` is one entry
+  per current section in document order, mapped onto `collectSections()` output BY INDEX, so the
+  counts must agree; `diffOverlays` returns nothing on a mismatch (degrade, never mislabel). This DOM
+  split and `@visualplan/compile`'s mdast `splitSections` are kept aligned by paired parity goldens
+  (`tests/section-comments.test.ts` here + `packages/compile/tests/sections.test.ts`); update both
+  when the section-start vocabulary changes.
 - `components/ThemeToggle.tsx` is the fixed top-right cog, just left of the share button. Its menu
   picks `system` / `light` / `dark`; choosing one recolors the page live (all colors are CSS vars,
   so flipping `<html data-theme>` repaints with no React re-render) and persists the choice in
