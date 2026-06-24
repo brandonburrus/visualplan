@@ -23,10 +23,13 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   chrome only (the plan DOM is never mutated): `SectionComments` tracks the hovered major section (a
   `.vp-phase` or top-level `h2`, found by walking the DOM) and floats one comment button beside it;
   `CommentModal` is the bottom composer; `DecisionBar` submits Approve/Deny/Iterate. `feedback.ts`
-  POSTs `{decision, comments, note}` (shape = `@visualplan/core` `feedbackSchema`) to the CLI's
-  `/__vp_feedback`. **Unload handling:** a `beforeunload` prompt fires while undecided, and the real
-  `pagehide` sends a Deny via `navigator.sendBeacon` (a normal `fetch` is cancelled mid-unload, so
-  the beacon is mandatory); both read the latest state through a ref since they register once.
+  POSTs an explicit decision `{decision, comments, note}` (shape = `@visualplan/core` `feedbackSchema`)
+  to `/__vp_feedback`. **Tab-close handling is server-detected, not beacon-based:** `ReviewLayer` holds
+  a `/__vp_alive` connection open and POSTs `/__vp_draft` whenever comments/note change; when the tab
+  closes the connection drops and the CLI resolves Deny with that draft. This replaced an unload
+  `sendBeacon`, which is dropped on a real close (it only survived navigation). A `beforeunload` prompt
+  while undecided is now just a courtesy, the actual Deny no longer depends on the page sending
+  anything during unload.
 - `components/ThemeToggle.tsx` is the fixed top-right cog, just left of the share button. Its menu
   picks `system` / `light` / `dark`; choosing one recolors the page live (all colors are CSS vars,
   so flipping `<html data-theme>` repaints with no React re-render) and persists the choice in

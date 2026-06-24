@@ -23,9 +23,12 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
   (`formatFeedback` -> readable text, `exitCodeFor`: approve 0 / deny 1 / iterate 2 / timeout 3). The
   transport lives in `compile.ts` `startReviewServer`: a one-shot Vite server over a frozen snapshot
   (a string input, so no watch/hot-reload, which is what lets the page collect comments without
-  re-rendering) that injects `__VP_REVIEW__` and exposes `POST /__vp_feedback`, validating the body
-  against `@visualplan/core`'s `feedbackSchema` and resolving the session (a tab-close `sendBeacon`
-  hits the same endpoint).
+  re-rendering) that injects `__VP_REVIEW__` and exposes three endpoints, all settling the session
+  once: `POST /__vp_feedback` (the explicit decision, validated against `@visualplan/core`'s
+  `feedbackSchema`), `POST /__vp_draft` (the page keeps the Deny-on-close payload current as comments
+  are added), and `GET /__vp_alive` (a connection the page holds open; its drop resolves Deny with the
+  latest draft). Detecting that socket close server-side is what makes a real tab close reliable,
+  where an unload-time `sendBeacon` is not (verified: the beacon survives navigation but not a close).
 - `src/config.ts` — the persistent CLI config at `~/.vplan/config.json` (literal path via
   `homedir()`, deliberately NOT `env-paths`). Only setting today is `theme` (`light`|`dark`|
   `system`). `readConfig` is tolerant (missing/malformed/unknown-theme -> `{ theme: 'system' }`) so a
