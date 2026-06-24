@@ -113,6 +113,12 @@ interface ProseToken {
   text: string
 }
 
+/** Data-component containers whose rendered text is structured data, not authored prose. Their text
+ * tokenizes differently from the MDX source (file paths split by separators, table cells, task
+ * items), so it is excluded from word-highlighting, matching the source-side `PROSE_OPAQUE_COMPONENTS`. */
+const DATA_COMPONENT_SELECTOR =
+  '.vp-filetree, .vp-chart, .vp-matrix-wrap, .vp-compare, .vp-checklist, .vp-stat, .vp-questions'
+
 /** Lowercase word tokens, for whitespace-insensitive, case-insensitive matching. */
 function tokenize(text: string): string[] {
   return text.toLowerCase().match(/\S+/g) ?? []
@@ -129,7 +135,7 @@ function proseTokens(roots: Element[]): ProseToken[] {
     let node = walker.nextNode()
     while (node) {
       const block = node.parentElement?.closest('p, li')
-      if (block && root.contains(block)) {
+      if (block && root.contains(block) && !block.closest(DATA_COMPONENT_SELECTOR)) {
         const text = node.textContent ?? ''
         for (const match of text.matchAll(/\S+/g)) {
           if (match.index !== undefined) {

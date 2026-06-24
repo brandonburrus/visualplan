@@ -108,6 +108,17 @@ describe('insertedWordRanges', () => {
     expect(insertedWordRanges([el], 'Stand up the Redis client')).toEqual([])
   })
 
+  it('excludes data-component li (FileTree etc.) from word highlighting (edge)', () => {
+    document.body.innerHTML =
+      '<div class="vp-phase"><p>Wrap the SDK with retries</p><div class="vp-filetree"><ul><li>add backfill.ts</li></ul></div></div>'
+    const el = document.querySelector('.vp-phase') as Element
+    // Only the paragraph's new words highlight; the FileTree entry is excluded despite being "new".
+    expect(insertedWordRanges([el], 'Wrap the SDK').map(r => r.toString())).toEqual([
+      'with',
+      'retries',
+    ])
+  })
+
   it('returns no ranges when the section has no p/li prose (error / non-prose block)', () => {
     document.body.innerHTML = '<div class="vp-filetree"><span>add src/x.ts</span></div>'
     const el = document.querySelector('.vp-filetree') as Element

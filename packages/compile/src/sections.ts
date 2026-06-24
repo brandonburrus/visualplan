@@ -119,10 +119,27 @@ function textContent(node: MdastNode): string {
   return out
 }
 
+/** Data components whose markdown children are structured DATA, not authored prose; their rendered
+ * text (file paths, table cells, task items) tokenizes differently from the source, so they are
+ * excluded from prose word-highlighting on both sides (here and the runtime's DOM extraction). */
+const PROSE_OPAQUE_COMPONENTS = new Set([
+  'FileTree',
+  'Chart',
+  'Matrix',
+  'Compare',
+  'Checklist',
+  'Stat',
+  'Questions',
+])
+
 /** The prose text of a node: text within `paragraph`/`listItem` nodes only (no headings, titles, or
- * attributes), recursively. Mirrors the runtime's `p`/`li` DOM extraction so the two token streams
- * align for word-level highlighting. `inProse` becomes true once inside a paragraph or list item. */
+ * attributes), recursively, skipping data-component subtrees. Mirrors the runtime's `p`/`li` DOM
+ * extraction so the two token streams align for word-level highlighting. `inProse` becomes true once
+ * inside a paragraph or list item. */
 function proseText(node: MdastNode, inProse: boolean, out: string[]): void {
+  if (node.type === 'mdxJsxFlowElement' && node.name && PROSE_OPAQUE_COMPONENTS.has(node.name)) {
+    return
+  }
   const within = inProse || node.type === 'paragraph' || node.type === 'listItem'
   if (
     within &&

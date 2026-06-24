@@ -137,6 +137,22 @@ Watch out.
     ])
   })
 
+  it('excludes data-component children from a section prose (so word-diff stays clean)', () => {
+    const source = `# Title
+
+<Phase title="Build">
+Wrap the SDK.
+
+<FileTree>
+- add src/x.ts
+</FileTree>
+</Phase>
+`
+    const phase = splitSections(source)[1]
+    // Prose carries the paragraph but not the FileTree entry text (which tokenizes unlike its source).
+    expect(phase?.prose).toBe('Wrap the SDK.')
+  })
+
   it('gives titled sections a label-based key and titleless ones a content-based key', () => {
     const sections = splitSections(BASE)
     const phase = sections[1]
