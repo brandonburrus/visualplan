@@ -88,6 +88,7 @@
     "@types/ms": "^2.1.0",
     "@visualplan/compile": "workspace:*",
     "@visualplan/core": "workspace:*",
-    "@visualplan/runtime": "workspace:*"
+    "@visualplan/runtime": "workspace:*",
+    "playwright-core": "^1.61.0"
   }
 }
