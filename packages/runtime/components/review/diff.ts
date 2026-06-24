@@ -52,6 +52,7 @@ export function diffOverlays(
   sections: Section[],
   diff: InjectedDiff,
   onlyChanges: boolean,
+  barOffset = 18,
 ): DiffOverlay[] {
   if (sections.length !== diff.sections.length) return []
   const overlays: DiffOverlay[] = []
@@ -61,7 +62,9 @@ export function diffOverlays(
     const { top, bottom } = sectionContent(section)
     const height = Math.max(bottom - top, 0)
     if (isChanged(status)) {
-      const left = Math.max(section.element.getBoundingClientRect().left - 18, 6)
+      // `barOffset` is the distance left of the content; the caller tightens it in review mode so the
+      // bar hugs the content edge and leaves the outer gutter free for the comment badges.
+      const left = Math.max(section.element.getBoundingClientRect().left - barOffset, 4)
       overlays.push({
         sectionIndex: section.index,
         kind: 'bar',

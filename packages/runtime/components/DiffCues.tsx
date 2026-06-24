@@ -72,7 +72,9 @@ function DiffOverlay({ diff }: { diff: NonNullable<ReturnType<typeof readDiff>> 
   // A re-render of an identical plan has nothing to surface, so show no chrome at all.
   if (changedCount === 0 && removedCount === 0) return null
 
-  const overlays = diffOverlays(sections, diff, showChanges)
+  // In review mode the outer gutter holds comment badges, so hug the content edge (offset 4) to avoid
+  // clipping them; otherwise sit out in the gutter (offset 18) for the git-gutter look.
+  const overlays = diffOverlays(sections, diff, showChanges, isReviewMode() ? 4 : 18)
   // The toggle only does something when the bars are mapped (the diff and DOM section counts agree).
   const mapped = sections.length === diff.sections.length
 
