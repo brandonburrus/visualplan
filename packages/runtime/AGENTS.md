@@ -39,21 +39,23 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   while undecided is now just a courtesy, the actual Deny no longer depends on the page sending
   anything during unload.
 - `components/DiffCues.tsx` renders iteration diff cues when the CLI injected `__VP_DIFF__` (any
-  render/watch/review with a baseline, NOT review-gated). All fixed-position overlay (plan DOM
-  untouched): a git-gutter left edge-accent bar beside each added (`--vp-done`) / edited
-  (`--vp-modify`) section, a bottom-left summary chip, and an "only changes" toggle that scrims
-  unchanged sections. Each edited section **also shows a true inline word diff by default** (not
-  behind the toggle, so it is not missed): `applyInlineWordDiff` word-diffs the section's `<p>` prose
-  against its injected baseline prose (`prev`) and re-renders the first prose paragraph as the diff,
-  deletions in `<del class="vp-diff-del">` (struck red) and insertions in `<ins class="vp-diff-ins">`
-  (green). This **mutates the plan DOM** (a deletion is not otherwise in the page) but only the prose,
-  and reversibly (the effect's cleanup restores it). It scopes to authored prose (`<p>` not inside a
-  data component), so file paths / table cells / task items never produce false diffs, and scans a
-  section's full owned sibling span (a heading plus its intro paragraph). `components/review/diff.ts`
-  holds the **pure**, jsdom-tested helpers (`diffOverlays`, `wordDiffOps`, `applyInlineWordDiff`,
-  `sectionOwnedElements`). Known limit: inline formatting (bold/links) in an edited paragraph is
-  flattened to text while the diff is shown, and word-level granularity re-marks a word on a
-  punctuation-only change. **Parity contract:** the injected `__VP_DIFF__.sections` is one entry
+  render/watch/review with a baseline, NOT review-gated). Always on: a change bar **flush to the left
+  edge of the viewport** (`left: 0`, a dedicated lane clear of the content gutter so it never piles up
+  with the phase timeline or review comment badges) for each added (`--vp-done`) / edited
+  (`--vp-modify`) section, plus a bottom-left summary chip. The **"Show changes"** toggle reveals the
+  inline word diff and scrims unchanged sections. The inline diff (`applyInlineWordDiff` for the
+  body prose, `applyTitleDiff` for a renamed title) word-diffs each edited section against its injected
+  baseline (`prev` = body prose, `prevLabel` = old title) and re-renders it as `<del class="vp-diff-del">`
+  (red strikethrough) / `<ins class="vp-diff-ins">` (green-tinted), keeping the text its normal color so
+  it stays readable. `prevLabel` is what surfaces a rename whose body is unchanged (else the section is
+  "marked changed but nothing differs"). This **mutates the plan DOM** (a deletion is not otherwise in
+  the page) but only the prose/title, reversibly (the effect cleanup restores it). It scopes to authored
+  prose (`<p>` not inside a data component), so file paths / table cells never produce false diffs, and
+  scans a section's full owned sibling span (a heading plus its intro paragraph). `wordDiffOps` compares
+  on a punctuation-stripped, lowercased word core, so a trailing-comma or capitalization change is not
+  noise. `components/review/diff.ts` holds the **pure**, jsdom-tested helpers (`diffOverlays`,
+  `wordDiffOps`, `applyInlineWordDiff`, `applyTitleDiff`, `sectionOwnedElements`). Known limit: inline
+  formatting (bold/links) in an edited paragraph is flattened to text while the diff is shown. **Parity contract:** the injected `__VP_DIFF__.sections` is one entry
   per current section in document order, mapped onto `collectSections()` output BY INDEX, so the
   counts must agree; `diffOverlays` returns nothing on a mismatch (degrade, never mislabel). This DOM
   split and `@visualplan/compile`'s mdast `splitSections` are kept aligned by paired parity goldens

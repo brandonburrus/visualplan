@@ -21,10 +21,11 @@ const STATUS_COLOR: Record<DiffStatus, string> = {
 }
 
 /**
- * Iteration diff cues: a git-gutter-style left edge-accent bar beside each added/edited section, a
- * summary chip with the change counts, and an "only changes" toggle that fades unchanged sections.
- * Renders whenever the CLI injected `__VP_DIFF__` (a render/watch/review with a baseline), not just in
- * review mode. Everything is fixed-position overlay; the plan DOM is never touched.
+ * Iteration diff cues, shown whenever the CLI injected `__VP_DIFF__` (a render/watch/review with a
+ * baseline). Always on: a change bar flush to the left edge of the viewport for each added/edited
+ * section, plus a summary chip. The "Show changes" toggle reveals the inline word diff (each edited
+ * section's prose and renamed title re-rendered as del/ins) and fades unchanged sections. The bars,
+ * scrims, and chip are fixed-position overlay; the inline diff alone mutates the prose DOM, reversibly.
  */
 export function DiffCues() {
   const diff = readDiff()

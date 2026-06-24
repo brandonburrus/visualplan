@@ -61,7 +61,8 @@ through the workspace.
   pass so a reworded title or edited title-less block reads as `edited` not remove+add. Output is one
   status per current section in document order (so the runtime maps it by index) plus removed ones;
   an `edited` section also carries `prev` (the baseline `prose` = paragraph/list text only, no
-  title/attributes) so the runtime can word-highlight what changed against the rendered `p`/`li`.
+  title/attributes) and, when renamed, `prevLabel` (the baseline title) so the runtime can word-diff
+  the body and the title respectively (a rename has no body diff).
   Pure/isomorphic (no fs/DOM). **The section set + order MUST match the runtime's `collectSections`**;
   paired parity goldens here and in the runtime pin it (see the runtime AGENTS.md). A behavioral
   corpus (`tests/fixtures/diff-corpus.json`, `tests/diff-corpus.test.ts`) calibrates the threshold.
