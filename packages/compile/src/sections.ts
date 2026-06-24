@@ -47,6 +47,9 @@ export interface SectionDiff {
     /** The baseline section's prose, present only on `edited` sections, so the runtime can highlight
      * the words that changed against the rendered body. */
     prev?: string
+    /** The baseline section's label, present only when an `edited` section was renamed, so the runtime
+     * can show the title change (a rename has no body diff). */
+    prevLabel?: string
   }[]
   removed: { label: string; type: string }[]
 }
@@ -362,9 +365,19 @@ export function diffSections(baseline: string, current: string): SectionDiff {
     sections: cur.map((s, ci) => {
       const sectionStatus = status[ci] as SectionStatus
       const bi = matchedBase[ci]
+      const baseSection = sectionStatus === 'edited' && bi !== undefined ? base[bi] : undefined
       // Carry the baseline prose only on edited sections, so the runtime can highlight what changed.
-      const prev = sectionStatus === 'edited' && bi !== undefined ? base[bi]?.prose : undefined
-      return { status: sectionStatus, label: s.label, type: s.type, ...(prev ? { prev } : {}) }
+      const prev = baseSection?.prose
+      // Carry the baseline label only when the title actually changed (a rename), so the runtime can
+      // show that even when the body is unchanged.
+      const prevLabel = baseSection && baseSection.label !== s.label ? baseSection.label : undefined
+      return {
+        status: sectionStatus,
+        label: s.label,
+        type: s.type,
+        ...(prev ? { prev } : {}),
+        ...(prevLabel ? { prevLabel } : {}),
+      }
     }),
     removed,
   }

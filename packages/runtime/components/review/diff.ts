@@ -15,9 +15,9 @@ export type DiffStatus = 'unchanged' | 'edited' | 'added'
 
 /** The diff payload injected by the CLI build's `planDiffPlugin`. */
 export interface InjectedDiff {
-  /** One per current section, in document order. `prev` is the baseline prose, present only on
-   * `edited` sections, for word-level highlighting. */
-  sections: { status: DiffStatus; label: string; type: string; prev?: string }[]
+  /** One per current section, in document order. `prev` is the baseline prose and `prevLabel` the
+   * baseline title (only on `edited` sections; `prevLabel` only on a rename), for word-level diffing. */
+  sections: { status: DiffStatus; label: string; type: string; prev?: string; prevLabel?: string }[]
   /** Baseline sections with no current match. */
   removed: { label: string; type: string }[]
 }
@@ -221,4 +221,31 @@ export function applyInlineWordDiff(roots: Element[], prevProse: string): () => 
     target.replaceChildren(...originalTarget)
     for (const { p, display } of collapsed) p.style.display = display
   }
+}
+
+/** A section's title/label element, whose text the rename diff targets: the heading itself for a
+ * heading section, otherwise the block's title/label element. */
+const TITLE_SELECTOR =
+  '.vp-phase__title, .vp-chart__title, .vp-checklist__title, .vp-stat__title, .vp-questions__title, .vp-callout__label'
+
+function titleElement(section: Section): Element | null {
+  const el = section.element
+  if (/^H[1-6]$/.test(el.tagName)) return el
+  return el.querySelector(TITLE_SELECTOR)
+}
+
+/**
+ * Show a renamed section's title change inline: diff the rendered title against the baseline label
+ * (`prevLabel`) and re-render it as the diff. This is what surfaces a rename whose body is otherwise
+ * unchanged (so the section is not "marked changed but nothing differs"). Reversible; returns a
+ * cleanup that restores the title.
+ */
+export function applyTitleDiff(section: Section, prevLabel: string): () => void {
+  const el = titleElement(section)
+  if (!el) return () => {}
+  const ops = wordDiffOps(words(prevLabel), words(el.textContent ?? ''))
+  if (!ops.some(op => op.type !== 'eq')) return () => {}
+  const original = Array.from(el.childNodes)
+  el.replaceChildren(renderDiff(ops))
+  return () => el.replaceChildren(...original)
 }

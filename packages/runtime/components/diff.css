@@ -35,10 +35,13 @@
 }
 
 .vp-main del.vp-diff-del {
-  color: var(--vp-muted);
+  /* Keep the text readable (not red-on-red), but make the removal unmistakably red via a thick red
+     strike and a red tint. */
+  color: var(--vp-text);
   text-decoration: line-through;
-  text-decoration-thickness: 1px;
-  background: color-mix(in srgb, var(--vp-risk) 16%, transparent);
+  text-decoration-color: var(--vp-risk);
+  text-decoration-thickness: 2px;
+  background: color-mix(in srgb, var(--vp-risk) 18%, transparent);
   border-radius: 2px;
   padding: 0 0.1em;
 }

@@ -41,6 +41,8 @@
   pointer-events: none;
   border-radius: 10px;
   background: color-mix(in srgb, var(--vp-accent) 3.5%, transparent);
+  /* A same-hue border so the band reads as a padded frame around the hovered section. */
+  border: 1px solid color-mix(in srgb, var(--vp-accent) 10%, transparent);
   animation: vp-review-fade-in 0.12s var(--vp-ease);
 }
 

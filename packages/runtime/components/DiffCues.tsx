@@ -2,6 +2,7 @@ import { IconGitCommit } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import {
   applyInlineWordDiff,
+  applyTitleDiff,
   type DiffStatus,
   diffOverlays,
   isChanged,
@@ -58,9 +59,13 @@ function DiffOverlay({ diff }: { diff: NonNullable<ReturnType<typeof readDiff>> 
     if (!showChanges || sections.length !== diff.sections.length) return
     const restores = sections.flatMap((section, index) => {
       const entry = diff.sections[index]
-      return entry?.status === 'edited' && entry.prev
-        ? [applyInlineWordDiff(sectionOwnedElements(section), entry.prev)]
-        : []
+      if (entry?.status !== 'edited') return []
+      const sectionRestores: (() => void)[] = []
+      // A rename (prevLabel) shows in the title; a body edit (prev) shows in the prose. Either or both.
+      if (entry.prevLabel) sectionRestores.push(applyTitleDiff(section, entry.prevLabel))
+      if (entry.prev)
+        sectionRestores.push(applyInlineWordDiff(sectionOwnedElements(section), entry.prev))
+      return sectionRestores
     })
     return () => {
       for (const restore of restores) restore()

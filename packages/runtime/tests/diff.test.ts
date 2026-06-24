@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   applyInlineWordDiff,
+  applyTitleDiff,
   diffOverlays,
   type InjectedDiff,
   isChanged,
@@ -141,5 +142,25 @@ describe('applyInlineWordDiff', () => {
     const filetreeP = el.querySelector('.vp-filetree p') as HTMLElement
     expect(filetreeP.querySelector('del, ins')).toBeNull()
     expect(filetreeP.textContent).toBe('add backfill.ts')
+  })
+})
+
+describe('applyTitleDiff', () => {
+  it('re-renders a renamed phase title as a del/ins diff and restores it (golden + restore)', () => {
+    document.body.innerHTML =
+      '<main class="vp-main"><div class="vp-phase"><div class="vp-phase__title">Switch the write path</div></div></main>'
+    const section = collectSections()[0]
+    const title = document.querySelector('.vp-phase__title') as HTMLElement
+    const original = title.innerHTML
+
+    const restore = applyTitleDiff(
+      section as Parameters<typeof applyTitleDiff>[0],
+      'Switch the upload path',
+    )
+    expect(title.querySelector('del')?.textContent).toBe('upload')
+    expect(title.querySelector('ins')?.textContent).toBe('write')
+
+    restore()
+    expect(title.innerHTML).toBe(original)
   })
 })

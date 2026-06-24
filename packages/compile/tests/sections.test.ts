@@ -226,6 +226,13 @@ describe('diffSections', () => {
     expect(callout?.prev).toBeUndefined()
   })
 
+  it('carries the baseline label as prevLabel on a renamed section', () => {
+    const current = BASE.replace('title="Build the limiter"', 'title="Build the rate limiter"')
+    const phase = diffSections(BASE, current).sections[1]
+    expect(phase?.status).toBe('edited')
+    expect(phase?.prevLabel).toBe('Build the limiter')
+  })
+
   it('detects a reworded title as an edit (rename), not a remove + add', () => {
     const current = BASE.replace('title="Build the limiter"', 'title="Build the rate limiter"')
     const diff = diffSections(BASE, current)
