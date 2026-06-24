@@ -17,9 +17,10 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
   plan's MDX (deflate + base64url), validating first so a broken plan is never shared. Reads a file
   or stdin.
 - `vplan render --review <file.mdx|->` opens the plan as an interactive review session: the user
-  comments on sections and clicks Approve / Deny / Iterate, and the CLI blocks until then, prints the
-  feedback to stdout, and exits (approve 0, deny 1, iterate 2, timeout 3). `--timeout` (default 15m)
-  bounds the wait; a closed tab resolves as Deny.
+  comments on sections (or selected text) and clicks Approve / Deny / Iterate, and the CLI blocks
+  until then, prints the feedback to stdout, and exits (approve 0, deny 1, iterate 2, timeout 3).
+  `--timeout` (default 15m) bounds the wait; a closed tab resolves as Deny. `-i/--iteration N` shows
+  the revision number in the review bar (the agent increments it each re-review).
 - `vplan components` prints the component vocabulary cheat-sheet.
 - A programmatic API (`import { renderPlan, checkPlan } from 'vplan'`) renders/validates a plan from
   an in-memory MDX string, with a named export per catalog entry. See `packages/cli/src/api.ts`.

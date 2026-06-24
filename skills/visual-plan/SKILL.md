@@ -40,7 +40,9 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
    **blocks** until they submit, then prints their decision and comments and exits: approve 0, deny 1,
    iterate 2, timeout 3 (`--timeout`, default 15m; a closed tab counts as deny). Read the printed
    feedback and act on it: on Iterate, revise the plan using the comments and review again; on Deny,
-   stop and reconsider. Use this when you want explicit sign-off, not just to show the plan.
+   stop and reconsider. Use this when you want explicit sign-off, not just to show the plan. When you
+   re-review after revising, pass `-i N` (`--iteration N`) so the review bar shows the user which
+   revision they are looking at (increment it each round).
 
 Run `vplan components` anytime for the exact prop signatures.
 
