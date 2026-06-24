@@ -61,12 +61,13 @@ export function diffOverlays(
     const { top, bottom } = sectionContent(section)
     const height = Math.max(bottom - top, 0)
     if (isChanged(status)) {
-      const left = Math.max(section.element.getBoundingClientRect().left - 18, 6)
+      // Flush to the left edge of the viewport: a dedicated change-indicator lane, clear of the
+      // content gutter (phase timeline + review comment affordances), so nothing piles up.
       overlays.push({
         sectionIndex: section.index,
         kind: 'bar',
         status,
-        rect: { top, left, height },
+        rect: { top, left: 0, height },
       })
     } else if (onlyChanges) {
       overlays.push({

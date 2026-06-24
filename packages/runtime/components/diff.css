@@ -11,31 +11,35 @@
   }
 }
 
-/* The git-gutter-style accent bar beside a changed section. Thin, low-key, color set inline from the
-   section's status (added = done-green, edited = modify-amber). */
+/* A change-indicator bar flush to the left edge of the viewport (left: 0 set inline), a dedicated
+   lane clear of the content gutter. Color set inline from the status (added = green, edited = amber). */
 .vp-diff-bar {
   position: fixed;
   z-index: 52;
-  width: 2px;
-  border-radius: 2px;
+  width: 4px;
+  border-radius: 0 2px 2px 0;
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 0.75;
   animation: vp-diff-fade-in 0.12s var(--vp-ease);
 }
 
-/* Inline word-level diff inside an edited section's prose: insertions in green, deletions muted and
-   struck through, so the before -> after change is readable in place without shouting. */
+/* Inline word-level diff inside an edited section's prose: insertions green, deletions red and struck
+   through, each on a light tinted background so the before -> after change is clearly visible. */
 .vp-main ins.vp-diff-ins {
   color: var(--vp-done);
   text-decoration: none;
-  box-shadow: inset 0 -1px 0 color-mix(in srgb, var(--vp-done) 40%, transparent);
+  background: color-mix(in srgb, var(--vp-done) 16%, transparent);
+  border-radius: 2px;
+  padding: 0 0.1em;
 }
 
 .vp-main del.vp-diff-del {
-  color: var(--vp-muted);
+  color: var(--vp-risk);
   text-decoration: line-through;
   text-decoration-thickness: 1px;
-  text-decoration-color: color-mix(in srgb, var(--vp-risk) 60%, transparent);
+  background: color-mix(in srgb, var(--vp-risk) 13%, transparent);
+  border-radius: 2px;
+  padding: 0 0.1em;
 }
 
 /* Fades an unchanged section when "only changes" is on, so the changed ones stand out. */
