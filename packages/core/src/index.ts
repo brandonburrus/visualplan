@@ -9,6 +9,11 @@ import { z } from 'zod'
  * imports. Keep it isomorphic.
  */
 
+/** The visualplan.dev page that decodes a `?data=` share link and recompiles the plan in-browser.
+ * Lives in the index (not the `share` codec subpath) so the vendored, fflate-free runtime can import
+ * it for the share button; the CLI's `buildShareUrl` reads it from here too. One source of truth. */
+export const SHARE_VIEW_URL = 'https://visualplan.dev/view'
+
 export const STATUS_VALUES = ['planned', 'active', 'done'] as const
 export const CHANGE_VALUES = ['add', 'modify', 'delete', 'move'] as const
 export const CHART_TYPE_VALUES = [

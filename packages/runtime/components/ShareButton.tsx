@@ -1,8 +1,6 @@
 import { IconCheck, IconCopy, IconShare3 } from '@tabler/icons-react'
+import { SHARE_VIEW_URL } from '@visualplan/core'
 import { useState } from 'react'
-
-/** The page `/view` lives at on visualplan.dev; the share link points here. */
-const VIEW_URL = 'https://visualplan.dev/view'
 
 /** Injected onto `globalThis` by the CLI build (compile.ts `planSharePlugin`). */
 interface PlanShare {
@@ -80,7 +78,7 @@ export function ShareButton() {
   const copied = status === 'copied'
 
   const onCopy = async () => {
-    const link = `${VIEW_URL}?data=${await currentData(share)}`
+    const link = `${SHARE_VIEW_URL}?data=${await currentData(share)}`
     setUrl(link)
     const ok = await copyText(link)
     setStatus(ok ? 'copied' : 'manual')

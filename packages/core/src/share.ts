@@ -1,4 +1,5 @@
 import { deflateSync, Inflate, inflateSync, strFromU8, strToU8 } from 'fflate'
+import { SHARE_VIEW_URL } from './index.js'
 
 /**
  * Codec for the stateless plan-share URL (`?data=`). A plan's MDX source is
@@ -91,6 +92,12 @@ function base64UrlToBytes(data: string): Uint8Array {
 /** Encode a plan's MDX source into the URL-safe `?data=` payload. */
 export function encodePlan(mdx: string): string {
   return bytesToBase64Url(deflateSync(strToU8(mdx), { level: 9 }))
+}
+
+/** Build the full stateless share link for a plan's MDX source. `SHARE_VIEW_URL` lives in the core
+ * index (fflate-free) so the runtime can share it; this codec subpath carries the encode half. */
+export function buildShareUrl(mdx: string): string {
+  return `${SHARE_VIEW_URL}?data=${encodePlan(mdx)}`
 }
 
 /** Thrown by `decodePlan` when a payload decompresses past `maxBytes`. Distinct from a corrupt
