@@ -1,10 +1,11 @@
-import type { Feedback, ReviewComment, ReviewDecision } from '@visualplan/core'
+import type { Feedback, ReviewAnswer, ReviewComment, ReviewDecision } from '@visualplan/core'
 import { IconCheck, IconMessagePlus } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
 import { CommentModal } from './CommentModal.js'
 import { CommentsPopover } from './CommentsPopover.js'
 import { DecisionBar } from './DecisionBar.js'
 import { isReviewMode, openKeepalive, postDraft, postFeedback } from './feedback.js'
+import { useQuestionAnswers } from './ReviewAnswers.js'
 import {
   type Section,
   sectionAt,
@@ -32,6 +33,17 @@ interface CommentTarget {
   range?: Range
 }
 
+/** Turn the answer map into the feedback payload, dropping questions left blank. */
+function collectAnswers(answers: Map<string, string> | undefined): ReviewAnswer[] {
+  if (!answers) return []
+  const result: ReviewAnswer[] = []
+  for (const [question, answer] of answers) {
+    const trimmed = answer.trim()
+    if (trimmed) result.push({ question, answer: trimmed })
+  }
+  return result
+}
+
 /** Mounts the interactive review UI, but only when the CLI started the page in review mode. */
 export function ReviewLayer() {
   if (!isReviewMode()) return null
@@ -53,6 +65,7 @@ function ReviewSession() {
 
   const { sections, hoveredIndex } = useReviewSections(submitted === null)
   const { selection, clear: clearSelection } = useTextSelection(submitted === null)
+  const questionAnswers = useQuestionAnswers()
 
   // A selection comment is sent under its quote so the agent can locate the exact text; a section
   // comment is sent under the section label.
@@ -60,6 +73,9 @@ function ReviewSession() {
     section: c.quote ?? c.label,
     body: c.body,
   }))
+  // Answered questions (those with non-blank text) ride the distinct `answers` channel, keyed by the
+  // question so the agent maps each back to the plan's `Questions`.
+  const payloadAnswers: ReviewAnswer[] = collectAnswers(questionAnswers?.answers)
   const commentCounts = new Map<number, number>()
   for (const comment of comments) {
     commentCounts.set(comment.sectionIndex, (commentCounts.get(comment.sectionIndex) ?? 0) + 1)
@@ -72,14 +88,20 @@ function ReviewSession() {
     return () => connection.abort()
   }, [])
 
-  // Keep the server's Deny-on-close payload current, so a tab-close Deny still carries the comments.
-  // Build the payload from `comments` inside the effect so it runs only when the state actually changes.
+  // Keep the server's Deny-on-close payload current, so a tab-close Deny still carries the comments
+  // and answers. Build the payload inside the effect so it runs only when the state actually changes.
+  const answersMap = questionAnswers?.answers
   useEffect(() => {
     if (!submitted) {
       const draft = comments.map(c => ({ section: c.quote ?? c.label, body: c.body }))
-      postDraft({ decision: 'deny', comments: draft, note: note.trim() || undefined })
+      postDraft({
+        decision: 'deny',
+        comments: draft,
+        answers: collectAnswers(answersMap),
+        note: note.trim() || undefined,
+      })
     }
-  }, [comments, note, submitted])
+  }, [comments, note, answersMap, submitted])
 
   // Warn before leaving while undecided; the actual Deny is handled server-side via the dropped
   // keepalive, so this prompt is purely a courtesy. It reads the latest `submitted` via a ref.
@@ -136,6 +158,7 @@ function ReviewSession() {
     const feedback: Feedback = {
       decision,
       comments: payloadComments,
+      answers: payloadAnswers,
       note: note.trim() || undefined,
     }
     setBusy(true)
@@ -252,6 +275,7 @@ function ReviewSession() {
       )}
       <DecisionBar
         commentCount={comments.length}
+        answerCount={payloadAnswers.length}
         note={note}
         onNote={setNote}
         onDecide={decide}

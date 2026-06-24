@@ -18,12 +18,20 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   button self-hides when no `__VP_SHARE__` was injected (the API's `enableSharing: false` default).
   It also mounts `<ReviewLayer />`, which self-hides unless `__VP_REVIEW__` was injected.
 - `components/review/` is the interactive review UI (`vplan render --review`), gated on the injected
-  `__VP_REVIEW__` global (mirroring how `ShareButton` reads `__VP_SHARE__`), so it adds nothing to a
-  normal render. `ReviewLayer` owns the session state and overlays the plan with fixed-position
-  chrome only (the plan DOM is never mutated): `SectionComments` tracks the hovered major section (a
-  `.vp-phase` or top-level `h2`, found by walking the DOM) and floats one comment button beside it;
-  `CommentModal` is the bottom composer; `DecisionBar` submits Approve/Deny/Iterate. `feedback.ts`
-  POSTs an explicit decision `{decision, comments, note}` (shape = `@visualplan/core` `feedbackSchema`)
+  `__VP_REVIEW__` global (mirroring how `ShareButton` reads `__VP_SHARE__`), so the heavy review
+  chrome adds nothing to a normal render (`Questions` does import the tiny `isReviewMode` +
+  `ReviewAnswers` leaf modules, which are negligible). `ReviewLayer` owns the session state and
+  overlays the plan with fixed-position chrome only (the plan DOM is never mutated):
+  `SectionComments` tracks the hovered section and floats one comment button beside it. A section
+  starts at any `.vp-phase`, heading (`h1`-`h3`), or standalone block (`.vp-callout`, `.vp-mermaid`,
+  `.vp-chart`, `.vp-filetree`, `.vp-matrix-wrap`, `.vp-compare`, `.vp-checklist`, `.vp-stat`,
+  `.vp-questions`) that is a **direct** child of `.vp-main`, so loose top-level intro content does not
+  collapse into one oversized section while blocks nested inside a `<Phase>` stay part of it.
+  `CommentModal` is the bottom composer; `DecisionBar` submits Approve/Deny/Iterate. In review mode
+  `Questions` is **directly answerable**: each row renders an answer field whose value flows up via
+  the `ReviewAnswers` context (provided in `Layout`, shared by `Questions` and `ReviewSession`) into
+  the feedback's distinct `answers` channel. `feedback.ts` POSTs an explicit decision
+  `{decision, comments, answers, note}` (shape = `@visualplan/core` `feedbackSchema`)
   to `/__vp_feedback`. **Tab-close handling is server-detected, not beacon-based:** `ReviewLayer` holds
   a `/__vp_alive` connection open and POSTs `/__vp_draft` whenever comments/note change; when the tab
   closes the connection drops and the CLI resolves Deny with that draft. This replaced an unload
@@ -173,9 +181,12 @@ page. The rules below are deliberate; changing them needs a reason.
   CSS vars so dark mode is correct.
 - **Callout colors are semantic and distinct:** note (blue), tip (green), decision (purple), risk
   (red), warn (yellow). Each must stay visually different. `tip` green is its own `--vp-tip*` token
-  set, not the done/add status green, so the two can diverge. `Questions` is a **neutral** card
-  (surface tint) with a blue accent on its icon and numbers only, so it stays distinct from the
-  blue `note` callout.
+  set, not the done/add status green, so the two can diverge. `Questions` is **deliberately not
+  neutral**: it is a blue-tinted card with an always-on humming glow (`vp-questions-hum`, paused
+  under `prefers-reduced-motion`) so it reads as the panel to act on (and is directly answerable in
+  review mode). This is an intentional exception to the otherwise-monochrome chrome; it sits close to
+  the blue `note` callout on purpose. Earlier it was a neutral card kept distinct from `note`; that
+  was changed by request.
 - **Visual verification:** `playwright-core` (devDep) drives the system Chrome to screenshot a
   rendered `.plan.html` in light and dark. Re-check both schemes after any theme change.
   Screenshot pages that contain a `<Chart>` at a **fixed tall viewport, not `fullPage`**:

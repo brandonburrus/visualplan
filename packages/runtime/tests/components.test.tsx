@@ -9,6 +9,7 @@ import { MathBlock } from '../components/Math.js'
 import { Matrix } from '../components/Matrix.js'
 import { Phase } from '../components/Phase.js'
 import { Questions } from '../components/Questions.js'
+import { ReviewAnswersProvider } from '../components/review/ReviewAnswers.js'
 import { copyText, ShareButton } from '../components/ShareButton.js'
 import { Stat } from '../components/Stat.js'
 import { ThemeToggle } from '../components/ThemeToggle.js'
@@ -246,6 +247,34 @@ describe('Questions', () => {
   it('renders a single question (edge)', () => {
     const html = renderToStaticMarkup(<Questions items={['Only one?']} />)
     expect(html).toContain('Only one?')
+  })
+})
+
+describe('Questions in review mode', () => {
+  function setReviewMode(on: boolean): void {
+    ;(globalThis as { __VP_REVIEW__?: boolean }).__VP_REVIEW__ = on || undefined
+  }
+  afterEach(() => setReviewMode(false))
+
+  it('renders an inline answer field per question in review mode (golden)', () => {
+    setReviewMode(true)
+    const html = renderToStaticMarkup(
+      <ReviewAnswersProvider>
+        <Questions items={['Fail open or closed?', 'TTL ok?']} />
+      </ReviewAnswersProvider>,
+    )
+    expect((html.match(/vp-questions__answer/g) || []).length).toBe(2)
+    expect(html).toContain('Fail open or closed?')
+  })
+
+  it('stays a static list with no answer field outside review mode (edge)', () => {
+    setReviewMode(false)
+    const html = renderToStaticMarkup(
+      <ReviewAnswersProvider>
+        <Questions items={['Fail open or closed?']} />
+      </ReviewAnswersProvider>,
+    )
+    expect(html).not.toContain('vp-questions__answer')
   })
 })
 

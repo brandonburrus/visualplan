@@ -28,6 +28,10 @@ export function formatFeedback(feedback: Feedback): string {
     lines.push('', `Comment on "${comment.section}":`, indent(comment.body))
   }
 
+  for (const answer of feedback.answers) {
+    lines.push('', `Answer to "${answer.question}":`, indent(answer.answer))
+  }
+
   if (feedback.note) {
     lines.push('', 'General note:', indent(feedback.note))
   }

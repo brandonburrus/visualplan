@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect } from 'react'
+import { ReviewAnswersProvider } from './components/review/ReviewAnswers.js'
 import { ReviewLayer } from './components/review/ReviewLayer.js'
 import { ShareButton } from './components/ShareButton.js'
 import { ThemeToggle } from './components/ThemeToggle.js'
@@ -17,11 +18,13 @@ export function Layout({ children }: { children: ReactNode }) {
   }, [])
 
   return (
-    <div className='vp-shell'>
-      <ShareButton />
-      {!isThemeLocked() && <ThemeToggle />}
-      <main className='vp-main'>{children}</main>
-      <ReviewLayer />
-    </div>
+    <ReviewAnswersProvider>
+      <div className='vp-shell'>
+        <ShareButton />
+        {!isThemeLocked() && <ThemeToggle />}
+        <main className='vp-main'>{children}</main>
+        <ReviewLayer />
+      </div>
+    </ReviewAnswersProvider>
   )
 }

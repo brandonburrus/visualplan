@@ -38,9 +38,16 @@ describe('isReviewMode', () => {
 describe('DecisionBar Iterate gating', () => {
   const noop = () => {}
 
-  it('disables Iterate with no comments and no note (edge)', () => {
+  it('disables Iterate with no comments, answers, or note (edge)', () => {
     const html = renderToStaticMarkup(
-      <DecisionBar commentCount={0} note='' onNote={noop} onDecide={noop} busy={false} />,
+      <DecisionBar
+        commentCount={0}
+        answerCount={0}
+        note=''
+        onNote={noop}
+        onDecide={noop}
+        busy={false}
+      />,
     )
     // Only the Iterate button is disabled; Deny and Approve are always actionable when not busy.
     expect((html.match(/disabled=""/g) || []).length).toBe(1)
@@ -48,7 +55,28 @@ describe('DecisionBar Iterate gating', () => {
 
   it('enables Iterate once a comment exists (golden)', () => {
     const html = renderToStaticMarkup(
-      <DecisionBar commentCount={1} note='' onNote={noop} onDecide={noop} busy={false} />,
+      <DecisionBar
+        commentCount={1}
+        answerCount={0}
+        note=''
+        onNote={noop}
+        onDecide={noop}
+        busy={false}
+      />,
+    )
+    expect((html.match(/disabled=""/g) || []).length).toBe(0)
+  })
+
+  it('enables Iterate when only an answer exists (golden)', () => {
+    const html = renderToStaticMarkup(
+      <DecisionBar
+        commentCount={0}
+        answerCount={1}
+        note=''
+        onNote={noop}
+        onDecide={noop}
+        busy={false}
+      />,
     )
     expect((html.match(/disabled=""/g) || []).length).toBe(0)
   })

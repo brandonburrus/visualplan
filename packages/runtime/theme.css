@@ -23,6 +23,7 @@
   --vp-question: #2f6fed;
   --vp-question-tint: #eef3fe;
   --vp-question-border: #d4e0fb;
+  --vp-question-glow: rgb(47 111 237 / 28%);
   --vp-note: #2f6fed;
   --vp-note-tint: #eef3fe;
   --vp-note-border: #d4e0fb;
@@ -67,6 +68,7 @@
   --vp-question: #7aa2ff;
   --vp-question-tint: #161d2e;
   --vp-question-border: #2b3a5e;
+  --vp-question-glow: rgb(122 162 255 / 34%);
   --vp-note: #7aa2ff;
   --vp-note-tint: #161d2e;
   --vp-note-border: #2b3a5e;
@@ -600,14 +602,35 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Questions: open questions for the reader. Neutral card like the other list cards,
-   with blue kept only as the accent on the item numbers. */
+/* Questions: open questions for the reader, deliberately called out with a blue tint and an
+   always-on humming glow so the panel reads as the place to act (especially in a review session,
+   where each row becomes directly answerable). Intentionally NOT neutral; see runtime AGENTS.md. */
 .vp-questions {
-  border: 1px solid var(--vp-border);
-  background: var(--vp-surface);
+  border: 1px solid var(--vp-question-border);
+  background: var(--vp-question-tint);
   border-radius: 10px;
   padding: 0.85rem 1.1rem;
   margin: 1.4rem 0;
+  animation: vp-questions-hum 3.2s var(--vp-ease) infinite;
+}
+
+/* The "hum": a soft blue halo that swells and settles. */
+@keyframes vp-questions-hum {
+  0%,
+  100% {
+    box-shadow: 0 0 7px -2px var(--vp-question-glow);
+  }
+  50% {
+    box-shadow: 0 0 18px 1px var(--vp-question-glow);
+  }
+}
+
+/* Reduced motion: keep the call-out glow, but hold it steady instead of pulsing. */
+@media (prefers-reduced-motion: reduce) {
+  .vp-questions {
+    animation: none;
+    box-shadow: 0 0 12px -2px var(--vp-question-glow);
+  }
 }
 
 /* Small uppercase label, identical to the Checklist title. */
@@ -645,8 +668,42 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Holds the question text and, in review mode, its answer field stacked beneath it. */
+.vp-questions__body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
 .vp-questions__text {
   color: var(--vp-text);
+}
+
+/* The review-mode answer field: a plain surface inset on the tinted card, focus ring in the
+   question blue. Grows with `rows`, but stays a single line by default. */
+.vp-questions__answer {
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--vp-text);
+  background: var(--vp-bg);
+  border: 1px solid var(--vp-question-border);
+  border-radius: 7px;
+  padding: 0.4rem 0.55rem;
+  resize: vertical;
+}
+
+.vp-questions__answer::placeholder {
+  color: var(--vp-faint);
+}
+
+.vp-questions__answer:focus-visible {
+  outline: none;
+  border-color: var(--vp-question);
+  box-shadow: 0 0 0 2px var(--vp-question-glow);
 }
 
 /* Compare */
