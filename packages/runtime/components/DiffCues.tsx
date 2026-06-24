@@ -1,10 +1,9 @@
 import { IconGitCommit } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
 import {
-  applyWordHighlights,
+  applyInlineWordDiff,
   type DiffStatus,
   diffOverlays,
-  insertedWordRanges,
   isChanged,
   readDiff,
   sectionOwnedElements,
@@ -49,19 +48,21 @@ function DiffOverlay({ diff }: { diff: NonNullable<ReturnType<typeof readDiff>> 
     }
   }, [])
 
-  // "Only changes" also reveals the exact words that changed: word-diff each edited section's body
-  // against its baseline prose and register the inserted words as a CSS Custom Highlight (no DOM
-  // mutation). Cleared whenever the toggle is off, the counts mismatch, or the component unmounts.
+  // Render the word-level changes inline on every diff render (not behind the toggle, so they are
+  // not missed): re-render each edited section's prose as a diff, deletions struck through and
+  // insertions marked. Restored on cleanup (deps change / unmount).
   useEffect(() => {
-    if (!onlyChanges || sections.length !== diff.sections.length) return applyWordHighlights([])
-    const ranges = sections.flatMap((section, index) => {
+    if (sections.length !== diff.sections.length) return
+    const restores = sections.flatMap((section, index) => {
       const entry = diff.sections[index]
       return entry?.status === 'edited' && entry.prev
-        ? insertedWordRanges(sectionOwnedElements(section), entry.prev)
+        ? [applyInlineWordDiff(sectionOwnedElements(section), entry.prev)]
         : []
     })
-    return applyWordHighlights(ranges)
-  }, [onlyChanges, sections, diff])
+    return () => {
+      for (const restore of restores) restore()
+    }
+  }, [sections, diff])
 
   const changedCount = diff.sections.filter(s => isChanged(s.status)).length
   const removedCount = diff.removed.length

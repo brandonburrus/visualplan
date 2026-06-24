@@ -80,121 +80,12 @@ export function diffOverlays(
   return overlays
 }
 
-/** The CSS Custom Highlight registered for inserted/changed words inside an edited section. */
-export const DIFF_HIGHLIGHT_NAME = 'vp-diff-ins'
-
-interface HighlightRegistry {
-  set(name: string, highlight: unknown): void
-  delete(name: string): void
-}
-
-/** Register `ranges` as a non-destructive CSS Custom Highlight (no DOM mutation) and return a cleanup
- * that removes it. Where the Custom Highlight API is unavailable (older browsers) or there is nothing
- * to mark, it clears any prior highlight and degrades to no inline cue; the gutter bars still show. */
-export function applyWordHighlights(ranges: Range[]): () => void {
-  const registry = (CSS as unknown as { highlights?: HighlightRegistry }).highlights
-  const HighlightConstructor = (
-    globalThis as unknown as { Highlight?: new (...r: Range[]) => unknown }
-  ).Highlight
-  const clear = () => registry?.delete(DIFF_HIGHLIGHT_NAME)
-  if (!registry || !HighlightConstructor || ranges.length === 0) {
-    clear()
-    return clear
-  }
-  registry.set(DIFF_HIGHLIGHT_NAME, new HighlightConstructor(...ranges))
-  return clear
-}
-
-/** A prose word in the rendered section, with the text node and offsets that locate it for a Range. */
-interface ProseToken {
-  node: Text
-  start: number
-  end: number
-  text: string
-}
-
 /** Data-component containers whose rendered text is structured data, not authored prose. Their text
  * tokenizes differently from the MDX source (file paths split by separators, table cells, task
- * items), so it is excluded from word-highlighting, matching the source-side `PROSE_OPAQUE_COMPONENTS`. */
+ * items), so they are excluded from the prose diff, matching the source-side `PROSE_OPAQUE_COMPONENTS`. */
 const DATA_COMPONENT_SELECTOR =
   '.vp-filetree, .vp-chart, .vp-matrix-wrap, .vp-compare, .vp-checklist, .vp-stat, .vp-questions'
 
-/** Lowercase word tokens, for whitespace-insensitive, case-insensitive matching. */
-function tokenize(text: string): string[] {
-  return text.toLowerCase().match(/\S+/g) ?? []
-}
-
-/** Collect the prose word tokens within a set of root elements: text inside `p`/`li` only (so
- * titles, headings, and chrome like a status badge are never matched), each tagged with its text
- * node + offsets. A section owns several sibling blocks (e.g. a heading plus its intro paragraph),
- * so the caller passes all of them, not just the start element. */
-function proseTokens(roots: Element[]): ProseToken[] {
-  const tokens: ProseToken[] = []
-  for (const root of roots) {
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT)
-    let node = walker.nextNode()
-    while (node) {
-      const block = node.parentElement?.closest('p, li')
-      if (block && root.contains(block) && !block.closest(DATA_COMPONENT_SELECTOR)) {
-        const text = node.textContent ?? ''
-        for (const match of text.matchAll(/\S+/g)) {
-          if (match.index !== undefined) {
-            tokens.push({
-              node: node as Text,
-              start: match.index,
-              end: match.index + match[0].length,
-              text: match[0],
-            })
-          }
-        }
-      }
-      node = walker.nextNode()
-    }
-  }
-  return tokens
-}
-
-/** The current-token indices NOT in the LCS with the previous tokens, i.e. the inserted/changed words. */
-function insertedIndices(prev: string[], current: string[]): Set<number> {
-  const n = prev.length
-  const m = current.length
-  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0))
-  for (let i = n - 1; i >= 0; i--) {
-    const row = dp[i] as number[]
-    const next = dp[i + 1] as number[]
-    for (let j = m - 1; j >= 0; j--) {
-      row[j] =
-        prev[i] === current[j] ? (next[j + 1] ?? 0) + 1 : Math.max(next[j] ?? 0, row[j + 1] ?? 0)
-    }
-  }
-  const matched = new Set<number>()
-  let i = 0
-  let j = 0
-  while (i < n && j < m) {
-    const row = dp[i] as number[]
-    const next = dp[i + 1] as number[]
-    if (prev[i] === current[j]) {
-      matched.add(j)
-      i++
-      j++
-    } else if ((next[j] ?? 0) >= (row[j + 1] ?? 0)) {
-      i++
-    } else {
-      j++
-    }
-  }
-  const inserted = new Set<number>()
-  for (let k = 0; k < m; k++) if (!matched.has(k)) inserted.add(k)
-  return inserted
-}
-
-/**
- * Ranges over the words in a section's prose that are new or changed relative to `prevProse` (the
- * baseline section's prose). `roots` are the sibling blocks the section owns (its start element plus
- * any following blocks up to the next section). A word-level LCS marks the inserted current tokens;
- * each becomes a DOM Range so the caller can register a non-destructive CSS Custom Highlight (no DOM
- * mutation). Pure given the DOM, so it is unit-testable in jsdom.
- */
 /** The sibling blocks a section owns: from its start element through `lastElement`, so prose in a
  * following sibling (a heading's intro paragraph) is included, not just the start element's subtree. */
 export function sectionOwnedElements(section: Section): Element[] {
@@ -207,20 +98,114 @@ export function sectionOwnedElements(section: Section): Element[] {
   return children.slice(start, (last < 0 ? start : last) + 1)
 }
 
-export function insertedWordRanges(roots: Element[], prevProse: string): Range[] {
-  const tokens = proseTokens(roots)
-  if (tokens.length === 0) return []
-  const inserted = insertedIndices(
-    tokenize(prevProse),
-    tokens.map(t => t.text.toLowerCase()),
-  )
-  const ranges: Range[] = []
-  tokens.forEach((token, index) => {
-    if (!inserted.has(index)) return
-    const range = document.createRange()
-    range.setStart(token.node, token.start)
-    range.setEnd(token.node, token.end)
-    ranges.push(range)
-  })
-  return ranges
+/** One step of a word-level diff: text kept (`eq`), removed from the baseline (`del`), or added in
+ * the current version (`ins`). */
+export interface DiffOp {
+  type: 'eq' | 'del' | 'ins'
+  text: string
+}
+
+/** Raw whitespace-split words, keeping original case and punctuation for display. */
+function words(text: string): string[] {
+  return text.match(/\S+/g) ?? []
+}
+
+/**
+ * Word-level diff of `prev` -> `current` via LCS, as an ordered op list (kept / deleted / inserted).
+ * Comparison is case-insensitive so a capitalization change is not noise, but ops carry the original
+ * words for display. Pure, so it is unit-testable.
+ */
+export function wordDiffOps(prev: string[], current: string[]): DiffOp[] {
+  const n = prev.length
+  const m = current.length
+  const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase()
+  const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0))
+  for (let i = n - 1; i >= 0; i--) {
+    const row = dp[i] as number[]
+    const next = dp[i + 1] as number[]
+    for (let j = m - 1; j >= 0; j--) {
+      row[j] = same(prev[i] as string, current[j] as string)
+        ? (next[j + 1] ?? 0) + 1
+        : Math.max(next[j] ?? 0, row[j + 1] ?? 0)
+    }
+  }
+  const ops: DiffOp[] = []
+  let i = 0
+  let j = 0
+  while (i < n && j < m) {
+    const row = dp[i] as number[]
+    const next = dp[i + 1] as number[]
+    if (same(prev[i] as string, current[j] as string)) {
+      ops.push({ type: 'eq', text: current[j] as string })
+      i++
+      j++
+    } else if ((next[j] ?? 0) >= (row[j + 1] ?? 0)) {
+      ops.push({ type: 'del', text: prev[i] as string })
+      i++
+    } else {
+      ops.push({ type: 'ins', text: current[j] as string })
+      j++
+    }
+  }
+  while (i < n) ops.push({ type: 'del', text: prev[i++] as string })
+  while (j < m) ops.push({ type: 'ins', text: current[j++] as string })
+  return ops
+}
+
+/** The prose paragraphs a section owns: `<p>` elements not inside a data component (whose text is
+ * structured data, not authored prose). Deduped, in document order. */
+function proseParagraphs(roots: Element[]): HTMLParagraphElement[] {
+  const found = new Set<HTMLParagraphElement>()
+  for (const root of roots) {
+    const candidates: Element[] = root.matches('p') ? [root] : []
+    candidates.push(...root.querySelectorAll('p'))
+    for (const el of candidates) {
+      if (!el.closest(DATA_COMPONENT_SELECTOR)) found.add(el as HTMLParagraphElement)
+    }
+  }
+  return [...found]
+}
+
+/** Render a word-diff op list into a fragment: kept words as text, deletions struck through, and
+ * insertions marked, each followed by a space. */
+function renderDiff(ops: DiffOp[]): DocumentFragment {
+  const fragment = document.createDocumentFragment()
+  for (const op of ops) {
+    if (op.type === 'eq') {
+      fragment.append(`${op.text} `)
+    } else {
+      const mark = document.createElement(op.type === 'del' ? 'del' : 'ins')
+      mark.className = op.type === 'del' ? 'vp-diff-del' : 'vp-diff-ins'
+      mark.textContent = op.text
+      fragment.append(mark, ' ')
+    }
+  }
+  return fragment
+}
+
+/**
+ * Show an edited section's word-level changes inline: diff its prose against the baseline
+ * (`prevProse`) and re-render the section's first prose paragraph as the diff (deletions struck
+ * through, insertions marked), collapsing any further prose paragraphs while active. Returns a
+ * cleanup that restores the original DOM exactly. Mutates the plan DOM by necessity (a deletion is
+ * not present in the rendered page), but only the prose, and reversibly.
+ */
+export function applyInlineWordDiff(roots: Element[], prevProse: string): () => void {
+  const paragraphs = proseParagraphs(roots)
+  const target = paragraphs[0]
+  if (!target) return () => {}
+  const current = words(paragraphs.map(p => p.textContent ?? '').join(' '))
+  const ops = wordDiffOps(words(prevProse), current)
+  // Nothing actually differs in the prose (e.g. only a title/attribute changed): leave it untouched.
+  if (!ops.some(op => op.type !== 'eq')) return () => {}
+
+  const originalTarget = Array.from(target.childNodes)
+  const collapsed = paragraphs.slice(1).map(p => ({ p, display: p.style.display }))
+  target.replaceChildren(renderDiff(ops))
+  for (const { p } of collapsed) p.style.display = 'none'
+
+  return () => {
+    target.replaceChildren(...originalTarget)
+    for (const { p, display } of collapsed) p.style.display = display
+  }
 }

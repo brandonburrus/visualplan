@@ -1,10 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import {
+  applyInlineWordDiff,
   diffOverlays,
   type InjectedDiff,
-  insertedWordRanges,
   isChanged,
   readDiff,
+  wordDiffOps,
 } from '../components/review/diff.js'
 import { collectSections } from '../components/review/SectionComments.js'
 
@@ -79,49 +80,60 @@ describe('isChanged', () => {
   })
 })
 
-describe('insertedWordRanges', () => {
-  const section = (html: string): Element => {
-    document.body.innerHTML = `<div class="vp-phase">${html}</div>`
-    return document.querySelector('.vp-phase') as Element
-  }
+describe('wordDiffOps', () => {
+  const compact = (ops: { type: string; text: string }[]) =>
+    ops.map(o => (o.type === 'eq' ? o.text : `${o.type === 'del' ? '-' : '+'}${o.text}`))
 
-  it('ranges cover only the inserted words in the body prose (golden)', () => {
-    // The title is in a non-prose element, so it is never matched even though it changed.
-    const el = section(
-      '<div class="vp-phase__title">Ship it now</div><p>Roll out behind a staged feature flag with metrics</p>',
+  it('marks kept, inserted, and deleted words in order (golden)', () => {
+    const ops = wordDiffOps('the old slow path'.split(' '), 'the new path'.split(' '))
+    expect(compact(ops)).toEqual(['the', '-old', '-slow', '+new', 'path'])
+  })
+
+  it('reports an append as all insertions after the kept words (edge)', () => {
+    const ops = wordDiffOps(
+      'Roll out the flag'.split(' '),
+      'Roll out the flag behind a guard'.split(' '),
     )
-    const ranges = insertedWordRanges([el], 'Roll out behind a feature flag')
-    expect(ranges.map(r => r.toString())).toEqual(['staged', 'with', 'metrics'])
+    expect(compact(ops)).toEqual(['Roll', 'out', 'the', 'flag', '+behind', '+a', '+guard'])
   })
 
-  it('scans prose across all owned sibling blocks, not just the start element (edge)', () => {
-    // A heading section owns a following intro paragraph that is its sibling, not its child.
+  it('treats a capitalization-only change as unchanged (edge)', () => {
+    expect(wordDiffOps('done'.split(' '), 'Done'.split(' ')).every(o => o.type === 'eq')).toBe(true)
+  })
+})
+
+describe('applyInlineWordDiff', () => {
+  it('re-renders an edited paragraph as a del/ins diff and restores it (golden + restore)', () => {
     document.body.innerHTML =
-      '<main class="vp-main"><h1>Title</h1><p>Intro text now with extra words</p></main>'
-    const main = document.querySelector('.vp-main') as Element
-    const ranges = insertedWordRanges(Array.from(main.children), 'Intro text')
-    expect(ranges.map(r => r.toString())).toEqual(['now', 'with', 'extra', 'words'])
-  })
-
-  it('returns no ranges when the body prose is unchanged (edge)', () => {
-    const el = section('<p>Stand up the Redis client</p>')
-    expect(insertedWordRanges([el], 'Stand up the Redis client')).toEqual([])
-  })
-
-  it('excludes data-component li (FileTree etc.) from word highlighting (edge)', () => {
-    document.body.innerHTML =
-      '<div class="vp-phase"><p>Wrap the SDK with retries</p><div class="vp-filetree"><ul><li>add backfill.ts</li></ul></div></div>'
+      '<div class="vp-phase"><div class="vp-phase__title">Build</div><p>Wrap the SDK</p></div>'
     const el = document.querySelector('.vp-phase') as Element
-    // Only the paragraph's new words highlight; the FileTree entry is excluded despite being "new".
-    expect(insertedWordRanges([el], 'Wrap the SDK').map(r => r.toString())).toEqual([
-      'with',
-      'retries',
-    ])
+    const p = el.querySelector('p') as HTMLElement
+    const original = p.innerHTML
+
+    const restore = applyInlineWordDiff([el], 'Wrap the old SDK')
+    expect(p.querySelector('del.vp-diff-del')?.textContent).toBe('old')
+    expect(p.textContent).toContain('Wrap the')
+
+    restore()
+    expect(p.innerHTML).toBe(original)
   })
 
-  it('returns no ranges when the section has no p/li prose (error / non-prose block)', () => {
-    document.body.innerHTML = '<div class="vp-filetree"><span>add src/x.ts</span></div>'
-    const el = document.querySelector('.vp-filetree') as Element
-    expect(insertedWordRanges([el], 'modify src/y.ts')).toEqual([])
+  it('does not touch a section whose prose is unchanged (edge)', () => {
+    document.body.innerHTML = '<div class="vp-phase"><p>Stand up the client</p></div>'
+    const el = document.querySelector('.vp-phase') as Element
+    const original = (el.querySelector('p') as HTMLElement).innerHTML
+    applyInlineWordDiff([el], 'Stand up the client')
+    expect((el.querySelector('p') as HTMLElement).innerHTML).toBe(original)
+  })
+
+  it('ignores data-component prose, only diffing real paragraphs (edge)', () => {
+    document.body.innerHTML =
+      '<div class="vp-phase"><p>Wrap the SDK</p><div class="vp-filetree"><p>add backfill.ts</p></div></div>'
+    const el = document.querySelector('.vp-phase') as Element
+    applyInlineWordDiff([el], 'Wrap the SDK')
+    // The filetree paragraph is left alone (no diff markup injected there).
+    const filetreeP = el.querySelector('.vp-filetree p') as HTMLElement
+    expect(filetreeP.querySelector('del, ins')).toBeNull()
+    expect(filetreeP.textContent).toBe('add backfill.ts')
   })
 })
