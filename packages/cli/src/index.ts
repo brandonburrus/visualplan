@@ -6,6 +6,7 @@ import { runComponents } from './commands/components.js'
 import { runConfigGet, runConfigPath, runConfigSet, runConfigShow } from './commands/config.js'
 import {
   DEFAULT_REVIEW_TIMEOUT_MS,
+  parseIteration,
   parsePort,
   parseTimeout,
   runRender,
@@ -26,6 +27,11 @@ program
   .option('--out <path>', 'output HTML path (defaults to <file>.plan.html)')
   .option('--stdout', 'write the rendered HTML to stdout instead of a file')
   .option('--review', 'open an interactive review session and print the reviewer feedback')
+  .option(
+    '-i, --iteration <number>',
+    'plan revision number shown in the review bar',
+    parseIteration,
+  )
   .option(
     '--timeout <duration>',
     'max wait for review feedback, e.g. 15m, 30s, 1h',

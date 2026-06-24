@@ -1,14 +1,17 @@
-import { IconMessagePlus } from '@tabler/icons-react'
-import { useEffect, useRef, useState } from 'react'
+import { IconMessage2, IconMessagePlus } from '@tabler/icons-react'
+import { Fragment, useEffect, useState } from 'react'
 
-/** A major section the reviewer can comment on: a `Phase` or a top-level `## heading`. */
-export interface HoveredSection {
+/** A major section the reviewer can comment on: a `Phase` or a top-level `# / ## heading`. */
+export interface Section {
+  /** Document-order index, the stable key for comments (labels can repeat). */
+  index: number
   label: string
-  rect: DOMRect
+  /** The section's anchor (the phase or heading element). */
+  element: Element
+  /** The last top-level element this section owns (the one before the next section), so the
+   * highlight can wrap the actual content rather than the empty space up to the next section. */
+  lastElement: Element
 }
-
-/** The hover-detect selector for a section's anchor element within the plan column. */
-const SECTION_SELECTOR = '.vp-phase, h2'
 
 /** Derive a human label the agent can map back to the MDX: a Phase's title or the heading's text. */
 function sectionLabel(element: Element): string {
@@ -18,97 +21,233 @@ function sectionLabel(element: Element): string {
   return element.textContent?.trim() || 'Section'
 }
 
-/** The nearest *top-level* section (a direct child of `.vp-main`) under the pointer, or null. */
-function topLevelSection(target: EventTarget | null, main: Element): Element | null {
-  if (!(target instanceof Element)) return null
-  const section = target.closest(SECTION_SELECTOR)
-  return section && section.parentElement === main ? section : null
+/** Enumerate the plan's major sections in document order, each owning the elements up to the next
+ * section. Called once: the plan is a frozen snapshot. */
+export function collectSections(): Section[] {
+  const main = document.querySelector('.vp-main')
+  if (!main) return []
+  const children = Array.from(main.children)
+  const starts = children.filter(el => el.matches('.vp-phase, h1, h2'))
+  return starts.map((element, index) => {
+    const next = starts[index + 1]
+    const nextIdx = next ? children.indexOf(next) : children.length
+    const lastElement = children[nextIdx - 1] ?? element
+    return { index, label: sectionLabel(element), element, lastElement }
+  })
+}
+
+/** The viewport-relative bottom of the plan column, the lower bound of the last section's band. */
+function mainBottom(): number {
+  return document.querySelector('.vp-main')?.getBoundingClientRect().bottom ?? window.innerHeight
 }
 
 /**
- * Track which major section the pointer is over, so a single comment button can follow it. Returns
- * the hovered section (with a live rect, recomputed on scroll/resize) and `keepAlive`, which the
- * button calls on hover so traveling from the section to the button does not dismiss it.
+ * The vertical band a section occupies: from its own top down to the next section's top (the last
+ * runs to the column bottom). Hover is decided by which band the pointer's Y falls in, so the whole
+ * section, heading and the content beneath it, is the target, and the highlight spans it edge to edge.
  */
-export function useHoveredSection(active: boolean): {
-  hovered: HoveredSection | null
-  keepAlive: () => void
-} {
-  const [hovered, setHovered] = useState<HoveredSection | null>(null)
-  const elementRef = useRef<Element | null>(null)
-  const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
-
-  useEffect(() => {
-    if (!active) return
-    const main = document.querySelector('.vp-main')
-    if (!main) return
-
-    const reposition = () => {
-      if (elementRef.current) {
-        setHovered({
-          label: sectionLabel(elementRef.current),
-          rect: elementRef.current.getBoundingClientRect(),
-        })
-      }
-    }
-    const onPointerMove = (event: PointerEvent) => {
-      const section = topLevelSection(event.target, main)
-      if (section) {
-        clearTimeout(hideTimer.current)
-        if (section !== elementRef.current) {
-          elementRef.current = section
-          reposition()
-        }
-      }
-    }
-    // Delay the dismiss so the pointer can cross the small gap to the button (which calls keepAlive).
-    const onLeave = () => {
-      hideTimer.current = setTimeout(() => {
-        elementRef.current = null
-        setHovered(null)
-      }, 280)
-    }
-
-    document.addEventListener('pointermove', onPointerMove)
-    main.addEventListener('pointerleave', onLeave)
-    window.addEventListener('scroll', reposition, { passive: true })
-    window.addEventListener('resize', reposition)
-    return () => {
-      document.removeEventListener('pointermove', onPointerMove)
-      main.removeEventListener('pointerleave', onLeave)
-      window.removeEventListener('scroll', reposition)
-      window.removeEventListener('resize', reposition)
-      clearTimeout(hideTimer.current)
-    }
-  }, [active])
-
-  return { hovered, keepAlive: () => clearTimeout(hideTimer.current) }
+export function sectionBand(
+  sections: Section[],
+  arrayPos: number,
+): { top: number; bottom: number } {
+  const current = sections[arrayPos]
+  const top = current?.element.getBoundingClientRect().top ?? 0
+  const next = sections[arrayPos + 1]
+  return { top, bottom: next ? next.element.getBoundingClientRect().top : mainBottom() }
 }
 
-/** The floating "comment on this section" button, pinned to the right of the hovered section. */
-export function HoverCommentButton({
-  section,
-  onClick,
-  onKeepAlive,
+/** The rect wrapping a section's actual content (anchor top to its last owned element's bottom), so
+ * the highlight hugs the content instead of the empty space running up to the next section. */
+export function sectionContent(section: Section): { top: number; bottom: number } {
+  return {
+    top: section.element.getBoundingClientRect().top,
+    bottom: section.lastElement.getBoundingClientRect().bottom,
+  }
+}
+
+/** The section whose vertical band contains the viewport Y, or null (e.g. above the first section). */
+export function sectionAt(sections: Section[], y: number): Section | null {
+  for (let pos = 0; pos < sections.length; pos++) {
+    const section = sections[pos]
+    if (!section) continue
+    const band = sectionBand(sections, pos)
+    if (y >= band.top && y < band.bottom) return section
+  }
+  return null
+}
+
+/**
+ * Track the plan's sections and which band the pointer is in. Collects sections once after mount,
+ * then maps the pointer's Y to a section band, so hovering anywhere in a section (not just its
+ * header) selects it, and the highlight is a stable full-width band rather than something chasing the
+ * cursor. Re-runs on scroll with the last Y so the highlight follows the content, and bumps a tick so
+ * the overlays (which read live rects) stay pinned.
+ */
+export function useReviewSections(active: boolean): {
+  sections: Section[]
+  hoveredIndex: number | null
+} {
+  const [sections, setSections] = useState<Section[]>([])
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
+  const [, setTick] = useState(0)
+
+  useEffect(() => setSections(collectSections()), [])
+
+  useEffect(() => {
+    if (!active || sections.length === 0) {
+      setHoveredIndex(null)
+      return
+    }
+    let lastY = -1
+    const detect = () => {
+      if (lastY < 0) return
+      setHoveredIndex(sectionAt(sections, lastY)?.index ?? null)
+    }
+    const onMove = (event: PointerEvent) => {
+      lastY = event.clientY
+      detect()
+    }
+    const onReflow = () => {
+      setTick(tick => tick + 1)
+      detect()
+    }
+
+    document.addEventListener('pointermove', onMove)
+    window.addEventListener('scroll', onReflow, { passive: true })
+    window.addEventListener('resize', onReflow)
+    return () => {
+      document.removeEventListener('pointermove', onMove)
+      window.removeEventListener('scroll', onReflow)
+      window.removeEventListener('resize', onReflow)
+    }
+  }, [active, sections])
+
+  return { sections, hoveredIndex }
+}
+
+/** A finalized text selection inside the plan: the quoted text and a snapshot of its range. */
+export interface TextSelection {
+  text: string
+  range: Range
+}
+
+/**
+ * Surface a text selection made within the plan so the reviewer can comment on an exact quote. Reads
+ * the selection on `mouseup`; ignores collapsed selections and any selection outside `.vp-main`. The
+ * range is cloned so its rect can be read live (it tracks scroll); `clear` dismisses the affordance.
+ */
+export function useTextSelection(active: boolean): {
+  selection: TextSelection | null
+  clear: () => void
+} {
+  const [selection, setSelection] = useState<TextSelection | null>(null)
+
+  useEffect(() => {
+    if (!active) {
+      setSelection(null)
+      return
+    }
+    const main = document.querySelector('.vp-main')
+    if (!main) return
+    const onMouseUp = () => {
+      const sel = window.getSelection()
+      if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+        setSelection(null)
+        return
+      }
+      const range = sel.getRangeAt(0)
+      const text = sel.toString().trim()
+      if (!text || !main.contains(range.commonAncestorContainer)) {
+        setSelection(null)
+        return
+      }
+      setSelection({ text, range: range.cloneRange() })
+    }
+    document.addEventListener('mouseup', onMouseUp)
+    return () => document.removeEventListener('mouseup', onMouseUp)
+  }, [active])
+
+  return { selection, clear: () => setSelection(null) }
+}
+
+/**
+ * The per-section overlay layer: highlights the hovered section and shows its add-comment button, and
+ * a persistent count badge on any section that already has comments. All fixed-position over the plan
+ * (read from live rects), so the plan DOM is never touched.
+ */
+export function SectionOverlays({
+  sections,
+  hoveredIndex,
+  commentCounts,
+  onAdd,
+  onView,
 }: {
-  section: HoveredSection
-  onClick: () => void
-  onKeepAlive: () => void
+  sections: Section[]
+  hoveredIndex: number | null
+  commentCounts: Map<number, number>
+  onAdd: (section: Section) => void
+  onView: (section: Section) => void
 }) {
-  // Right of the section's content column, aligned near its top; clamped into the viewport.
-  const left = Math.min(section.rect.right + 8, window.innerWidth - 44)
-  const top = Math.max(section.rect.top + 4, 8)
   return (
-    <button
-      type='button'
-      className='vp-review-add'
-      style={{ top, left }}
-      onClick={onClick}
-      onMouseEnter={onKeepAlive}
-      aria-label={`Comment on "${section.label}"`}
-      title={`Comment on "${section.label}"`}
-    >
-      <IconMessagePlus size={17} />
-    </button>
+    <>
+      {sections.map(section => {
+        const hovered = section.index === hoveredIndex
+        const count = commentCounts.get(section.index) ?? 0
+        if (!hovered && count === 0) return null
+        const rect = section.element.getBoundingClientRect()
+        const content = sectionContent(section)
+        // Center the controls on the section's actual content, kept on-screen and clear of the
+        // bottom bar when the content extends beyond the viewport (a tall section, or scrolled off).
+        const controlTop = Math.min(
+          Math.max((content.top + content.bottom) / 2 - 15, 8),
+          window.innerHeight - 72,
+        )
+        return (
+          <Fragment key={section.index}>
+            {hovered && (
+              // A wide band hugging the section's content (heading + its elements), not the empty
+              // space up to the next section. Side-inset for breathing space; overlay only, so it
+              // never shifts the page layout.
+              <div
+                className='vp-review-highlight'
+                style={{
+                  top: content.top,
+                  left: 10,
+                  right: 10,
+                  height: Math.max(content.bottom - content.top, 0),
+                }}
+              />
+            )}
+            {hovered && (
+              <button
+                type='button'
+                className='vp-review-add'
+                // Out in the right gutter with breathing room from the content, clamped on-screen.
+                style={{ top: controlTop, left: Math.min(rect.right + 18, window.innerWidth - 42) }}
+                onClick={() => onAdd(section)}
+                aria-label={`Comment on "${section.label}"`}
+                title={`Comment on "${section.label}"`}
+              >
+                <IconMessagePlus size={16} />
+              </button>
+            )}
+            {count > 0 && (
+              <button
+                type='button'
+                className='vp-review-badge'
+                // Out in the left gutter with breathing room from the content, clamped on-screen.
+                style={{ top: controlTop, left: Math.max(rect.left - 46, 10) }}
+                onClick={() => onView(section)}
+                aria-label={`${count} comment${count === 1 ? '' : 's'} on "${section.label}"`}
+                title={`View ${count} comment${count === 1 ? '' : 's'}`}
+              >
+                <IconMessage2 size={13} />
+                {count}
+              </button>
+            )}
+          </Fragment>
+        )
+      })}
+    </>
   )
 }

@@ -10,6 +10,12 @@ export function isReviewMode(): boolean {
   return (globalThis as { __VP_REVIEW__?: boolean }).__VP_REVIEW__ === true
 }
 
+/** The plan revision number from the CLI's `--iteration` flag, or null when it was not passed. */
+export function reviewIteration(): number | null {
+  const value = (globalThis as { __VP_REVIEW_ITERATION__?: number }).__VP_REVIEW_ITERATION__
+  return typeof value === 'number' ? value : null
+}
+
 /** POST the explicit decision to the CLI, which resolves the blocking session. Returns whether it was accepted. */
 export async function postFeedback(feedback: Feedback): Promise<boolean> {
   try {

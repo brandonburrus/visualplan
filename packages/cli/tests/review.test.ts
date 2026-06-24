@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it } from 'vitest'
 import { type ReviewServer, startReviewServer } from '../src/build/compile.js'
-import { parseTimeout, runRender } from '../src/commands/render.js'
+import { parseIteration, parseTimeout, runRender } from '../src/commands/render.js'
 import { exitCodeFor, formatFeedback } from '../src/review/format.js'
 
 const PLAN = '# Plan\n\ntext\n'
@@ -46,6 +46,19 @@ describe('parseTimeout', () => {
 
   it('rejects an unparseable duration (error)', () => {
     expect(() => parseTimeout('soon')).toThrow(/positive duration/)
+  })
+})
+
+describe('parseIteration', () => {
+  it('parses a positive integer (golden)', () => {
+    expect(parseIteration('3')).toBe(3)
+  })
+
+  it('rejects zero, negatives, and non-integers (error + edge)', () => {
+    expect(() => parseIteration('0')).toThrow(/positive integer/)
+    expect(() => parseIteration('-1')).toThrow()
+    expect(() => parseIteration('1.5')).toThrow()
+    expect(() => parseIteration('two')).toThrow()
   })
 })
 

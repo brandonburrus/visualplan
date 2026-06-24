@@ -25,6 +25,17 @@ export interface RenderOptions {
   review?: boolean
   /** Max wait (ms) for review feedback before timing out; parsed from a duration by `parseTimeout`. */
   timeout?: number
+  /** Iteration number shown in the review bar (the agent sets it as it revises the plan). */
+  iteration?: number
+}
+
+/** Parse the `--iteration` value as a positive integer (the plan revision number shown in review). */
+export function parseIteration(value: string): number {
+  const n = Number(value)
+  if (!Number.isInteger(n) || n < 1) {
+    throw new InvalidArgumentError('iteration must be a positive integer')
+  }
+  return n
 }
 
 /** Parse and validate the `--port` value as a TCP port (1-65535). Commander calls this per option
@@ -87,6 +98,7 @@ export async function runRender(file: string | undefined, options: RenderOptions
       theme,
       options.timeout ?? DEFAULT_REVIEW_TIMEOUT_MS,
       options.open !== false,
+      options.iteration,
     )
     return
   }

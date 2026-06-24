@@ -381,13 +381,28 @@ interface ReviewState {
  *   before a decision, that abandonment resolves as Deny carrying the latest draft. Detecting the
  *   socket close server-side is reliable on a real tab close, unlike an unload-time `sendBeacon`.
  */
-function reviewPlugin(settle: (feedback: Feedback) => void, state: ReviewState): Plugin {
+function reviewPlugin(
+  settle: (feedback: Feedback) => void,
+  state: ReviewState,
+  iteration?: number,
+): Plugin {
   return {
     name: 'visualplan:review',
     transformIndexHtml: {
       order: 'pre',
       handler() {
-        return [{ tag: 'script', injectTo: 'head', children: 'globalThis.__VP_REVIEW__=true' }]
+        const tags = [
+          { tag: 'script', injectTo: 'head' as const, children: 'globalThis.__VP_REVIEW__=true' },
+        ]
+        // `iteration` is a validated number, so it is safe to inline; the bar shows "Iteration N".
+        if (iteration !== undefined) {
+          tags.push({
+            tag: 'script',
+            injectTo: 'head' as const,
+            children: `globalThis.__VP_REVIEW_ITERATION__=${iteration}`,
+          })
+        }
+        return tags
       },
     },
     configureServer(server) {
@@ -458,6 +473,7 @@ export interface ReviewServer {
 export async function startReviewServer(
   source: string,
   theme: Theme = 'system',
+  iteration?: number,
 ): Promise<ReviewServer> {
   const paths = findRuntimePaths()
   let settled = false
@@ -473,13 +489,16 @@ export async function startReviewServer(
   }
   const state: ReviewState = { draft: { decision: 'deny', comments: [] } }
   const config = baseConfig(paths, source, { theme })
+  // Use the same default port as the `--watch` dev server (Vite auto-increments if it is taken).
   const server = await createServer({
     ...config,
-    plugins: [...(config.plugins ?? []), reviewPlugin(settle, state)],
+    server: { ...config.server, port: DEFAULT_DEV_PORT },
+    plugins: [...(config.plugins ?? []), reviewPlugin(settle, state, iteration)],
   })
   await server.listen()
   const url =
-    server.resolvedUrls?.local[0] ?? `http://localhost:${server.config.server.port ?? 5173}`
+    server.resolvedUrls?.local[0] ??
+    `http://localhost:${server.config.server.port ?? DEFAULT_DEV_PORT}`
   return {
     url,
     feedback,

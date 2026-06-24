@@ -1,5 +1,6 @@
 import { IconCheck, IconRefresh, IconX } from '@tabler/icons-react'
 import type { ReviewDecision } from '@visualplan/core'
+import { reviewIteration } from './feedback.js'
 
 /**
  * The sticky decision bar. Approve and Deny always submit (comments optional); Iterate requires at
@@ -19,10 +20,14 @@ export function DecisionBar({
   busy: boolean
 }) {
   const canIterate = commentCount > 0 || note.trim().length > 0
+  const iteration = reviewIteration()
 
   return (
     <div className='vp-review-bar'>
       <div className='vp-review-bar__meta'>
+        {iteration !== null && (
+          <span className='vp-review-bar__iteration'>Iteration {iteration}</span>
+        )}
         <input
           className='vp-review-bar__note'
           placeholder='Optional overall note'
