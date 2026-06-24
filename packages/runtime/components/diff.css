@@ -16,11 +16,20 @@
 .vp-diff-bar {
   position: fixed;
   z-index: 52;
-  width: 3px;
+  width: 2px;
   border-radius: 2px;
   pointer-events: none;
-  opacity: 0.85;
+  opacity: 0.5;
   animation: vp-diff-fade-in 0.12s var(--vp-ease);
+}
+
+/* Inserted/changed words inside an edited section, revealed while "only changes" is on. A soft amber
+   wash + underline (the edited color), non-destructive via the CSS Custom Highlight API. */
+::highlight(vp-diff-ins) {
+  background-color: color-mix(in srgb, var(--vp-modify) 18%, transparent);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--vp-modify) 55%, transparent);
+  text-underline-offset: 2px;
 }
 
 /* Fades an unchanged section when "only changes" is on, so the changed ones stand out. */

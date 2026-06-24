@@ -1,6 +1,14 @@
 import { IconGitCommit } from '@tabler/icons-react'
 import { useEffect, useState } from 'react'
-import { type DiffStatus, diffOverlays, isChanged, readDiff } from './review/diff.js'
+import {
+  applyWordHighlights,
+  type DiffStatus,
+  diffOverlays,
+  insertedWordRanges,
+  isChanged,
+  readDiff,
+  sectionOwnedElements,
+} from './review/diff.js'
 import { collectSections, type Section } from './review/SectionComments.js'
 import './diff.css'
 
@@ -40,6 +48,20 @@ function DiffOverlay({ diff }: { diff: NonNullable<ReturnType<typeof readDiff>> 
       window.removeEventListener('resize', onReflow)
     }
   }, [])
+
+  // "Only changes" also reveals the exact words that changed: word-diff each edited section's body
+  // against its baseline prose and register the inserted words as a CSS Custom Highlight (no DOM
+  // mutation). Cleared whenever the toggle is off, the counts mismatch, or the component unmounts.
+  useEffect(() => {
+    if (!onlyChanges || sections.length !== diff.sections.length) return applyWordHighlights([])
+    const ranges = sections.flatMap((section, index) => {
+      const entry = diff.sections[index]
+      return entry?.status === 'edited' && entry.prev
+        ? insertedWordRanges(sectionOwnedElements(section), entry.prev)
+        : []
+    })
+    return applyWordHighlights(ranges)
+  }, [onlyChanges, sections, diff])
 
   const changedCount = diff.sections.filter(s => isChanged(s.status)).length
   const removedCount = diff.removed.length

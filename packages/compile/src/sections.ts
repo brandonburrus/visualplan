@@ -31,13 +31,23 @@ export interface PlanSection {
   titled: boolean
   /** Normalized text of the section's span, for edit detection and rename similarity. */
   text: string
+  /** Normalized prose (paragraph + list text only, no title/heading/attributes), so the runtime can
+   * word-diff a section's body against its rendered `p`/`li` text without title/chrome false hits. */
+  prose: string
 }
 
 /** The diff of a current plan against a baseline. `sections` is one entry per current section in
  * document order (so it maps onto the runtime's DOM sections by index); `removed` lists baseline
  * sections with no current match, for the summary. */
 export interface SectionDiff {
-  sections: { status: SectionStatus; label: string; type: string }[]
+  sections: {
+    status: SectionStatus
+    label: string
+    type: string
+    /** The baseline section's prose, present only on `edited` sections, so the runtime can highlight
+     * the words that changed against the rendered body. */
+    prev?: string
+  }[]
   removed: { label: string; type: string }[]
 }
 
@@ -107,6 +117,21 @@ function textContent(node: MdastNode): string {
   }
   if (node.children) for (const child of node.children) out += textContent(child)
   return out
+}
+
+/** The prose text of a node: text within `paragraph`/`listItem` nodes only (no headings, titles, or
+ * attributes), recursively. Mirrors the runtime's `p`/`li` DOM extraction so the two token streams
+ * align for word-level highlighting. `inProse` becomes true once inside a paragraph or list item. */
+function proseText(node: MdastNode, inProse: boolean, out: string[]): void {
+  const within = inProse || node.type === 'paragraph' || node.type === 'listItem'
+  if (
+    within &&
+    typeof node.value === 'string' &&
+    (node.type === 'text' || node.type === 'inlineCode')
+  ) {
+    out.push(node.value)
+  }
+  if (node.children) for (const child of node.children) proseText(child, within, out)
 }
 
 /** All text of a section's span: node values plus JSX string-attribute values (so a title or a
@@ -192,10 +217,14 @@ export function splitSections(source: string): PlanSection[] {
 
   return starts.map(({ index, descriptor }, position) => {
     const end = starts[position + 1]?.index ?? children.length
-    const text = normalizeWhitespace(children.slice(index, end).map(spanText).join(' '))
+    const span = children.slice(index, end)
+    const text = normalizeWhitespace(span.map(spanText).join(' '))
+    const proseParts: string[] = []
+    for (const node of span) proseText(node, false, proseParts)
+    const prose = normalizeWhitespace(proseParts.join(' '))
     const { type, label, titled } = descriptor
     const key = titled ? `${type}:${label}` : `${type}:#${hash(text)}`
-    return { type, label, key, titled, text }
+    return { type, label, key, titled, text, prose }
   })
 }
 
@@ -263,6 +292,9 @@ export function diffSections(baseline: string, current: string): SectionDiff {
   const baseMatched = new Array(base.length).fill(false)
   const curMatched = new Array(cur.length).fill(false)
   const status: (SectionStatus | undefined)[] = new Array(cur.length)
+  // The baseline section each current section matched, so an edited section can carry its previous
+  // prose for word-level highlighting.
+  const matchedBase: (number | undefined)[] = new Array(cur.length)
 
   for (const [bi, ci] of lcsPairs(
     base.map(s => s.key),
@@ -270,6 +302,7 @@ export function diffSections(baseline: string, current: string): SectionDiff {
   )) {
     baseMatched[bi] = true
     curMatched[ci] = true
+    matchedBase[ci] = bi
     // A titleless key embeds the content hash, so a matched key implies identical text (unchanged);
     // a titled key is stable under body edits, so compare the text to tell unchanged from edited.
     status[ci] =
@@ -295,6 +328,7 @@ export function diffSections(baseline: string, current: string): SectionDiff {
     if (best >= 0) {
       baseMatched[best] = true
       curMatched[ci] = true
+      matchedBase[ci] = best
       status[ci] = 'edited'
     }
   }
@@ -308,11 +342,13 @@ export function diffSections(baseline: string, current: string): SectionDiff {
     .map(s => ({ label: s.label, type: s.type }))
 
   return {
-    sections: cur.map((s, ci) => ({
-      status: status[ci] as SectionStatus,
-      label: s.label,
-      type: s.type,
-    })),
+    sections: cur.map((s, ci) => {
+      const sectionStatus = status[ci] as SectionStatus
+      const bi = matchedBase[ci]
+      // Carry the baseline prose only on edited sections, so the runtime can highlight what changed.
+      const prev = sectionStatus === 'edited' && bi !== undefined ? base[bi]?.prose : undefined
+      return { status: sectionStatus, label: s.label, type: s.type, ...(prev ? { prev } : {}) }
+    }),
     removed,
   }
 }

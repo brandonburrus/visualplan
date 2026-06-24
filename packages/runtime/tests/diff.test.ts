@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { diffOverlays, type InjectedDiff, isChanged, readDiff } from '../components/review/diff.js'
+import {
+  diffOverlays,
+  type InjectedDiff,
+  insertedWordRanges,
+  isChanged,
+  readDiff,
+} from '../components/review/diff.js'
 import { collectSections } from '../components/review/SectionComments.js'
 
 afterEach(() => {
@@ -70,5 +76,41 @@ describe('isChanged', () => {
     expect(isChanged('added')).toBe(true)
     expect(isChanged('edited')).toBe(true)
     expect(isChanged('unchanged')).toBe(false)
+  })
+})
+
+describe('insertedWordRanges', () => {
+  const section = (html: string): Element => {
+    document.body.innerHTML = `<div class="vp-phase">${html}</div>`
+    return document.querySelector('.vp-phase') as Element
+  }
+
+  it('ranges cover only the inserted words in the body prose (golden)', () => {
+    // The title is in a non-prose element, so it is never matched even though it changed.
+    const el = section(
+      '<div class="vp-phase__title">Ship it now</div><p>Roll out behind a staged feature flag with metrics</p>',
+    )
+    const ranges = insertedWordRanges([el], 'Roll out behind a feature flag')
+    expect(ranges.map(r => r.toString())).toEqual(['staged', 'with', 'metrics'])
+  })
+
+  it('scans prose across all owned sibling blocks, not just the start element (edge)', () => {
+    // A heading section owns a following intro paragraph that is its sibling, not its child.
+    document.body.innerHTML =
+      '<main class="vp-main"><h1>Title</h1><p>Intro text now with extra words</p></main>'
+    const main = document.querySelector('.vp-main') as Element
+    const ranges = insertedWordRanges(Array.from(main.children), 'Intro text')
+    expect(ranges.map(r => r.toString())).toEqual(['now', 'with', 'extra', 'words'])
+  })
+
+  it('returns no ranges when the body prose is unchanged (edge)', () => {
+    const el = section('<p>Stand up the Redis client</p>')
+    expect(insertedWordRanges([el], 'Stand up the Redis client')).toEqual([])
+  })
+
+  it('returns no ranges when the section has no p/li prose (error / non-prose block)', () => {
+    document.body.innerHTML = '<div class="vp-filetree"><span>add src/x.ts</span></div>'
+    const el = document.querySelector('.vp-filetree') as Element
+    expect(insertedWordRanges([el], 'modify src/y.ts')).toEqual([])
   })
 })

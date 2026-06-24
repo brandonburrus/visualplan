@@ -42,8 +42,13 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   render/watch/review with a baseline, NOT review-gated). All fixed-position overlay (plan DOM
   untouched): a git-gutter left edge-accent bar beside each added (`--vp-done`) / edited
   (`--vp-modify`) section, a bottom-left summary chip, and an "only changes" toggle that scrims
-  unchanged sections. `components/review/diff.ts` reads the global and holds `diffOverlays`, a **pure**
-  helper (unit-tested in jsdom). **Parity contract:** the injected `__VP_DIFF__.sections` is one entry
+  unchanged sections AND reveals the exact changed words inside edited ones. The word reveal
+  word-diffs each edited section's `p`/`li` prose against its injected baseline prose (`prev`) and
+  registers the inserted words as a **CSS Custom Highlight** (`::highlight(vp-diff-ins)`) — no DOM
+  mutation, feature-detected (degrades to bars-only on older browsers). It scopes to prose so titles
+  and chrome never false-hit, and scans a section's full owned sibling span (a heading plus its intro
+  paragraph), not just the start element. `components/review/diff.ts` reads the global and holds the
+  **pure**, jsdom-tested helpers (`diffOverlays`, `insertedWordRanges`, `sectionOwnedElements`). **Parity contract:** the injected `__VP_DIFF__.sections` is one entry
   per current section in document order, mapped onto `collectSections()` output BY INDEX, so the
   counts must agree; `diffOverlays` returns nothing on a mismatch (degrade, never mislabel). This DOM
   split and `@visualplan/compile`'s mdast `splitSections` are kept aligned by paired parity goldens

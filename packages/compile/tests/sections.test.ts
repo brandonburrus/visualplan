@@ -196,6 +196,20 @@ describe('diffSections', () => {
     expect(diff.removed.map(r => r.type)).toEqual(['callout'])
   })
 
+  it('carries the baseline prose as prev on an edited section, not on others', () => {
+    const current = BASE.replace(
+      'Implement the Redis window.',
+      'Implement the sliding window in Redis.',
+    )
+    const diff = diffSections(BASE, current)
+    const [title, phase, callout] = diff.sections
+    expect(phase?.status).toBe('edited')
+    expect(phase?.prev).toBe('Implement the Redis window.')
+    // Unchanged sections (and added ones) carry no prev.
+    expect(title?.prev).toBeUndefined()
+    expect(callout?.prev).toBeUndefined()
+  })
+
   it('detects a reworded title as an edit (rename), not a remove + add', () => {
     const current = BASE.replace('title="Build the limiter"', 'title="Build the rate limiter"')
     const diff = diffSections(BASE, current)
