@@ -1,9 +1,10 @@
 import { Command } from 'commander'
 import packageJson from '../package.json' with { type: 'json' }
+import { DEFAULT_DEV_PORT } from './build/compile.js'
 import { runCheck } from './commands/check.js'
 import { runComponents } from './commands/components.js'
 import { runConfigGet, runConfigPath, runConfigSet, runConfigShow } from './commands/config.js'
-import { runRender, type RenderOptions } from './commands/render.js'
+import { parsePort, runRender, type RenderOptions } from './commands/render.js'
 
 const program = new Command('vplan')
   .description("Render an AI agent's plans as visual MDX pages instead of walls of text")
@@ -14,6 +15,7 @@ program
   .description('Compile a plan .mdx to a self-contained HTML page (default command)')
   .argument('<file>', 'the plan .mdx file to render')
   .option('--watch', 'start a hot-reloading dev server instead of writing a file')
+  .option('--port <number>', 'port for the --watch dev server', parsePort, DEFAULT_DEV_PORT)
   .option('--out <path>', 'output HTML path (defaults to <file>.plan.html)')
   .option('--no-open', 'do not open the result in a browser')
   .action((file: string, options: RenderOptions) => runRender(file, options))

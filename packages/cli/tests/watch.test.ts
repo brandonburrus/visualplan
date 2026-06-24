@@ -3,7 +3,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { type DevServer, startDevServer } from '../src/build/compile.js'
+import { DEFAULT_DEV_PORT, type DevServer, startDevServer } from '../src/build/compile.js'
 
 let workDir: string
 let planPath: string
@@ -26,6 +26,22 @@ describe('startDevServer (--watch)', () => {
     const html = await (await fetch(server.url)).text()
     expect(html).toContain('id="root"')
   })
+
+  it('defaults to DEFAULT_DEV_PORT when no port is passed (golden)', () => {
+    // The shared server has no explicit port, so it binds the default (or the next free port if
+    // 9140 is taken). Asserting the host distinguishes the default from Vite's old 5173.
+    expect(new URL(server.url).port).toBe(String(DEFAULT_DEV_PORT))
+  })
+
+  it('binds an explicitly requested port (edge)', async () => {
+    const requested = 9173
+    const custom = await startDevServer(planPath, 'system', requested)
+    try {
+      expect(new URL(custom.url).port).toBe(String(requested))
+    } finally {
+      await custom.close()
+    }
+  }, 60_000)
 
   it('pushes a full-reload over HMR when the watched plan is edited (regression)', async () => {
     // The plan is a virtual module backed by a file, so addWatchFile alone does not invalidate it

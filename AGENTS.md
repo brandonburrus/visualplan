@@ -7,8 +7,9 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
 ## What it does
 
 - `vplan <file.mdx>` (alias `render`) compiles a plan to a single self-contained
-  `<file>.plan.html` and opens it. `--watch` starts a hot-reloading dev server instead;
-  `--out <path>` sets the output; `--no-open` suppresses the browser.
+  `<file>.plan.html` and opens it. `--watch` starts a hot-reloading dev server instead (on
+  `--port`, default 9140, auto-incrementing if taken); `--out <path>` sets the output; `--no-open`
+  suppresses the browser.
 - `vplan check <file.mdx>` validates a plan without rendering (the self-correction
   loop): MDX compile errors plus static component checks, printed as `file:line:col`.
 - `vplan components` prints the component vocabulary cheat-sheet.

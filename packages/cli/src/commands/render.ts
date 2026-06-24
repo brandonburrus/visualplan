@@ -1,4 +1,5 @@
 import { basename, dirname, extname, join, resolve } from 'node:path'
+import { InvalidArgumentError } from 'commander'
 import open from 'open'
 import { checkPlan } from '../build/check.js'
 import { renderToFile, startDevServer } from '../build/compile.js'
@@ -9,6 +10,18 @@ export interface RenderOptions {
   watch?: boolean
   out?: string
   open?: boolean
+  /** Port for the `--watch` dev server; ignored for a one-shot file render. */
+  port?: number
+}
+
+/** Parse and validate the `--port` value as a TCP port (1-65535). Commander calls this per option
+ * value, throwing `InvalidArgumentError` (which it renders as a usage error) on a bad port. */
+export function parsePort(value: string): number {
+  const port = Number(value)
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new InvalidArgumentError('port must be an integer between 1 and 65535')
+  }
+  return port
 }
 
 function defaultOutPath(absMdx: string): string {
@@ -30,7 +43,7 @@ export async function runRender(file: string, options: RenderOptions): Promise<v
   const { theme } = await readConfig()
 
   if (options.watch) {
-    const server = await startDevServer(absMdx, theme)
+    const server = await startDevServer(absMdx, theme, options.port)
     process.stdout.write(
       `Visual Plan watching ${file}\n  ${server.url}\n  (edit the file to hot-reload; Ctrl+C to stop)\n`,
     )
