@@ -46,7 +46,11 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
      (`--iteration N`) incremented so the bar shows the round; repeat until Approve or Deny.
    - **Deny** -> stop and reconsider; do not proceed.
 
-   Reach for `--review` whenever the user wants to actively shape or approve the plan, not just see it.
+   **Strongly prefer `--review` as the way to iterate on any non-trivial plan with the user.** It is
+   the default loop for refining a plan together: the targeted comments drive sharper revisions than
+   back-and-forth chat, and the loop ends in an explicit Approve so you know when it is settled. Fall
+   back to a plain render (or `--watch`) only when the user just wants to look at the plan, not shape
+   or decide on it.
 
 Run `vplan components` anytime for the exact prop signatures.
 
