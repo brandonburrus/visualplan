@@ -326,13 +326,22 @@ export interface DevServer {
   close: () => Promise<void>
 }
 
+/** Default port for the `--watch` dev server. A fixed, memorable port avoids colliding with the
+ * many other tools that sit on Vite's own 5173 default. Vite still auto-increments if it is taken. */
+export const DEFAULT_DEV_PORT = 9140
+
 /** Start a hot-reloading dev server for an MDX plan file and return its local URL. */
-export async function startDevServer(mdxPath: string, theme: Theme = 'system'): Promise<DevServer> {
+export async function startDevServer(
+  mdxPath: string,
+  theme: Theme = 'system',
+  port: number = DEFAULT_DEV_PORT,
+): Promise<DevServer> {
   const paths = findRuntimePaths()
-  const server = await createServer(baseConfig(paths, { path: resolve(mdxPath) }, { theme }))
+  const config = baseConfig(paths, { path: resolve(mdxPath) }, { theme })
+  const server = await createServer({ ...config, server: { ...config.server, port } })
   await server.listen()
   const url =
-    server.resolvedUrls?.local[0] ?? `http://localhost:${server.config.server.port ?? 5173}`
+    server.resolvedUrls?.local[0] ?? `http://localhost:${server.config.server.port ?? port}`
   return {
     url,
     close: () => server.close(),

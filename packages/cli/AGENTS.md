@@ -7,9 +7,14 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
 ## Structure
 
 - `src/index.ts` — commander dispatch (the `bin`). `src/commands/` — one file per command (render,
-  check, components, config). `config` is a parent command: bare `config` shows the settings + path,
-  `config get <key>` / `config set <key> <value>` / `config path` are subcommands. Invalid key/value
-  throws, which the top-level catch turns into a stderr message + exit 1.
+  check, components, config, share). `config` is a parent command: bare `config` shows the settings
+  + path, `config get <key>` / `config set <key> <value>` / `config path` are subcommands. Invalid
+  key/value throws, which the top-level catch turns into a stderr message + exit 1.
+- `src/commands/input.ts` — `readPlanSource(file?)`, the shared input layer for `render` and
+  `share`. Returns the MDX source plus a diagnostics `label` and a `fromStdin` flag. Reads stdin when
+  the arg is `-` or (no arg given) stdin is piped (`!process.stdin.isTTY`); a bare invocation on an
+  interactive terminal throws rather than hang. `render` routes stdin output to stdout by default,
+  and `--stdout`/`--out`/`--watch` have mutual-exclusion guards (watch needs a real file to re-read).
 - `src/config.ts` — the persistent CLI config at `~/.vplan/config.json` (literal path via
   `homedir()`, deliberately NOT `env-paths`). Only setting today is `theme` (`light`|`dark`|
   `system`). `readConfig` is tolerant (missing/malformed/unknown-theme -> `{ theme: 'system' }`) so a

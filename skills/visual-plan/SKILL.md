@@ -24,10 +24,17 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
 2. Validate before showing the user: `vplan check <file>.mdx`. Fix any reported
    `file:line:col` issues (it names the valid values for bad enums and flags unknown components).
 3. Render: `vplan <file>.mdx` writes a self-contained `<file>.plan.html` next to the source and
-   opens it. Pass `--no-open` to skip the browser, `--out <path>` to set the output location, or
-   `--watch` to start a live-reloading dev server while you refine the plan. `--watch` is a
-   long-running foreground server (it serves a local URL, writes no file, and only stops on
-   Ctrl+C), so for a one-shot HTML output use the plain render, not `--watch`.
+   **opens it in the browser**. Opening the rendered plan is the whole point of this tool, so let
+   it open by default. While you are iterating on the plan with the user, prefer
+   `vplan --watch <file>.mdx`: it starts a live-reloading dev server so your edits show up in the
+   open page without a re-run. `--watch` is a long-running foreground server (run it in the
+   background; it serves a local URL, writes no file, and only stops on Ctrl+C), so for a final
+   one-shot HTML output use the plain render, not `--watch`. `--out <path>` sets the output
+   location.
+
+   **Do not pass `--no-open`.** A plan the user never sees defeats the tool. Only suppress the
+   browser when the user has explicitly asked for the HTML file alone (e.g. for CI or a headless
+   run); a plan being generated for the user to read is never that case.
 
 Run `vplan components` anytime for the exact prop signatures.
 
@@ -217,6 +224,9 @@ it in paragraphs. Prose is the connective tissue between visuals, never the subs
 
 - **Always `vplan check` before presenting, and fix every reported `file:line:col` issue first.**
   The user should never see a broken render.
+- **Let the plan open; never pass `--no-open` for a user-facing plan.** The point of a visual plan
+  is that the user sees it. Use the plain render (which opens the page) to deliver, or `--watch`
+  while iterating. Reserve `--no-open` for an explicit headless/CI request only.
 - **No images or external assets.** The page is a single self-contained file, so a markdown image
   (`![](url)`) or any external asset cannot be embedded, and `check` rejects markdown images. Use a
   ` ```mermaid ` diagram for anything visual, or describe it in text.

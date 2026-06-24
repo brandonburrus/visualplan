@@ -1,9 +1,11 @@
 import { Command } from 'commander'
 import packageJson from '../package.json' with { type: 'json' }
+import { DEFAULT_DEV_PORT } from './build/compile.js'
 import { runCheck } from './commands/check.js'
 import { runComponents } from './commands/components.js'
 import { runConfigGet, runConfigPath, runConfigSet, runConfigShow } from './commands/config.js'
-import { runRender, type RenderOptions } from './commands/render.js'
+import { parsePort, runRender, type RenderOptions } from './commands/render.js'
+import { runShare } from './commands/share.js'
 
 const program = new Command('vplan')
   .description("Render an AI agent's plans as visual MDX pages instead of walls of text")
@@ -12,11 +14,19 @@ const program = new Command('vplan')
 program
   .command('render', { isDefault: true })
   .description('Compile a plan .mdx to a self-contained HTML page (default command)')
-  .argument('<file>', 'the plan .mdx file to render')
+  .argument('[file]', 'the plan .mdx file; - or omit to read from stdin')
   .option('--watch', 'start a hot-reloading dev server instead of writing a file')
+  .option('--port <number>', 'port for the --watch dev server', parsePort, DEFAULT_DEV_PORT)
   .option('--out <path>', 'output HTML path (defaults to <file>.plan.html)')
+  .option('--stdout', 'write the rendered HTML to stdout instead of a file')
   .option('--no-open', 'do not open the result in a browser')
-  .action((file: string, options: RenderOptions) => runRender(file, options))
+  .action((file: string | undefined, options: RenderOptions) => runRender(file, options))
+
+program
+  .command('share')
+  .description('Print a shareable visualplan.dev/view link for a plan')
+  .argument('[file]', 'the plan .mdx file; - or omit to read from stdin')
+  .action((file: string | undefined) => runShare(file))
 
 program
   .command('check')

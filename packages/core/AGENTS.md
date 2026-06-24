@@ -19,6 +19,10 @@ CLI's `check` and `components` commands. One file: `src/index.ts`.
   `/view` passes it because the payload is untrusted, and the decode is then a BOUNDED streaming
   inflate that aborts with `PlanTooLargeError` rather than letting a decompression bomb (DEFLATE can
   expand ~1000x) exhaust memory. The CLI never decodes, so the trusted round-trip omits the cap.
+  `SHARE_VIEW_URL` (the `visualplan.dev/view` base) lives in `index.ts`, NOT here, because the
+  runtime share button imports it and must stay `fflate`-free; `share.ts`'s `buildShareUrl` (CLI
+  only) imports the constant from the index. The dependency is one-way (share -> index); never make
+  `index.ts` import `share.ts`, or `fflate` leaks into the vendored runtime path.
 - **The `exports` map MUST keep `"./package.json": "./package.json"`.** Once a package has an
   `exports` map, Node blocks every subpath not listed, including `package.json`. `compile.ts`'s
   `findRuntimePaths` resolves `@visualplan/core/package.json` to locate the core dir in the
