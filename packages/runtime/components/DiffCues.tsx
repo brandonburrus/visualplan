@@ -8,6 +8,7 @@ import {
   readDiff,
   sectionOwnedElements,
 } from './review/diff.js'
+import { isReviewMode } from './review/feedback.js'
 import { collectSections, type Section } from './review/SectionComments.js'
 import './diff.css'
 
@@ -99,7 +100,8 @@ function DiffOverlay({ diff }: { diff: NonNullable<ReturnType<typeof readDiff>> 
           />
         ),
       )}
-      <div className='vp-diff-summary'>
+      {/* In review mode the bottom is occupied by the review DecisionBar, so lift the chip above it. */}
+      <div className='vp-diff-summary' data-review={isReviewMode() || undefined}>
         <IconGitCommit size={14} />
         <span>{summaryText(changedCount, removedCount)}</span>
         {mapped && changedCount > 0 && (

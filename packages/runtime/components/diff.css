@@ -49,7 +49,7 @@
   animation: vp-diff-fade-in 0.12s var(--vp-ease);
 }
 
-/* The summary chip, bottom-left, clear of the top-right cog/share and the centered review bar. */
+/* The summary chip, bottom-left, clear of the top-right cog/share. */
 .vp-diff-summary {
   position: fixed;
   z-index: 59;
@@ -66,6 +66,13 @@
   border: 1px solid var(--vp-border);
   border-radius: 999px;
   box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+}
+
+/* In review mode the review DecisionBar owns the bottom edge, so lift the chip clear of it and
+   above its z-index. */
+.vp-diff-summary[data-review="true"] {
+  bottom: 4.75rem;
+  z-index: 71;
 }
 
 .vp-diff-toggle {
