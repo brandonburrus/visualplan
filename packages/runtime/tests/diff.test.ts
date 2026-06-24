@@ -100,6 +100,12 @@ describe('wordDiffOps', () => {
   it('treats a capitalization-only change as unchanged (edge)', () => {
     expect(wordDiffOps('done'.split(' '), 'Done'.split(' ')).every(o => o.type === 'eq')).toBe(true)
   })
+
+  it('does not mark a punctuation-only change, only the real insertion (edge)', () => {
+    // "scaling." -> "scaling" is just a comma move; only "and" is genuinely inserted.
+    const ops = wordDiffOps('scaling. We move'.split(' '), 'scaling and we move'.split(' '))
+    expect(compact(ops)).toEqual(['scaling', '+and', 'we', 'move'])
+  })
 })
 
 describe('applyInlineWordDiff', () => {

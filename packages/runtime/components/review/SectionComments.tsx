@@ -264,8 +264,9 @@ export function SectionOverlays({
               <button
                 type='button'
                 className='vp-review-badge'
-                // Out in the left gutter with breathing room from the content, clamped on-screen.
-                style={{ top: controlTop, left: Math.max(rect.left - 46, 10) }}
+                // Out in the left gutter, past the diff gutter bar (which sits at rect.left - 18) so
+                // the two never overlap; clamped on-screen.
+                style={{ top: controlTop, left: Math.max(rect.left - 64, 8) }}
                 onClick={() => onView(section)}
                 aria-label={`${count} comment${count === 1 ? '' : 's'} on "${section.label}"`}
                 title={`View ${count} comment${count === 1 ? '' : 's'}`}

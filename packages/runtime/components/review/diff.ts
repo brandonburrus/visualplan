@@ -52,7 +52,6 @@ export function diffOverlays(
   sections: Section[],
   diff: InjectedDiff,
   onlyChanges: boolean,
-  barOffset = 18,
 ): DiffOverlay[] {
   if (sections.length !== diff.sections.length) return []
   const overlays: DiffOverlay[] = []
@@ -62,9 +61,7 @@ export function diffOverlays(
     const { top, bottom } = sectionContent(section)
     const height = Math.max(bottom - top, 0)
     if (isChanged(status)) {
-      // `barOffset` is the distance left of the content; the caller tightens it in review mode so the
-      // bar hugs the content edge and leaves the outer gutter free for the comment badges.
-      const left = Math.max(section.element.getBoundingClientRect().left - barOffset, 4)
+      const left = Math.max(section.element.getBoundingClientRect().left - 18, 6)
       overlays.push({
         sectionIndex: section.index,
         kind: 'bar',
@@ -118,10 +115,22 @@ function words(text: string): string[] {
  * Comparison is case-insensitive so a capitalization change is not noise, but ops carry the original
  * words for display. Pure, so it is unit-testable.
  */
+/** A word's comparison core: lowercased, with leading/trailing punctuation stripped, so a change in
+ * only surrounding punctuation (a trailing comma) does not register as an edit. */
+function wordCore(word: string): string {
+  return word.toLowerCase().replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, '')
+}
+
 export function wordDiffOps(prev: string[], current: string[]): DiffOp[] {
   const n = prev.length
   const m = current.length
-  const same = (a: string, b: string) => a.toLowerCase() === b.toLowerCase()
+  // Compare on the punctuation-stripped core (so "scaling." matches "scaling"); fall back to exact
+  // for all-punctuation tokens, which have no core.
+  const same = (a: string, b: string) => {
+    const ca = wordCore(a)
+    const cb = wordCore(b)
+    return ca && cb ? ca === cb : a.toLowerCase() === b.toLowerCase()
+  }
   const dp: number[][] = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0))
   for (let i = n - 1; i >= 0; i--) {
     const row = dp[i] as number[]
