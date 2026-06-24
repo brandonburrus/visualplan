@@ -1,0 +1,138 @@
+import { describe, expect, it } from 'vitest'
+import { diffSections, splitSections } from '../src/sections.js'
+
+/** A small well-formed plan used as the unchanged baseline across the diff cases. */
+const BASE = `# Rate limiting
+
+Intro prose before the first phase.
+
+<Phase title="Build the limiter">
+Implement the Redis window.
+</Phase>
+
+<Callout type="risk">
+A Redis outage must fail open.
+</Callout>
+
+<Phase title="Ship it">
+Roll out behind a flag.
+</Phase>
+`
+
+describe('splitSections', () => {
+  it('enumerates the section-start blocks in document order', () => {
+    const sections = splitSections(BASE)
+    expect(sections.map(s => s.type)).toEqual(['h1', 'phase', 'callout', 'phase'])
+    expect(sections.map(s => s.label)).toEqual([
+      'Rate limiting',
+      'Build the limiter',
+      'Risk',
+      'Ship it',
+    ])
+  })
+
+  it('does not treat nested blocks or non-section blocks as starts', () => {
+    const source = `# Title
+
+<Phase title="Outer">
+Some text.
+
+<Callout type="note">
+Nested callout, not a top-level section.
+</Callout>
+</Phase>
+
+\`\`\`math
+T(n) = O(n)
+\`\`\`
+`
+    // h1 + the one top-level Phase only; the nested Callout and the math fence are not starts.
+    expect(splitSections(source).map(s => s.type)).toEqual(['h1', 'phase'])
+  })
+
+  it('treats a mermaid fence as a section start but not a regular code fence', () => {
+    const source = `# Title
+
+\`\`\`mermaid
+flowchart LR
+  A --> B
+\`\`\`
+
+\`\`\`ts
+const x = 1
+\`\`\`
+`
+    expect(splitSections(source).map(s => s.type)).toEqual(['h1', 'mermaid'])
+  })
+
+  it('gives titled sections a label-based key and titleless ones a content-based key', () => {
+    const sections = splitSections(BASE)
+    const phase = sections[1]
+    const callout = sections[2]
+    expect(phase?.titled).toBe(true)
+    expect(phase?.key).toBe('phase:Build the limiter')
+    expect(callout?.titled).toBe(false)
+    expect(callout?.key).toMatch(/^callout:#/)
+  })
+})
+
+describe('diffSections', () => {
+  it('reports every section unchanged when the source is identical', () => {
+    const diff = diffSections(BASE, BASE)
+    expect(diff.sections.map(s => s.status)).toEqual([
+      'unchanged',
+      'unchanged',
+      'unchanged',
+      'unchanged',
+    ])
+    expect(diff.removed).toEqual([])
+  })
+
+  it('marks an edited phase body as edited and leaves its siblings unchanged', () => {
+    const current = BASE.replace(
+      'Implement the Redis window.',
+      'Implement the sliding window in Redis.',
+    )
+    const diff = diffSections(BASE, current)
+    expect(diff.sections.map(s => s.status)).toEqual([
+      'unchanged',
+      'edited',
+      'unchanged',
+      'unchanged',
+    ])
+  })
+
+  it('marks a newly inserted section as added and keeps the rest stable', () => {
+    const current = BASE.replace(
+      '<Phase title="Ship it">',
+      '<Phase title="Test it">\nWrite the tests.\n</Phase>\n\n<Phase title="Ship it">',
+    )
+    const diff = diffSections(BASE, current)
+    expect(diff.sections.map(s => s.status)).toEqual([
+      'unchanged',
+      'unchanged',
+      'unchanged',
+      'added',
+      'unchanged',
+    ])
+  })
+
+  it('reports a deleted section under removed, not in the current sections', () => {
+    const current = BASE.replace(/<Callout type="risk">[\s\S]*?<\/Callout>\n\n/, '')
+    const diff = diffSections(BASE, current)
+    expect(diff.sections.map(s => s.status)).toEqual(['unchanged', 'unchanged', 'unchanged'])
+    expect(diff.removed.map(r => r.type)).toEqual(['callout'])
+  })
+
+  it('detects a reworded title as an edit (rename), not a remove + add', () => {
+    const current = BASE.replace('title="Build the limiter"', 'title="Build the rate limiter"')
+    const diff = diffSections(BASE, current)
+    expect(diff.sections.map(s => s.status)).toEqual([
+      'unchanged',
+      'edited',
+      'unchanged',
+      'unchanged',
+    ])
+    expect(diff.removed).toEqual([])
+  })
+})

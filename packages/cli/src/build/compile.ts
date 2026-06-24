@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { compile, type CompileOptions } from '@mdx-js/mdx'
-import { baseExpressiveCodeOptions, remarkPlugins } from '@visualplan/compile'
+import { baseExpressiveCodeOptions, diffSections, remarkPlugins } from '@visualplan/compile'
 import { pluginFileIcons } from '@visualplan/compile/file-icons'
 import { remarkFileTreeIcons } from '@visualplan/compile/filetree-icons'
 import { type Feedback, feedbackSchema } from '@visualplan/core'
@@ -209,6 +209,36 @@ function planSharePlugin(readSource: () => string): Plugin {
   }
 }
 
+/**
+ * Inject the section diff against a baseline onto `globalThis.__VP_DIFF__` so the runtime can mark
+ * added/edited sections (git-gutter style). The current source is read fresh on each call, so the
+ * `--watch` dev server re-diffs the live file against the session's baseline on every reload. A diff
+ * failure is swallowed: a diffing problem must never break the render (the page just shows no cues).
+ */
+function planDiffPlugin(readSource: () => string, baseline: string): Plugin {
+  return {
+    name: 'visualplan:diff',
+    transformIndexHtml: {
+      order: 'pre',
+      handler() {
+        let diff: ReturnType<typeof diffSections>
+        try {
+          diff = diffSections(baseline, readSource())
+        } catch {
+          return []
+        }
+        return [
+          {
+            tag: 'script',
+            injectTo: 'head',
+            children: `globalThis.__VP_DIFF__=${JSON.stringify(diff)}`,
+          },
+        ]
+      },
+    },
+  }
+}
+
 /** How a plan is rendered, beyond its source. Defaults match the CLI (cog + share both on). */
 export interface BuildOptions {
   /** Default color scheme baked into the page. Default `system`. */
@@ -218,6 +248,9 @@ export interface BuildOptions {
   lockTheme?: boolean
   /** Inject the share button's data. The CLI shares; the programmatic API defaults this off. Default true. */
   enableSharing?: boolean
+  /** A previous version of the plan's MDX source. When set, the section diff against it is injected
+   * as `__VP_DIFF__` so the runtime marks added/edited sections. Omitted = no diff (the default). */
+  baseline?: string
 }
 
 /**
@@ -262,6 +295,8 @@ function baseConfig(paths: RuntimePaths, input: PlanInput, options: BuildOptions
   ]
   // The share button renders only when its data is injected, so omitting the plugin hides it.
   if (enableSharing) plugins.push(planSharePlugin(readSource))
+  // Diff cues render only when a baseline is given, so omitting the plugin leaves a plain render.
+  if (options.baseline !== undefined) plugins.push(planDiffPlugin(readSource, options.baseline))
   return {
     root: paths.runtimeDir,
     configFile: false,
@@ -336,9 +371,10 @@ export async function startDevServer(
   mdxPath: string,
   theme: Theme = 'system',
   port: number = DEFAULT_DEV_PORT,
+  baseline?: string,
 ): Promise<DevServer> {
   const paths = findRuntimePaths()
-  const config = baseConfig(paths, { path: resolve(mdxPath) }, { theme })
+  const config = baseConfig(paths, { path: resolve(mdxPath) }, { theme, baseline })
   const server = await createServer({ ...config, server: { ...config.server, port } })
   await server.listen()
   const url =
@@ -474,6 +510,7 @@ export async function startReviewServer(
   source: string,
   theme: Theme = 'system',
   iteration?: number,
+  baseline?: string,
 ): Promise<ReviewServer> {
   const paths = findRuntimePaths()
   let settled = false
@@ -488,7 +525,7 @@ export async function startReviewServer(
     resolveFeedback(value)
   }
   const state: ReviewState = { draft: { decision: 'deny', comments: [], answers: [] } }
-  const config = baseConfig(paths, source, { theme })
+  const config = baseConfig(paths, source, { theme, baseline })
   // Use the same default port as the `--watch` dev server (Vite auto-increments if it is taken).
   const server = await createServer({
     ...config,

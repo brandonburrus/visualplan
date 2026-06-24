@@ -19,8 +19,9 @@ export async function runReview(
   timeoutMs: number,
   openBrowser: boolean,
   iteration?: number,
+  baseline?: string,
 ): Promise<void> {
-  const server = await startReviewServer(source, theme, iteration)
+  const server = await startReviewServer(source, theme, iteration, baseline)
   process.stderr.write(
     `Visual Plan review at\n  ${server.url}\n  (comment on sections, then Approve / Deny / Iterate; Ctrl+C to cancel)\n`,
   )

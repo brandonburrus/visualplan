@@ -38,6 +38,11 @@ program
     parseTimeout,
     DEFAULT_REVIEW_TIMEOUT_MS,
   )
+  .option(
+    '--diff <path>',
+    'diff this render against a baseline plan .mdx (overrides the snapshot cache)',
+  )
+  .option('--no-diff', 'skip iteration diffing (do not read or write the snapshot cache)')
   .option('--no-open', 'do not open the result in a browser')
   .action((file: string | undefined, options: RenderOptions) => runRender(file, options))
 
