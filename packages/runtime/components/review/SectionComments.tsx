@@ -1,33 +1,62 @@
 import { IconMessage2, IconMessagePlus } from '@tabler/icons-react'
 import { Fragment, useEffect, useState } from 'react'
 
-/** A major section the reviewer can comment on: a `Phase` or a top-level `# / ## heading`. */
+/** A section the reviewer can comment on: a `Phase`, a heading, or a standalone block. */
 export interface Section {
   /** Document-order index, the stable key for comments (labels can repeat). */
   index: number
   label: string
-  /** The section's anchor (the phase or heading element). */
+  /** The section's anchor (the phase, heading, or block element). */
   element: Element
   /** The last top-level element this section owns (the one before the next section), so the
    * highlight can wrap the actual content rather than the empty space up to the next section. */
   lastElement: Element
 }
 
-/** Derive a human label the agent can map back to the MDX: a Phase's title or the heading's text. */
+/** What starts a commentable section: a phase, any heading, or a standalone block component. Only
+ * direct children of `.vp-main` are tested, so a block nested inside a `<Phase>` stays part of that
+ * phase; this splits up the loose top-level content (intro prose, a diagram, a callout) that would
+ * otherwise collapse into one oversized first section. `.vp-matrix-wrap` is the Matrix's scroll
+ * wrapper (its real top-level element). */
+const SECTION_START_SELECTOR =
+  '.vp-phase, h1, h2, h3, .vp-callout, .vp-mermaid, .vp-chart, .vp-filetree, .vp-matrix-wrap, .vp-compare, .vp-checklist, .vp-stat, .vp-questions'
+
+/** Friendly labels for blocks with no heading text of their own, by the class that identifies each. */
+const BLOCK_LABELS: ReadonlyArray<[string, string]> = [
+  ['.vp-mermaid', 'Diagram'],
+  ['.vp-filetree', 'File changes'],
+  ['.vp-matrix-wrap', 'Comparison'],
+  ['.vp-compare', 'Comparison'],
+]
+
+/** Derive a human label the agent can map back to the MDX: a Phase/heading's text, a block's own
+ * title, a friendly block name, or a short snippet of its content as a last resort. */
 function sectionLabel(element: Element): string {
   if (element.classList.contains('vp-phase')) {
     return element.querySelector('.vp-phase__title')?.textContent?.trim() || 'Phase'
   }
-  return element.textContent?.trim() || 'Section'
+  if (/^H[1-6]$/.test(element.tagName)) {
+    return element.textContent?.trim() || 'Section'
+  }
+  // A block that carries its own title/label reads best by that.
+  const titled = element.querySelector(
+    '.vp-callout__label, .vp-questions__title, .vp-checklist__title, .vp-stat__title, .vp-chart__title',
+  )
+  if (titled?.textContent?.trim()) return titled.textContent.trim()
+  for (const [selector, label] of BLOCK_LABELS) {
+    if (element.matches(selector)) return label
+  }
+  const text = element.textContent?.trim() ?? ''
+  return text ? (text.length > 60 ? `${text.slice(0, 60).trim()}…` : text) : 'Section'
 }
 
-/** Enumerate the plan's major sections in document order, each owning the elements up to the next
+/** Enumerate the plan's sections in document order, each owning the elements up to the next
  * section. Called once: the plan is a frozen snapshot. */
 export function collectSections(): Section[] {
   const main = document.querySelector('.vp-main')
   if (!main) return []
   const children = Array.from(main.children)
-  const starts = children.filter(el => el.matches('.vp-phase, h1, h2'))
+  const starts = children.filter(el => el.matches(SECTION_START_SELECTOR))
   return starts.map((element, index) => {
     const next = starts[index + 1]
     const nextIdx = next ? children.indexOf(next) : children.length

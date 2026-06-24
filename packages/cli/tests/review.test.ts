@@ -11,21 +11,37 @@ function feedbackUrl(server: ReviewServer): string {
 }
 
 describe('formatFeedback', () => {
-  it('renders decision, comments, and note as readable text (golden)', () => {
+  it('renders decision, comments, answers, and note as readable text (golden)', () => {
     const text = formatFeedback({
       decision: 'iterate',
       comments: [{ section: 'Phase 2', body: 'fix this' }],
+      answers: [{ question: 'Fail open or closed?', answer: 'Fail closed' }],
       note: 'overall good',
     })
     expect(text).toContain('DECISION: iterate')
     expect(text).toContain('Comment on "Phase 2":')
     expect(text).toContain('  fix this')
+    expect(text).toContain('Answer to "Fail open or closed?":')
+    expect(text).toContain('  Fail closed')
     expect(text).toContain('General note:')
     expect(text).toContain('  overall good')
   })
 
-  it('renders a bare approve with no comments or note (edge)', () => {
-    expect(formatFeedback({ decision: 'approve', comments: [] })).toBe('DECISION: approve')
+  it('orders comments before answers before the note (golden)', () => {
+    const text = formatFeedback({
+      decision: 'iterate',
+      comments: [{ section: 'Phase 1', body: 'c' }],
+      answers: [{ question: 'q', answer: 'a' }],
+      note: 'n',
+    })
+    expect(text.indexOf('Comment on')).toBeLessThan(text.indexOf('Answer to'))
+    expect(text.indexOf('Answer to')).toBeLessThan(text.indexOf('General note'))
+  })
+
+  it('renders a bare approve with no comments, answers, or note (edge)', () => {
+    expect(formatFeedback({ decision: 'approve', comments: [], answers: [] })).toBe(
+      'DECISION: approve',
+    )
   })
 })
 
@@ -94,7 +110,11 @@ describe('startReviewServer /__vp_feedback', () => {
       method: 'POST',
       body: JSON.stringify({ decision: 'approve' }),
     })
-    await expect(server.feedback).resolves.toEqual({ decision: 'approve', comments: [] })
+    await expect(server.feedback).resolves.toEqual({
+      decision: 'approve',
+      comments: [],
+      answers: [],
+    })
   }, 60_000)
 
   it('rejects an invalid body with 400 and leaves feedback pending (error)', async () => {
@@ -133,12 +153,20 @@ describe('startReviewServer tab-close (keepalive drop)', () => {
   it('resolves a bare Deny when the connection drops with no draft (golden)', async () => {
     server = await startReviewServer(PLAN)
     await dropAfterConnecting(server)
-    await expect(server.feedback).resolves.toEqual({ decision: 'deny', comments: [] })
+    await expect(server.feedback).resolves.toEqual({
+      decision: 'deny',
+      comments: [],
+      answers: [],
+    })
   }, 60_000)
 
   it('carries the synced draft comments into the tab-close Deny (golden)', async () => {
     server = await startReviewServer(PLAN)
-    const draft = { decision: 'deny', comments: [{ section: 'Phase 1', body: 'unfinished' }] }
+    const draft = {
+      decision: 'deny',
+      comments: [{ section: 'Phase 1', body: 'unfinished' }],
+      answers: [],
+    }
     await fetch(new URL('/__vp_draft', server.url), { method: 'POST', body: JSON.stringify(draft) })
     await dropAfterConnecting(server)
     await expect(server.feedback).resolves.toEqual(draft)
@@ -152,7 +180,11 @@ describe('startReviewServer tab-close (keepalive drop)', () => {
     })
     await dropAfterConnecting(server)
     // The POST settled first; the drop must not override it.
-    await expect(server.feedback).resolves.toEqual({ decision: 'approve', comments: [] })
+    await expect(server.feedback).resolves.toEqual({
+      decision: 'approve',
+      comments: [],
+      answers: [],
+    })
   }, 60_000)
 
   it('closes promptly while the keepalive is still open, so the CLI never hangs (regression)', async () => {

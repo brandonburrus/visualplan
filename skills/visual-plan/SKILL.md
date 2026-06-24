@@ -37,10 +37,12 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
    run); a plan being generated for the user to read is never that case.
 4. **To get the user's decision on the plan** (a sign-off, not just a viewing), render with
    `vplan render --review <file>.mdx`. It opens the plan with a feedback layer where the user comments
-   on whole sections or on selected text, then clicks Approve / Deny / Iterate. It **blocks** until
-   they submit, prints the decision and comments to stdout, and exits: approve 0, deny 1, iterate 2,
-   timeout 3 (`--timeout`, default 15m; closing the tab counts as deny). It is a long-running
-   foreground server, so run it in the background. Then act on the printed feedback:
+   on whole sections or on selected text, **answers any `<Questions>` directly** (each question
+   becomes an inline answer field, printed back as `Answer to "<question>":`), then clicks
+   Approve / Deny / Iterate. It **blocks** until they submit, prints the decision, comments, and
+   answers to stdout, and exits: approve 0, deny 1, iterate 2, timeout 3 (`--timeout`, default 15m;
+   closing the tab counts as deny). It is a long-running foreground server, so run it in the
+   background. Then act on the printed feedback:
    - **Approve** -> proceed with the plan as written.
    - **Iterate** -> revise the plan addressing each comment, then review again with `-i N`
      (`--iteration N`) incremented so the bar shows the round; repeat until Approve or Deny.
@@ -160,7 +162,8 @@ brace errors that break a render.
   ```
 - `<Questions>` — open questions you want the reader to resolve before building, one per bullet.
   Use this instead of burying uncertainties in prose. The title defaults to "Open questions";
-  override with `title="..."`.
+  override with `title="..."`. In a `--review` session each question is directly answerable, so
+  prefer a `<Questions>` block over prose when you want the reviewer to answer specific questions.
 
   ```mdx
   <Questions>

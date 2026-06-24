@@ -23,19 +23,28 @@ export const reviewCommentSchema = z.object({
   body: z.string().min(1),
 })
 
+/** A direct answer to one of a plan's `Questions`, keyed by the question text the reviewer answered. */
+export const reviewAnswerSchema = z.object({
+  question: z.string().min(1),
+  answer: z.string().min(1),
+})
+
 /**
  * The feedback payload the review page POSTs to the CLI's `/__vp_feedback` endpoint. Isomorphic so
  * the page (which constructs it) and the CLI (which validates it) share one contract and cannot
- * drift; `comments` defaults to empty because Approve and Deny may carry none.
+ * drift; `comments` and `answers` default to empty because Approve and Deny may carry neither.
+ * `answers` are distinct from `comments`: they are direct responses to the plan's `Questions`.
  */
 export const feedbackSchema = z.object({
   decision: z.enum(REVIEW_DECISION_VALUES),
   comments: z.array(reviewCommentSchema).default([]),
+  answers: z.array(reviewAnswerSchema).default([]),
   note: z.string().optional(),
 })
 
 export type ReviewDecision = (typeof REVIEW_DECISION_VALUES)[number]
 export type ReviewComment = z.infer<typeof reviewCommentSchema>
+export type ReviewAnswer = z.infer<typeof reviewAnswerSchema>
 export type Feedback = z.infer<typeof feedbackSchema>
 
 export const STATUS_VALUES = ['planned', 'active', 'done'] as const

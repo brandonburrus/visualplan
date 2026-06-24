@@ -487,7 +487,7 @@ export async function startReviewServer(
     settled = true
     resolveFeedback(value)
   }
-  const state: ReviewState = { draft: { decision: 'deny', comments: [] } }
+  const state: ReviewState = { draft: { decision: 'deny', comments: [], answers: [] } }
   const config = baseConfig(paths, source, { theme })
   // Use the same default port as the `--watch` dev server (Vite auto-increments if it is taken).
   const server = await createServer({
