@@ -8,6 +8,7 @@ import { compile, type CompileOptions } from '@mdx-js/mdx'
 import { baseExpressiveCodeOptions, remarkPlugins } from '@visualplan/compile'
 import { pluginFileIcons } from '@visualplan/compile/file-icons'
 import { remarkFileTreeIcons } from '@visualplan/compile/filetree-icons'
+import { type Feedback, feedbackSchema } from '@visualplan/core'
 import { encodePlan } from '@visualplan/core/share'
 import rehypeExpressiveCode, { type RehypeExpressiveCodeOptions } from 'rehype-expressive-code'
 import { build, createServer, type InlineConfig, type Plugin } from 'vite'
@@ -344,6 +345,163 @@ export async function startDevServer(
     server.resolvedUrls?.local[0] ?? `http://localhost:${server.config.server.port ?? port}`
   return {
     url,
+    close: () => server.close(),
+  }
+}
+
+/** Read a request body to a string, capped so a malformed client cannot stream unbounded data. */
+function readRequestBody(
+  req: import('node:http').IncomingMessage,
+  maxBytes = 1_000_000,
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let raw = ''
+    req.on('data', (chunk: Buffer) => {
+      raw += chunk
+      if (raw.length > maxBytes) reject(new Error('feedback body too large'))
+    })
+    req.on('end', () => resolve(raw))
+    req.on('error', reject)
+  })
+}
+
+/** Mutable holder for the payload to resolve with if the tab closes; kept current by `/__vp_draft`. */
+interface ReviewState {
+  /** The Deny-on-close payload, refreshed as the reviewer adds comments. */
+  draft: Feedback
+}
+
+/**
+ * Serve the plan in review mode and add its three endpoints. Injects `__VP_REVIEW__` so the runtime
+ * mounts its feedback layer (mirroring how `planSharePlugin` injects `__VP_SHARE__`). `settle`
+ * resolves the session exactly once:
+ * - `POST /__vp_feedback` — the reviewer's explicit decision (validated against `feedbackSchema`).
+ * - `POST /__vp_draft` — the page keeps the Deny-on-close payload current as comments are added.
+ * - `GET /__vp_alive` — a connection the page holds open; when it drops (tab closed / navigated away)
+ *   before a decision, that abandonment resolves as Deny carrying the latest draft. Detecting the
+ *   socket close server-side is reliable on a real tab close, unlike an unload-time `sendBeacon`.
+ */
+function reviewPlugin(
+  settle: (feedback: Feedback) => void,
+  state: ReviewState,
+  iteration?: number,
+): Plugin {
+  return {
+    name: 'visualplan:review',
+    transformIndexHtml: {
+      order: 'pre',
+      handler() {
+        const tags = [
+          { tag: 'script', injectTo: 'head' as const, children: 'globalThis.__VP_REVIEW__=true' },
+        ]
+        // `iteration` is a validated number, so it is safe to inline; the bar shows "Iteration N".
+        if (iteration !== undefined) {
+          tags.push({
+            tag: 'script',
+            injectTo: 'head' as const,
+            children: `globalThis.__VP_REVIEW_ITERATION__=${iteration}`,
+          })
+        }
+        return tags
+      },
+    },
+    configureServer(server) {
+      server.middlewares.use('/__vp_feedback', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405
+          res.end('method not allowed')
+          return
+        }
+        readRequestBody(req)
+          .then(raw => {
+            const feedback = feedbackSchema.parse(JSON.parse(raw))
+            res.statusCode = 200
+            res.setHeader('content-type', 'text/plain; charset=utf-8')
+            res.end('ok')
+            settle(feedback)
+          })
+          .catch(() => {
+            res.statusCode = 400
+            res.end('invalid feedback')
+          })
+      })
+      server.middlewares.use('/__vp_draft', (req, res) => {
+        if (req.method !== 'POST') {
+          res.statusCode = 405
+          res.end('method not allowed')
+          return
+        }
+        readRequestBody(req)
+          .then(raw => {
+            state.draft = feedbackSchema.parse(JSON.parse(raw))
+            res.statusCode = 200
+            res.end('ok')
+          })
+          .catch(() => {
+            res.statusCode = 400
+            res.end('invalid draft')
+          })
+      })
+      server.middlewares.use('/__vp_alive', (_req, res) => {
+        res.writeHead(200, {
+          'content-type': 'text/event-stream',
+          'cache-control': 'no-cache',
+          connection: 'keep-alive',
+        })
+        res.write(': ok\n\n')
+        // The response is never ended, so 'close' fires only on a client disconnect (tab close), not
+        // a normal response end. A backgrounded tab keeps the connection, so it never false-denies.
+        res.on('close', () => settle(state.draft))
+      })
+    },
+  }
+}
+
+export interface ReviewServer {
+  url: string
+  /** Resolves once: the submitted decision, or Deny when the review tab is closed. */
+  feedback: Promise<Feedback>
+  close: () => Promise<void>
+}
+
+/**
+ * Start a one-shot review server for a plan's in-memory source. Unlike `startDevServer` it serves a
+ * frozen snapshot (a string input, so no watch file and no hot-reload), which is what lets the page
+ * collect comments without re-rendering underneath them. The returned `feedback` promise resolves
+ * with the reviewer's decision (or Deny on tab close); the caller opens the URL, awaits it, closes.
+ */
+export async function startReviewServer(
+  source: string,
+  theme: Theme = 'system',
+  iteration?: number,
+): Promise<ReviewServer> {
+  const paths = findRuntimePaths()
+  let settled = false
+  let resolveFeedback!: (feedback: Feedback) => void
+  const feedback = new Promise<Feedback>(resolve => {
+    resolveFeedback = resolve
+  })
+  // First signal wins: an explicit decision, or a tab-close Deny, but never both.
+  const settle = (value: Feedback) => {
+    if (settled) return
+    settled = true
+    resolveFeedback(value)
+  }
+  const state: ReviewState = { draft: { decision: 'deny', comments: [] } }
+  const config = baseConfig(paths, source, { theme })
+  // Use the same default port as the `--watch` dev server (Vite auto-increments if it is taken).
+  const server = await createServer({
+    ...config,
+    server: { ...config.server, port: DEFAULT_DEV_PORT },
+    plugins: [...(config.plugins ?? []), reviewPlugin(settle, state, iteration)],
+  })
+  await server.listen()
+  const url =
+    server.resolvedUrls?.local[0] ??
+    `http://localhost:${server.config.server.port ?? DEFAULT_DEV_PORT}`
+  return {
+    url,
+    feedback,
     close: () => server.close(),
   }
 }

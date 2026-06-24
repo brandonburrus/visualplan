@@ -1,6 +1,6 @@
 ---
 name: visual-plan
-description: Always use when planning anything non-trivial (an implementation, design, refactor, or migration), as the default and better way to show your plan visually instead of as a wall of text, especially in plan mode. Authors the plan as an MDX file and renders it to a self-contained HTML page with the `vplan` CLI, using a fixed component vocabulary. Also use when the user says "make a visual plan", "render this plan", "show me the plan", or asks for a plan with diagrams/charts. Skip only for trivial one-step changes or prose-only notes.
+description: Always use when planning anything non-trivial (an implementation, design, refactor, or migration), as the default and better way to show your plan visually instead of as a wall of text, especially in plan mode. Authors the plan as an MDX file and renders it to a self-contained HTML page with the `vplan` CLI, using a fixed component vocabulary. Also use when the user says "make a visual plan", "render this plan", "show me the plan", or asks for a plan with diagrams/charts, and when they want to review, approve, or sign off on a plan or give structured feedback on it ("let me review the plan", "I want to give feedback", "get my approval") via `vplan render --review`. Skip only for trivial one-step changes or prose-only notes.
 ---
 
 # Visual Plan
@@ -35,6 +35,22 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
    **Do not pass `--no-open`.** A plan the user never sees defeats the tool. Only suppress the
    browser when the user has explicitly asked for the HTML file alone (e.g. for CI or a headless
    run); a plan being generated for the user to read is never that case.
+4. **To get the user's decision on the plan** (a sign-off, not just a viewing), render with
+   `vplan render --review <file>.mdx`. It opens the plan with a feedback layer where the user comments
+   on whole sections or on selected text, then clicks Approve / Deny / Iterate. It **blocks** until
+   they submit, prints the decision and comments to stdout, and exits: approve 0, deny 1, iterate 2,
+   timeout 3 (`--timeout`, default 15m; closing the tab counts as deny). It is a long-running
+   foreground server, so run it in the background. Then act on the printed feedback:
+   - **Approve** -> proceed with the plan as written.
+   - **Iterate** -> revise the plan addressing each comment, then review again with `-i N`
+     (`--iteration N`) incremented so the bar shows the round; repeat until Approve or Deny.
+   - **Deny** -> stop and reconsider; do not proceed.
+
+   **Strongly prefer `--review` as the way to iterate on any non-trivial plan with the user.** It is
+   the default loop for refining a plan together: the targeted comments drive sharper revisions than
+   back-and-forth chat, and the loop ends in an explicit Approve so you know when it is settled. Fall
+   back to a plain render (or `--watch`) only when the user just wants to look at the plan, not shape
+   or decide on it.
 
 Run `vplan components` anytime for the exact prop signatures.
 

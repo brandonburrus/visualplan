@@ -65,6 +65,7 @@
     "fflate": "^0.8.2",
     "hast-util-from-html": "^2.0.3",
     "material-icon-theme": "^5.35.0",
+    "ms": "^2.1.3",
     "open": "^11.0.0",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
@@ -84,8 +85,10 @@
   },
   "devDependencies": {
     "@types/hast": "^3.0.4",
+    "@types/ms": "^2.1.0",
     "@visualplan/compile": "workspace:*",
     "@visualplan/core": "workspace:*",
-    "@visualplan/runtime": "workspace:*"
+    "@visualplan/runtime": "workspace:*",
+    "playwright-core": "^1.61.0"
   }
 }

@@ -1,0 +1,438 @@
+/* Interactive review-mode chrome (vplan render --review). All colors are theme.css CSS vars so it
+   tracks light/dark with the rest of the page. Everything here is fixed-position overlay; the plan
+   content underneath is untouched. */
+
+@keyframes vp-review-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.vp-review-add {
+  position: fixed;
+  z-index: 58;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--vp-on-accent);
+  background: var(--vp-accent);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 20%);
+  animation: vp-review-fade-in 0.12s var(--vp-ease);
+  transition: filter 0.12s var(--vp-ease);
+}
+
+.vp-review-add:hover {
+  filter: brightness(1.08);
+}
+
+/* Marks the section the hover targets, so it is unambiguous what a comment attaches to. A full-width
+   tint band (positioned edge to edge inline), faded in so moving between sections does not pop. */
+.vp-review-highlight {
+  position: fixed;
+  z-index: 54;
+  pointer-events: none;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--vp-accent) 6%, transparent);
+  animation: vp-review-fade-in 0.12s var(--vp-ease);
+}
+
+/* Persistent highlighter over text that already has a comment (a distinct gold tint from the accent
+   hover band), so it is obvious a comment was attached there. Hoverable to reveal the comment. */
+.vp-review-quote-mark {
+  position: fixed;
+  z-index: 53;
+  padding: 0;
+  cursor: help;
+  appearance: none;
+  border: none;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--vp-gold) 28%, transparent);
+}
+
+.vp-review-quote-mark:hover {
+  background: color-mix(in srgb, var(--vp-gold) 42%, transparent);
+}
+
+/* The comment shown when hovering a quote mark. */
+.vp-review-tip {
+  position: fixed;
+  z-index: 72;
+  pointer-events: none;
+  max-width: 22rem;
+  padding: 0.4rem 0.55rem;
+  font-size: 0.8rem;
+  line-height: 1.35;
+  color: var(--vp-text);
+  background: var(--vp-surface-2);
+  border: 1px solid var(--vp-border);
+  border-radius: 7px;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 18%);
+  animation: vp-review-fade-in 0.1s var(--vp-ease);
+}
+
+/* Persistent count pill on a section that already has comments; click to view/manage them. */
+.vp-review-badge {
+  position: fixed;
+  z-index: 58;
+  display: inline-flex;
+  gap: 0.2rem;
+  align-items: center;
+  height: 22px;
+  padding: 0 0.45rem;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--vp-on-accent);
+  background: var(--vp-accent);
+  border: none;
+  border-radius: 11px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 18%);
+}
+
+.vp-review-popover {
+  position: fixed;
+  z-index: 71;
+  width: min(20rem, calc(100vw - 1rem));
+  max-height: 50vh;
+  overflow: auto;
+  padding: 0.6rem 0.7rem;
+  background: var(--vp-surface-2);
+  border: 1px solid var(--vp-border);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 18%);
+}
+
+.vp-review-popover__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+  color: var(--vp-muted);
+}
+
+.vp-review-popover__title strong {
+  color: var(--vp-text);
+}
+
+.vp-review-popover__close {
+  display: grid;
+  place-items: center;
+  padding: 0.15rem;
+  color: var(--vp-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.vp-review-popover__close:hover {
+  color: var(--vp-text);
+}
+
+.vp-review-popover__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vp-review-popover__item {
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 0.35rem 0.45rem;
+  font-size: 0.82rem;
+  color: var(--vp-text);
+  background: var(--vp-bg);
+  border: 1px solid var(--vp-border);
+  border-radius: 7px;
+}
+
+.vp-review-popover__delete {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  padding: 0.1rem;
+  color: var(--vp-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.vp-review-popover__delete:hover {
+  color: var(--vp-risk);
+}
+
+.vp-review-popover__text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.vp-review-popover__quote {
+  font-size: 0.72rem;
+  font-style: italic;
+  color: var(--vp-muted);
+}
+
+/* Floats next to a text selection so the reviewer can comment on an exact quote. */
+.vp-review-select {
+  position: fixed;
+  z-index: 60;
+  display: inline-flex;
+  gap: 0.3rem;
+  align-items: center;
+  padding: 0.3rem 0.55rem;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--vp-on-accent);
+  background: var(--vp-accent);
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 22%);
+  animation: vp-review-fade-in 0.1s var(--vp-ease);
+}
+
+.vp-review-select:hover {
+  filter: brightness(1.08);
+}
+
+.vp-review-bar {
+  position: fixed;
+  z-index: 70;
+  inset: auto 0 0 0;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1.25rem;
+  background: var(--vp-surface);
+  border-top: 1px solid var(--vp-border);
+  box-shadow: 0 -2px 12px rgb(0 0 0 / 8%);
+}
+
+.vp-review-bar__meta {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+}
+
+.vp-review-bar__iteration {
+  padding: 0.22rem 0.55rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--vp-text);
+  white-space: nowrap;
+  background: var(--vp-surface-2);
+  border: 1px solid var(--vp-border);
+  border-radius: 999px;
+}
+
+.vp-review-bar__note {
+  flex: 1;
+  max-width: 28rem;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--vp-text);
+  background: var(--vp-bg);
+  border: 1px solid var(--vp-border);
+  border-radius: 7px;
+}
+
+.vp-review-bar__note:focus {
+  outline: none;
+  border-color: var(--vp-border-strong);
+}
+
+.vp-review-bar__count {
+  font-size: 0.8rem;
+  color: var(--vp-muted);
+  white-space: nowrap;
+}
+
+.vp-review-bar__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.vp-review-decision {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.4rem 0.8rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 550;
+  color: var(--vp-text);
+  background: var(--vp-bg);
+  border: 1px solid var(--vp-border);
+  border-radius: 7px;
+  cursor: pointer;
+  transition:
+    border-color 0.12s var(--vp-ease),
+    background 0.12s var(--vp-ease);
+}
+
+.vp-review-decision:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vp-review-decision--approve:not(:disabled):hover {
+  color: var(--vp-done);
+  border-color: var(--vp-done);
+}
+
+.vp-review-decision--deny:not(:disabled):hover {
+  color: var(--vp-risk);
+  border-color: var(--vp-risk);
+}
+
+.vp-review-decision--iterate:not(:disabled):hover {
+  color: var(--vp-gold);
+  border-color: var(--vp-gold);
+}
+
+.vp-review-composer {
+  position: fixed;
+  z-index: 71;
+  inset: auto 0 3.6rem 0;
+  width: min(40rem, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 0.85rem;
+  background: var(--vp-surface-2);
+  border: 1px solid var(--vp-border);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 16%);
+}
+
+.vp-review-composer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.vp-review-composer__target {
+  font-size: 0.85rem;
+  color: var(--vp-muted);
+}
+
+.vp-review-composer__target strong {
+  color: var(--vp-text);
+}
+
+.vp-review-composer__close {
+  display: grid;
+  place-items: center;
+  padding: 0.2rem;
+  color: var(--vp-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.vp-review-composer__close:hover {
+  color: var(--vp-text);
+}
+
+.vp-review-composer__input {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--vp-text);
+  background: var(--vp-bg);
+  border: 1px solid var(--vp-border);
+  border-radius: 7px;
+  resize: vertical;
+}
+
+.vp-review-composer__input:focus {
+  outline: none;
+  border-color: var(--vp-border-strong);
+}
+
+.vp-review-composer__actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.6rem;
+}
+
+.vp-review-btn {
+  padding: 0.4rem 0.8rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 550;
+  color: var(--vp-text);
+  background: var(--vp-bg);
+  border: 1px solid var(--vp-border);
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.vp-review-btn:hover {
+  border-color: var(--vp-border-strong);
+}
+
+.vp-review-btn--primary {
+  color: var(--vp-on-accent);
+  background: var(--vp-accent);
+  border-color: var(--vp-accent);
+}
+
+.vp-review-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vp-review-done {
+  position: fixed;
+  z-index: 70;
+  inset: auto 0 0 0;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.9rem 1.25rem;
+  font-size: 0.9rem;
+  color: var(--vp-text);
+  background: var(--vp-surface);
+  border-top: 1px solid var(--vp-border);
+}
+
+.vp-review-done[data-decision="approve"] {
+  color: var(--vp-done);
+}
+
+.vp-review-done[data-decision="deny"] {
+  color: var(--vp-risk);
+}
+
+.vp-review-done[data-decision="iterate"] {
+  color: var(--vp-gold);
+}
+
+.vp-review-done strong {
+  text-transform: capitalize;
+}
