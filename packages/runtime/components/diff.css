@@ -1,0 +1,78 @@
+/* Iteration diff cues. All fixed-position overlay (the plan DOM is never touched) and all colors are
+   theme.css CSS vars, so the cues track light/dark. Subtle by design: a quiet gutter bar and a small
+   chip that draw the eye to what changed without the page screaming. */
+
+@keyframes vp-diff-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* The git-gutter-style accent bar beside a changed section. Thin, low-key, color set inline from the
+   section's status (added = done-green, edited = modify-amber). */
+.vp-diff-bar {
+  position: fixed;
+  z-index: 52;
+  width: 3px;
+  border-radius: 2px;
+  pointer-events: none;
+  opacity: 0.85;
+  animation: vp-diff-fade-in 0.12s var(--vp-ease);
+}
+
+/* Fades an unchanged section when "only changes" is on, so the changed ones stand out. */
+.vp-diff-scrim {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--vp-bg) 72%, transparent);
+  animation: vp-diff-fade-in 0.12s var(--vp-ease);
+}
+
+/* The summary chip, bottom-left, clear of the top-right cog/share and the centered review bar. */
+.vp-diff-summary {
+  position: fixed;
+  z-index: 59;
+  bottom: 1rem;
+  left: 1rem;
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.32rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--vp-muted);
+  background: var(--vp-surface-2);
+  border: 1px solid var(--vp-border);
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+}
+
+.vp-diff-toggle {
+  padding: 0.15rem 0.5rem;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--vp-muted);
+  background: transparent;
+  border: 1px solid var(--vp-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    color 0.12s var(--vp-ease),
+    background 0.12s var(--vp-ease);
+}
+
+.vp-diff-toggle:hover {
+  color: var(--vp-text);
+}
+
+.vp-diff-toggle[data-active="true"] {
+  color: var(--vp-on-accent);
+  background: var(--vp-accent);
+  border-color: var(--vp-accent);
+}
