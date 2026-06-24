@@ -35,6 +35,12 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
    **Do not pass `--no-open`.** A plan the user never sees defeats the tool. Only suppress the
    browser when the user has explicitly asked for the HTML file alone (e.g. for CI or a headless
    run); a plan being generated for the user to read is never that case.
+4. To collect a decision on the plan, render it with `vplan render --review <file>.mdx`. This opens
+   the plan with a feedback layer (the user comments on sections and clicks Approve / Deny / Iterate),
+   **blocks** until they submit, then prints their decision and comments and exits: approve 0, deny 1,
+   iterate 2, timeout 3 (`--timeout`, default 15m; a closed tab counts as deny). Read the printed
+   feedback and act on it: on Iterate, revise the plan using the comments and review again; on Deny,
+   stop and reconsider. Use this when you want explicit sign-off, not just to show the plan.
 
 Run `vplan components` anytime for the exact prop signatures.
 

@@ -9,7 +9,9 @@ CLI's `check` and `components` commands. One file: `src/index.ts`.
 - **Stay isomorphic.** This module is imported by BOTH the browser runtime (`@visualplan/runtime`,
   for render-time validation) and the Node CLI (`vplan`, for static `check` and the catalog
   printer). It must have **no** React, recharts, or mermaid imports. `index.ts` depends only on
-  `zod`.
+  `zod`. This is also why the cross-cutting contracts live here: `SHARE_VIEW_URL` and `feedbackSchema`
+  (the `--review` decision payload the page constructs and the CLI validates) are shared by both
+  sides, so the index is their single source of truth.
 - **`src/share.ts` is the stateless-share codec** (`encodePlan`/`decodePlan`: deflate via `fflate`
   + a hand-rolled base64url). It is exposed as the `@visualplan/core/share` subpath (`exports` map)
   and is deliberately NOT re-exported from `index.ts`, so the vendored render path (only `index.ts`

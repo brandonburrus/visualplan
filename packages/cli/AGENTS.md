@@ -14,7 +14,18 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
   `share`. Returns the MDX source plus a diagnostics `label` and a `fromStdin` flag. Reads stdin when
   the arg is `-` or (no arg given) stdin is piped (`!process.stdin.isTTY`); a bare invocation on an
   interactive terminal throws rather than hang. `render` routes stdin output to stdout by default,
-  and `--stdout`/`--out`/`--watch` have mutual-exclusion guards (watch needs a real file to re-read).
+  and `--stdout`/`--out`/`--watch`/`--review` have mutual-exclusion guards (watch needs a real file
+  to re-read; review is a server, not a file output).
+- `src/review/` — interactive review mode (`--review`). `session.ts` `runReview` serves the plan via
+  `startReviewServer`, opens it, and races `server.feedback` against `--timeout` (`ms`-parsed); it
+  prints the feedback to **stdout** (the agent reads it) and status to **stderr**, sets the exit code
+  from the outcome, and handles Ctrl+C (close + exit 130). `format.ts` is the pure formatter
+  (`formatFeedback` -> readable text, `exitCodeFor`: approve 0 / deny 1 / iterate 2 / timeout 3). The
+  transport lives in `compile.ts` `startReviewServer`: a one-shot Vite server over a frozen snapshot
+  (a string input, so no watch/hot-reload, which is what lets the page collect comments without
+  re-rendering) that injects `__VP_REVIEW__` and exposes `POST /__vp_feedback`, validating the body
+  against `@visualplan/core`'s `feedbackSchema` and resolving the session (a tab-close `sendBeacon`
+  hits the same endpoint).
 - `src/config.ts` — the persistent CLI config at `~/.vplan/config.json` (literal path via
   `homedir()`, deliberately NOT `env-paths`). Only setting today is `theme` (`light`|`dark`|
   `system`). `readConfig` is tolerant (missing/malformed/unknown-theme -> `{ theme: 'system' }`) so a
