@@ -1,0 +1,241 @@
+/* Interactive review-mode chrome (vplan render --review). All colors are theme.css CSS vars so it
+   tracks light/dark with the rest of the page. Everything here is fixed-position overlay; the plan
+   content underneath is untouched. */
+
+.vp-review-add {
+  position: fixed;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  color: var(--vp-muted);
+  background: var(--vp-surface);
+  border: 1px solid var(--vp-border);
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 12%);
+  transition:
+    color 0.12s var(--vp-ease),
+    border-color 0.12s var(--vp-ease);
+}
+
+.vp-review-add:hover {
+  color: var(--vp-accent);
+  border-color: var(--vp-border-strong);
+}
+
+.vp-review-bar {
+  position: fixed;
+  z-index: 55;
+  inset: auto 0 0 0;
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.7rem 1.25rem;
+  background: var(--vp-surface);
+  border-top: 1px solid var(--vp-border);
+  box-shadow: 0 -2px 12px rgb(0 0 0 / 8%);
+}
+
+.vp-review-bar__meta {
+  display: flex;
+  gap: 0.85rem;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+}
+
+.vp-review-bar__note {
+  flex: 1;
+  max-width: 28rem;
+  min-width: 0;
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  font-size: 0.85rem;
+  color: var(--vp-text);
+  background: var(--vp-bg);
+  border: 1px solid var(--vp-border);
+  border-radius: 7px;
+}
+
+.vp-review-bar__note:focus {
+  outline: none;
+  border-color: var(--vp-border-strong);
+}
+
+.vp-review-bar__count {
+  font-size: 0.8rem;
+  color: var(--vp-muted);
+  white-space: nowrap;
+}
+
+.vp-review-bar__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.vp-review-decision {
+  display: inline-flex;
+  gap: 0.35rem;
+  align-items: center;
+  padding: 0.4rem 0.8rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 550;
+  color: var(--vp-text);
+  background: var(--vp-bg);
+  border: 1px solid var(--vp-border);
+  border-radius: 7px;
+  cursor: pointer;
+  transition:
+    border-color 0.12s var(--vp-ease),
+    background 0.12s var(--vp-ease);
+}
+
+.vp-review-decision:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vp-review-decision--approve:not(:disabled):hover {
+  color: var(--vp-done);
+  border-color: var(--vp-done);
+}
+
+.vp-review-decision--deny:not(:disabled):hover {
+  color: var(--vp-risk);
+  border-color: var(--vp-risk);
+}
+
+.vp-review-decision--iterate:not(:disabled):hover {
+  color: var(--vp-gold);
+  border-color: var(--vp-gold);
+}
+
+.vp-review-composer {
+  position: fixed;
+  z-index: 56;
+  inset: auto 0 3.6rem 0;
+  width: min(40rem, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 0.85rem;
+  background: var(--vp-surface-2);
+  border: 1px solid var(--vp-border);
+  border-radius: 10px;
+  box-shadow: 0 6px 24px rgb(0 0 0 / 16%);
+}
+
+.vp-review-composer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.vp-review-composer__target {
+  font-size: 0.85rem;
+  color: var(--vp-muted);
+}
+
+.vp-review-composer__target strong {
+  color: var(--vp-text);
+}
+
+.vp-review-composer__close {
+  display: grid;
+  place-items: center;
+  padding: 0.2rem;
+  color: var(--vp-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.vp-review-composer__close:hover {
+  color: var(--vp-text);
+}
+
+.vp-review-composer__input {
+  width: 100%;
+  padding: 0.5rem 0.6rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--vp-text);
+  background: var(--vp-bg);
+  border: 1px solid var(--vp-border);
+  border-radius: 7px;
+  resize: vertical;
+}
+
+.vp-review-composer__input:focus {
+  outline: none;
+  border-color: var(--vp-border-strong);
+}
+
+.vp-review-composer__actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-top: 0.6rem;
+}
+
+.vp-review-btn {
+  padding: 0.4rem 0.8rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 550;
+  color: var(--vp-text);
+  background: var(--vp-bg);
+  border: 1px solid var(--vp-border);
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.vp-review-btn:hover {
+  border-color: var(--vp-border-strong);
+}
+
+.vp-review-btn--primary {
+  color: var(--vp-on-accent);
+  background: var(--vp-accent);
+  border-color: var(--vp-accent);
+}
+
+.vp-review-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vp-review-done {
+  position: fixed;
+  z-index: 55;
+  inset: auto 0 0 0;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.9rem 1.25rem;
+  font-size: 0.9rem;
+  color: var(--vp-text);
+  background: var(--vp-surface);
+  border-top: 1px solid var(--vp-border);
+}
+
+.vp-review-done[data-decision="approve"] {
+  color: var(--vp-done);
+}
+
+.vp-review-done[data-decision="deny"] {
+  color: var(--vp-risk);
+}
+
+.vp-review-done[data-decision="iterate"] {
+  color: var(--vp-gold);
+}
+
+.vp-review-done strong {
+  text-transform: capitalize;
+}
