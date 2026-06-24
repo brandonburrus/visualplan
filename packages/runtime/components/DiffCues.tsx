@@ -32,7 +32,9 @@ export function DiffCues() {
 
 function DiffOverlay({ diff }: { diff: NonNullable<ReturnType<typeof readDiff>> }) {
   const [sections, setSections] = useState<Section[]>([])
-  const [onlyChanges, setOnlyChanges] = useState(false)
+  // The gutter bars are always on; "Show changes" reveals the inline word diffs and fades unchanged
+  // sections to focus on the deltas.
+  const [showChanges, setShowChanges] = useState(false)
   // Overlays read live rects, so a scroll/resize must re-render them to stay pinned to the content.
   const [, setTick] = useState(0)
 
@@ -48,11 +50,11 @@ function DiffOverlay({ diff }: { diff: NonNullable<ReturnType<typeof readDiff>> 
     }
   }, [])
 
-  // Render the word-level changes inline on every diff render (not behind the toggle, so they are
-  // not missed): re-render each edited section's prose as a diff, deletions struck through and
-  // insertions marked. Restored on cleanup (deps change / unmount).
+  // Reveal the word-level changes inline only while "Show changes" is active: re-render each edited
+  // section's prose as a diff, deletions struck through and insertions marked. The cleanup restores
+  // the prose when the toggle goes off (or on unmount).
   useEffect(() => {
-    if (sections.length !== diff.sections.length) return
+    if (!showChanges || sections.length !== diff.sections.length) return
     const restores = sections.flatMap((section, index) => {
       const entry = diff.sections[index]
       return entry?.status === 'edited' && entry.prev
@@ -62,14 +64,14 @@ function DiffOverlay({ diff }: { diff: NonNullable<ReturnType<typeof readDiff>> 
     return () => {
       for (const restore of restores) restore()
     }
-  }, [sections, diff])
+  }, [showChanges, sections, diff])
 
   const changedCount = diff.sections.filter(s => isChanged(s.status)).length
   const removedCount = diff.removed.length
   // A re-render of an identical plan has nothing to surface, so show no chrome at all.
   if (changedCount === 0 && removedCount === 0) return null
 
-  const overlays = diffOverlays(sections, diff, onlyChanges)
+  const overlays = diffOverlays(sections, diff, showChanges)
   // The toggle only does something when the bars are mapped (the diff and DOM section counts agree).
   const mapped = sections.length === diff.sections.length
 
@@ -104,10 +106,10 @@ function DiffOverlay({ diff }: { diff: NonNullable<ReturnType<typeof readDiff>> 
           <button
             type='button'
             className='vp-diff-toggle'
-            data-active={onlyChanges}
-            onClick={() => setOnlyChanges(value => !value)}
+            data-active={showChanges}
+            onClick={() => setShowChanges(value => !value)}
           >
-            Only changes
+            Show changes
           </button>
         )}
       </div>
