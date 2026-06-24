@@ -3,7 +3,7 @@ import { IconCheck } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
 import { CommentModal } from './CommentModal.js'
 import { DecisionBar } from './DecisionBar.js'
-import { beaconFeedback, isReviewMode, postFeedback } from './feedback.js'
+import { isReviewMode, openKeepalive, postDraft, postFeedback } from './feedback.js'
 import { HoverCommentButton, useHoveredSection } from './SectionComments.js'
 import './review.css'
 
@@ -22,32 +22,31 @@ function ReviewSession() {
 
   const { hovered, keepAlive } = useHoveredSection(submitted === null)
 
-  // The unload handlers register once but must see the latest state, so mirror it into a ref.
-  const stateRef = useRef({ comments, note, submitted })
-  stateRef.current = { comments, note, submitted }
+  // Hold a connection open so the server resolves Deny if the tab closes; the server, not an
+  // unreliable unload beacon, detects the drop. Aborted on unmount (e.g. after a submitted decision).
+  useEffect(() => {
+    const connection = openKeepalive()
+    return () => connection.abort()
+  }, [])
 
+  // Keep the server's Deny-on-close payload current, so a tab-close Deny still carries the comments.
+  useEffect(() => {
+    if (!submitted) postDraft({ decision: 'deny', comments, note: note.trim() || undefined })
+  }, [comments, note, submitted])
+
+  // Warn before leaving while undecided; the actual Deny is handled server-side via the dropped
+  // keepalive, so this prompt is purely a courtesy. It reads the latest `submitted` via a ref.
+  const submittedRef = useRef(submitted)
+  submittedRef.current = submitted
   useEffect(() => {
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
-      // Prompt before leaving only while the review is unresolved; a submitted decision closes freely.
-      if (!stateRef.current.submitted) {
+      if (!submittedRef.current) {
         event.preventDefault()
         event.returnValue = ''
       }
     }
-    // pagehide fires when the page is actually torn down (the user confirmed leaving), so this is the
-    // "they really left" signal. Closing without a decision is a Deny, carrying any comments made.
-    const onPageHide = () => {
-      const { submitted: done, comments: made, note: overall } = stateRef.current
-      if (!done) {
-        beaconFeedback({ decision: 'deny', comments: made, note: overall.trim() || undefined })
-      }
-    }
     window.addEventListener('beforeunload', onBeforeUnload)
-    window.addEventListener('pagehide', onPageHide)
-    return () => {
-      window.removeEventListener('beforeunload', onBeforeUnload)
-      window.removeEventListener('pagehide', onPageHide)
-    }
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
   }, [])
 
   const addComment = (body: string) => {

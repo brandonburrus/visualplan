@@ -101,3 +101,63 @@ describe('startReviewServer /__vp_feedback', () => {
     expect(res.status).toBe(405)
   }, 60_000)
 })
+
+describe('startReviewServer tab-close (keepalive drop)', () => {
+  let server: ReviewServer
+
+  afterEach(async () => {
+    await server?.close()
+  })
+
+  /** Open the keepalive connection and abort it, simulating the tab closing. */
+  async function dropAfterConnecting(server: ReviewServer): Promise<void> {
+    const controller = new AbortController()
+    void fetch(new URL('/__vp_alive', server.url), { signal: controller.signal }).catch(() => {})
+    await new Promise(resolve => setTimeout(resolve, 150))
+    controller.abort()
+  }
+
+  it('resolves a bare Deny when the connection drops with no draft (golden)', async () => {
+    server = await startReviewServer(PLAN)
+    await dropAfterConnecting(server)
+    await expect(server.feedback).resolves.toEqual({ decision: 'deny', comments: [] })
+  }, 60_000)
+
+  it('carries the synced draft comments into the tab-close Deny (golden)', async () => {
+    server = await startReviewServer(PLAN)
+    const draft = { decision: 'deny', comments: [{ section: 'Phase 1', body: 'unfinished' }] }
+    await fetch(new URL('/__vp_draft', server.url), { method: 'POST', body: JSON.stringify(draft) })
+    await dropAfterConnecting(server)
+    await expect(server.feedback).resolves.toEqual(draft)
+  }, 60_000)
+
+  it('lets an explicit decision win over a later connection drop (edge)', async () => {
+    server = await startReviewServer(PLAN)
+    await fetch(feedbackUrl(server), {
+      method: 'POST',
+      body: JSON.stringify({ decision: 'approve' }),
+    })
+    await dropAfterConnecting(server)
+    // The POST settled first; the drop must not override it.
+    await expect(server.feedback).resolves.toEqual({ decision: 'approve', comments: [] })
+  }, 60_000)
+
+  it('closes promptly while the keepalive is still open, so the CLI never hangs (regression)', async () => {
+    const live = await startReviewServer(PLAN)
+    const controller = new AbortController()
+    void fetch(new URL('/__vp_alive', live.url), { signal: controller.signal }).catch(() => {})
+    await new Promise(resolve => setTimeout(resolve, 150))
+    await fetch(new URL('/__vp_feedback', live.url), {
+      method: 'POST',
+      body: JSON.stringify({ decision: 'approve' }),
+    })
+    await live.feedback
+    // The held-open keepalive must not keep close() (and therefore the process) from finishing.
+    const outcome = await Promise.race([
+      live.close().then(() => 'closed'),
+      new Promise(resolve => setTimeout(() => resolve('hung'), 3_000)),
+    ])
+    controller.abort()
+    expect(outcome).toBe('closed')
+  }, 60_000)
+})
