@@ -41,4 +41,39 @@ export const exampleLinks: ExampleLink[] = [
     label: 'Product launch',
     title: 'Launch the Insights dashboard',
   },
+  {
+    href: '/examples/add-sso-auth.html',
+    label: 'SSO and OAuth2',
+    title: 'Add SSO with OAuth2 and OIDC',
+  },
+  {
+    href: '/examples/incident-runbook.html',
+    label: 'Incident runbook',
+    title: 'Sev1 incident response runbook',
+  },
+  {
+    href: '/examples/churn-model.html',
+    label: 'Churn model',
+    title: 'Train and ship a churn prediction model',
+  },
+  {
+    href: '/examples/frontend-performance.html',
+    label: 'Frontend performance',
+    title: "Halve the dashboard's load time",
+  },
+  {
+    href: '/examples/offline-sync.html',
+    label: 'Offline sync',
+    title: 'Offline-first sync for the mobile app',
+  },
+  {
+    href: '/examples/lakehouse-pipeline.html',
+    label: 'Lakehouse pipeline',
+    title: 'Build the events lakehouse pipeline',
+  },
+  {
+    href: '/examples/design-system-rollout.html',
+    label: 'Design system',
+    title: 'Roll out the design system to every app',
+  },
 ]
