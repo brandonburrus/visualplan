@@ -67,6 +67,15 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
   This single plugin replaced the old `virtual:plan` path alias AND `@mdx-js/rollup` (the plan is the
   only `.mdx`), so the one-shot build and `--watch` share ONE compile path and cannot drift. For
   `--watch`, `startDevServer(path)` passes `{ path }`; the plugin re-reads the file in `load`.
+  **Content-aware bundling:** `buildHtml` adds `stubUnusedRenderersPlugin`, which scans the plan
+  source and replaces the heavy renderers it does not author with a `() => null` stub at the component
+  boundary (`./components/<Name>.js`), dropping the dep subtree from the single-file output: no
+  ` ```mermaid ` fence stubs `Mermaid` (cuts beautiful-mermaid + elkjs, ~1.5MB), no `<Chart` stubs
+  `Chart` (cuts recharts, ~450KB). A renderer-free plan is ~320KB vs the ~2.3MB full bundle. The
+  per-renderer regexes (`STUBBABLE_RENDERERS`) **must stay biased toward inclusion** (a false positive
+  only costs bytes; a miss drops a renderer the plan uses and breaks it). It is added ONLY in
+  `buildHtml`, never in `baseConfig`/`startDevServer`, because a `--watch` plan can add a diagram or
+  chart after the bundle's renderers were chosen; do not move it into the shared config.
   **HMR gotcha:** the plan is now a virtual module backed by a file, not a real module Vite tracks by
   path, so `addWatchFile` alone does NOT invalidate it on a save (verified: it only adds the file to
   the watcher). The plugin's `handleHotUpdate` is what drives `--watch`: on a change to the plan it

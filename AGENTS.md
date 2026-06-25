@@ -136,6 +136,10 @@ A release is cut by creating a GitHub release; the tag is the published version 
 
 ## Key Decisions
 
+- 2026-06-24: The single-file render bundles only the heavy renderers the plan authors (a
+  source-token scan stubs unused `Mermaid`->elkjs and `Chart`->recharts at the component boundary,
+  one-shot build only). Why: elkjs alone was 62% of every bundle; a renderer-free plan drops from
+  ~2.3MB to ~320KB. Detection biases toward inclusion so a miss can never break a render.
 - 2026-06-24: Iteration diffing is section-level and maps a status onto a DOM section by
   **document-order index**, so `splitSections` (mdast, `@visualplan/compile`) and the runtime's
   `collectSections` (DOM) MUST enumerate the same sections in the same order; two parity goldens

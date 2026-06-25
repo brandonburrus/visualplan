@@ -115,6 +115,48 @@ describe('renderToFile', () => {
   }, 60_000)
 })
 
+describe('content-aware bundling', () => {
+  // The two heaviest renderers and their dep subtrees dominate the single-file output: a mermaid
+  // diagram pulls in beautiful-mermaid + elkjs (a ~1.5MB layout engine, the `elk.algorithm` marker),
+  // a chart pulls in recharts (~450KB, the `recharts-` class-prefix marker). buildHtml stubs the ones
+  // the plan does not author, so a plan ships only what it uses. These guards pin that: a regression to
+  // statically requiring either renderer would re-inflate the bundle and trip the absence assertions.
+  const ELK_MARKER = 'elk.algorithm'
+  const RECHARTS_MARKER = 'recharts-'
+
+  it('drops both heavy renderers from a plan that uses neither (golden)', async () => {
+    const html = await buildHtml(
+      '# Plain\n\nJust prose.\n\n<Phase title="A">\n\nwork\n\n</Phase>\n',
+    )
+    expect(html).toContain('vp-phase')
+    expect(html).not.toContain(ELK_MARKER)
+    expect(html).not.toContain(RECHARTS_MARKER)
+    // A renderer-free plan is a fraction of the full ~2.3MB bundle; the ceiling catches a regression
+    // to statically bundling elkjs/recharts without flaking on minor dependency size drift.
+    expect(html.length).toBeLessThan(1_000_000)
+  }, 60_000)
+
+  it('keeps recharts but drops elkjs for a chart-only plan (edge)', async () => {
+    const html = await buildHtml(
+      "# Chart\n\n<Chart type='bar' title='Effort'>\n- Limiter: 2\n- Flag: 1\n</Chart>\n",
+    )
+    expect(html).toContain(RECHARTS_MARKER)
+    expect(html).not.toContain(ELK_MARKER)
+  }, 60_000)
+
+  it('keeps elkjs but drops recharts for a diagram-only plan (edge)', async () => {
+    const html = await buildHtml('# Diagram\n\n```mermaid\nflowchart LR\n  A --> B\n```\n')
+    expect(html).toContain(ELK_MARKER)
+    expect(html).not.toContain(RECHARTS_MARKER)
+  }, 60_000)
+
+  it('keeps both renderers for the full example that uses both (golden)', () => {
+    // The example render in beforeAll authors both a chart and a mermaid diagram, so neither is stubbed.
+    expect(html).toContain(ELK_MARKER)
+    expect(html).toContain(RECHARTS_MARKER)
+  })
+})
+
 describe('planTitle', () => {
   it('reads the first H1 as the title (golden)', async () => {
     const path = join(workDir, 'titled.mdx')
