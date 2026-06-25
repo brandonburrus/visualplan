@@ -58,7 +58,7 @@ export const exampleLinks: ExampleLink[] = [
   },
   {
     href: '/examples/frontend-performance.html',
-    label: 'Frontend performance',
+    label: 'Page speed',
     title: "Halve the dashboard's load time",
   },
   {
