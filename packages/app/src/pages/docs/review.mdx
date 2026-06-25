@@ -1,0 +1,66 @@
+---
+layout: ../../layouts/Docs.astro
+title: Review mode
+description: Get a decision on a plan with an interactive review session.
+---
+
+import ReviewDemoEmbed from '../../components/ReviewDemoEmbed.astro'
+
+# Review mode
+
+Most of the time you render a plan just to read it. **Review mode** is for when you want a decision:
+it opens the plan as an interactive session where you comment on the plan, answer its open questions,
+and end with an explicit Approve, Deny, or Iterate. The CLI blocks on that verdict and hands it back
+to the agent, so the agent knows exactly when the plan is settled and what to change if it is not.
+
+```bash
+vplan render --review plan.mdx
+```
+
+The demo below is the real review layer running over a dummy plan, in a self-contained mode with no
+agent behind it. Hover a section to leave a comment, drag-select text to comment on an exact quote,
+type an answer into a question, then click a decision. Use **Reset** to start over.
+
+<ReviewDemoEmbed />
+
+## What you can do in a session
+
+- **Comment on any section.** Hover a phase, a callout, a diagram, or any block and a comment button
+  appears beside it. Each comment is tagged with the section so the agent can map it back to the MDX.
+- **Quote an exact span.** Select text inside the plan and comment on just that selection; the quote
+  rides along so the agent can find the precise wording you meant.
+- **Answer the open questions.** A `<Questions>` block is directly answerable in review mode: each
+  question gets an inline field, and your answers come back on their own channel, keyed to the
+  question, instead of being buried in a comment.
+- **Decide.** Approve, Deny, or Iterate from the bottom bar. Iterate needs at least one comment,
+  answer, or note, since "revise with feedback" needs feedback to act on.
+
+## What the agent gets back
+
+The CLI prints the decision, every comment, every answer, and an optional overall note to stdout,
+then exits with a decision-specific code:
+
+| Decision | Exit code | What it means |
+|----------|-----------|---------------|
+| Approve | `0` | Proceed with the plan as written. |
+| Deny | `1` | Stop and reconsider; do not proceed. |
+| Iterate | `2` | Revise the plan against the comments, then review again. |
+| Timeout | `3` | No decision before `--timeout` elapsed (default 15 minutes). |
+
+Closing the tab without deciding counts as Deny, and still carries any comments and answers you
+staged, so the agent always gets something to act on.
+
+## Iterating
+
+On an **Iterate**, the agent revises the same `.mdx` file in place and re-runs the review. Because a
+render snapshots the plan's source, the next session marks what changed since your last view with a
+git-gutter accent and an "N changed" summary, so you re-review only the delta. The agent passes
+`-i N` (`--iteration N`) so the bar shows which round you are on. This repeats until you Approve or
+Deny.
+
+```bash
+vplan render --review plan.mdx -i 2   # second review round, shows the diff since round 1
+```
+
+See the [CLI reference](/docs/cli/#review-mode) for the full flag list, including `--timeout`,
+`--diff`, and `--no-diff`.

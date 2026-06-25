@@ -19,7 +19,14 @@ package that is a web app rather than part of the CLI's render pipeline.
 - `src/nav.ts` — `docLinks`, the single source of truth for the docs sidebar order.
 - `src/pages/index.astro` — the landing page (custom hero + feature grid, uses `Base` directly).
 - `src/pages/docs/*` — the docs content: `index.md`, `install.md`, `cli.md`, `programmatic.md` (the
-  `vplan` Node API), and `authoring.mdx` (MDX, because it embeds live component demos).
+  `vplan` Node API), `authoring.mdx` (MDX, because it embeds live component demos), and `review.mdx`
+  (the Review-mode page, which embeds the interactive review demo).
+- `src/pages/review-demo-frame.astro` + `src/components/ReviewDemo.tsx` — the interactive review-mode
+  demo. `ReviewDemo` mounts the **real** runtime `ReviewLayer` over a dummy plan with
+  `__VP_REVIEW__` + `__VP_REVIEW_DEMO__` set, so it behaves exactly like `vplan render --review` but
+  with no CLI server (see the runtime AGENTS.md demo-mode note). It lives in its own page because the
+  review chrome is viewport-`fixed`; `ReviewDemoEmbed.astro` iframes that page into `review.mdx` so the
+  fixed chrome stays contained, and its Reset button reloads the frame to clear all review state.
 - `src/components/Demo.astro` — wraps a live runtime component as a "Renders to" stage (see below).
 - `src/nav.ts` — `docLinks` (the Guide sidebar group) and `exampleLinks` (the Examples group, which
   links straight to the rendered example HTML in a new tab).
@@ -134,6 +141,11 @@ links to these HTML files.
 - **No `!important` for the Shiki dark-mode swap.** `defaultColor: false` makes Shiki emit only
   `--shiki-light`/`--shiki-dark` CSS vars with no resolved inline color, so `global.css` drives token
   color from those vars and the cascade wins cleanly. Do not reintroduce `!important`.
+- **`vite.resolve.dedupe: ['react', 'react-dom']` in `astro.config.mjs` is load-bearing.** The runtime
+  is a workspace package consumed as source, so the dev server otherwise resolves a second React copy
+  for its deep-imported components and an island that mounts many at once (the review demo) dies with
+  an "invalid hook call" / `useState` of null. The production build dedupes via Rollup regardless;
+  this only fixes dev. Do not remove it.
 - `typecheck` is `astro check` (joins the repo's `pnpm -r typecheck`). `build` is `astro build` to
   `dist/` (git-ignored). `dev`/`preview` run the local server.
 - No emojis or em/en dashes in content or code.

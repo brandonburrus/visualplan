@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { CommentModal } from './CommentModal.js'
 import { CommentsPopover } from './CommentsPopover.js'
 import { DecisionBar } from './DecisionBar.js'
-import { isReviewMode, openKeepalive, postDraft, postFeedback } from './feedback.js'
+import { isReviewDemo, isReviewMode, openKeepalive, postDraft, postFeedback } from './feedback.js'
 import { useQuestionAnswers } from './ReviewAnswers.js'
 import {
   type Section,
@@ -83,7 +83,9 @@ function ReviewSession() {
 
   // Hold a connection open so the server resolves Deny if the tab closes; the server, not an
   // unreliable unload beacon, detects the drop. Aborted on unmount (e.g. after a submitted decision).
+  // A demo has no server behind it, so there is nothing to keep alive.
   useEffect(() => {
+    if (isReviewDemo()) return
     const connection = openKeepalive()
     return () => connection.abort()
   }, [])
@@ -92,7 +94,7 @@ function ReviewSession() {
   // and answers. Build the payload inside the effect so it runs only when the state actually changes.
   const answersMap = questionAnswers?.answers
   useEffect(() => {
-    if (!submitted) {
+    if (!submitted && !isReviewDemo()) {
       const draft = comments.map(c => ({ section: c.quote ?? c.label, body: c.body }))
       postDraft({
         decision: 'deny',
@@ -108,6 +110,8 @@ function ReviewSession() {
   const submittedRef = useRef(submitted)
   submittedRef.current = submitted
   useEffect(() => {
+    // A demo is meant to be navigated away from and reset freely, so it never arms the prompt.
+    if (isReviewDemo()) return
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!submittedRef.current) {
         event.preventDefault()
@@ -155,6 +159,13 @@ function ReviewSession() {
   }
 
   const decide = async (decision: ReviewDecision) => {
+    // A demo has no CLI behind it: record the decision in-page so the buttons are live, but never
+    // post to a server or close the tab. The embedding page's Reset returns to the live state.
+    if (isReviewDemo()) {
+      submittedRef.current = decision
+      setSubmitted(decision)
+      return
+    }
     const feedback: Feedback = {
       decision,
       comments: payloadComments,
@@ -177,7 +188,7 @@ function ReviewSession() {
     }
   }
 
-  if (submitted) return <SubmittedNotice decision={submitted} />
+  if (submitted) return <SubmittedNotice decision={submitted} demo={isReviewDemo()} />
 
   const viewingComments = viewing
     ? comments
@@ -285,13 +296,23 @@ function ReviewSession() {
   )
 }
 
-/** Replaces the decision bar once a verdict is sent, so the reviewer knows it is safe to close. */
-function SubmittedNotice({ decision }: { decision: ReviewDecision }) {
+/** Replaces the decision bar once a verdict is sent, so the reviewer knows it is safe to close. In a
+ * demo there is no agent waiting, so it explains what the decision would have done and points at Reset. */
+function SubmittedNotice({ decision, demo }: { decision: ReviewDecision; demo?: boolean }) {
   return (
     <div className='vp-review-done' data-decision={decision}>
       <IconCheck size={18} />
       <span>
-        Feedback submitted (<strong>{decision}</strong>). You can close this tab.
+        {demo ? (
+          <>
+            Demo: this would return <strong>{decision}</strong> to your agent. Press Reset to try
+            again.
+          </>
+        ) : (
+          <>
+            Feedback submitted (<strong>{decision}</strong>). You can close this tab.
+          </>
+        )}
       </span>
     </div>
   )

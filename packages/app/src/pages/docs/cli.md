@@ -41,7 +41,8 @@ render, not `--watch`.
 comments on sections or selected text, answers any `<Questions>` inline, then clicks Approve, Deny,
 or Iterate. The command **blocks** until they submit, prints the decision, comments, and answers to
 stdout, then exits with a decision-specific code (see [Exit codes](#exit-codes)). It is a
-long-running foreground server; a closed tab counts as Deny, and `--timeout` bounds the wait.
+long-running foreground server; a closed tab counts as Deny, and `--timeout` bounds the wait. See
+[Review mode](/docs/review/) for an interactive demo and the full session walkthrough.
 
 ### Iteration diffing
 
