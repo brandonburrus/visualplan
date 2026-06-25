@@ -135,10 +135,10 @@ body {
 }
 
 .vp-shell {
-  max-width: 800px;
+  max-width: 860px;
   margin: 0 auto;
   min-height: 100dvh;
-  padding: 3rem 1.5rem 6rem;
+  padding: 3rem 1.75rem 6rem;
 }
 
 .vp-main {
@@ -693,7 +693,10 @@ body {
   border: 1px solid var(--vp-question-border);
   border-radius: 7px;
   padding: 0.4rem 0.55rem;
-  resize: vertical;
+  /* The field auto-grows to fit its content (AutoGrowTextarea), so manual resize and the scrollbar
+     it would otherwise need are both off. */
+  resize: none;
+  overflow-y: hidden;
 }
 
 .vp-questions__answer::placeholder {

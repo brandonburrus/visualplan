@@ -17,3 +17,11 @@ export { remarkMath } from './remark-math.js'
 export { remarkMermaid } from './remark-mermaid.js'
 export { remarkPlanBlocks } from './remark-plan-blocks.js'
 export { assertPlanIsSafe, UnsafePlanError } from './safety-gate.js'
+export {
+  diffSections,
+  type PlanSection,
+  RENAME_THRESHOLD,
+  type SectionDiff,
+  type SectionStatus,
+  splitSections,
+} from './sections.js'

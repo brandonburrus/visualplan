@@ -1,10 +1,11 @@
-import { writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import { basename, dirname, extname, join, resolve } from 'node:path'
 import { InvalidArgumentError } from 'commander'
 import ms from 'ms'
 import open from 'open'
 import { checkPlan, checkSource } from '../build/check.js'
 import { buildHtml, startDevServer } from '../build/compile.js'
+import { readSnapshot, writeSnapshot } from '../build/snapshots.js'
 import { readConfig } from '../config.js'
 import { runReview } from '../review/session.js'
 import { printIssues, resolvePlanFile } from './check.js'
@@ -27,6 +28,36 @@ export interface RenderOptions {
   timeout?: number
   /** Iteration number shown in the review bar (the agent sets it as it revises the plan). */
   iteration?: number
+  /** Diff baseline. A string path is an explicit baseline (bypasses the cache); `false` is
+   * `--no-diff` (disable diffing); `undefined` auto-diffs a file render against its snapshot. */
+  diff?: string | false
+}
+
+/**
+ * Resolve the diff baseline for a render and refresh the snapshot cache. Explicit `--diff <path>`
+ * wins and does not touch the cache; `--no-diff` (`diff === false`) disables diffing entirely;
+ * otherwise a file render auto-diffs against its path-keyed snapshot and then overwrites it with the
+ * current source ("changes since you last looked"). Piped stdin (`absPath` undefined) has no stable
+ * key, so it only diffs via an explicit `--diff`.
+ */
+async function resolveBaseline(
+  options: RenderOptions,
+  currentSource: string,
+  absPath: string | undefined,
+): Promise<string | undefined> {
+  if (options.diff === false) return undefined
+  if (typeof options.diff === 'string') {
+    return (await readFile(resolve(options.diff), 'utf8')).replace(/^﻿/, '')
+  }
+  if (absPath === undefined) return undefined
+  const baseline = await readSnapshot(absPath)
+  await writeSnapshot(absPath, currentSource)
+  return baseline
+}
+
+/** The absolute path that keys a plan's snapshot, or undefined for stdin (no stable key). */
+function snapshotKey(file: string | undefined, fromStdin: boolean): string | undefined {
+  return !fromStdin && file && file !== '-' ? resolve(file) : undefined
 }
 
 /** Parse the `--iteration` value as a positive integer (the plan revision number shown in review). */
@@ -86,19 +117,21 @@ export async function runRender(file: string | undefined, options: RenderOptions
   // Review is a one-shot server that blocks on human feedback; it accepts a file or piped stdin
   // because it serves a snapshot read once (no watching), unlike --watch.
   if (options.review) {
-    const { source, label } = await readPlanSource(file)
+    const { source, label, fromStdin } = await readPlanSource(file)
     const issues = await checkSource(source)
     if (issues.length > 0) {
       printIssues(label, issues)
       process.exitCode = 1
       return
     }
+    const baseline = await resolveBaseline(options, source, snapshotKey(file, fromStdin))
     await runReview(
       source,
       theme,
       options.timeout ?? DEFAULT_REVIEW_TIMEOUT_MS,
       options.open !== false,
       options.iteration,
+      baseline,
     )
     return
   }
@@ -115,7 +148,8 @@ export async function runRender(file: string | undefined, options: RenderOptions
       process.exitCode = 1
       return
     }
-    const server = await startDevServer(absMdx, theme, options.port)
+    const baseline = await resolveBaseline(options, await readFile(absMdx, 'utf8'), absMdx)
+    const server = await startDevServer(absMdx, theme, options.port, baseline)
     process.stdout.write(
       `Visual Plan watching ${file}\n  ${server.url}\n  (edit the file to hot-reload; Ctrl+C to stop)\n`,
     )
@@ -131,10 +165,18 @@ export async function runRender(file: string | undefined, options: RenderOptions
     return
   }
 
-  const html = await buildHtml(source, { theme })
+  // A stdout render must stay deterministic (CI / pipelines), so it never auto-diffs against the
+  // home-dir snapshot cache; only an explicit --diff applies. A file render auto-diffs as usual.
+  const goingToStdout = options.stdout || (fromStdin && !options.out)
+  const baseline = await resolveBaseline(
+    options,
+    source,
+    goingToStdout ? undefined : snapshotKey(file, fromStdin),
+  )
+  const html = await buildHtml(source, { theme, baseline })
 
   // Piped stdin with no explicit destination defaults to stdout, so the tool composes in a pipeline.
-  if (options.stdout || (fromStdin && !options.out)) {
+  if (goingToStdout) {
     process.stdout.write(html)
     return
   }

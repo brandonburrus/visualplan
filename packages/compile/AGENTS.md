@@ -54,6 +54,18 @@ through the workspace.
   cog / CLI config, not just the OS. `useDarkModeMediaQuery` stays on as the pre-`data-theme`
   fallback. Both consumers set `<html data-theme>` (the CLI's inline bootstrap; the runtime `mount`),
   so do not drop the attribute or the syntax theme stops following an explicit light/dark choice.
+- `src/sections.ts` — section-level plan diffing for iteration cues. `splitSections(source)` parses
+  MDX to mdast and enumerates the section-start blocks (top-level heading depth<=3, mermaid fence, or
+  block component), mirroring the runtime's DOM `collectSections` set; `diffSections(baseline,
+  current)` aligns two versions by key via LCS, then a similarity (token-Jaccard, `RENAME_THRESHOLD`)
+  pass so a reworded title or edited title-less block reads as `edited` not remove+add. Output is one
+  status per current section in document order (so the runtime maps it by index) plus removed ones;
+  an `edited` section also carries `prev` (the baseline `prose` = paragraph/list text only, no
+  title/attributes) and, when renamed, `prevLabel` (the baseline title) so the runtime can word-diff
+  the body and the title respectively (a rename has no body diff).
+  Pure/isomorphic (no fs/DOM). **The section set + order MUST match the runtime's `collectSections`**;
+  paired parity goldens here and in the runtime pin it (see the runtime AGENTS.md). A behavioral
+  corpus (`tests/fixtures/diff-corpus.json`, `tests/diff-corpus.test.ts`) calibrates the threshold.
 - `src/icon-resolution.ts` — the **isomorphic** Material-icon resolution core
   (`@visualplan/compile/icon-resolution` subpath): a pure `resolveIconName(manifest, ...)` over a
   passed-in manifest, no fs. Single-sources the resolution order for the Node `file-icons.ts` AND

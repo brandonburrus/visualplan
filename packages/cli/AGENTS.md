@@ -29,6 +29,16 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
   are added), and `GET /__vp_alive` (a connection the page holds open; its drop resolves Deny with the
   latest draft). Detecting that socket close server-side is what makes a real tab close reliable,
   where an unload-time `sendBeacon` is not (verified: the beacon survives navigation but not a close).
+- `src/build/snapshots.ts` — the per-plan snapshot cache (`~/.vplan/snapshots`, keyed by a hash of
+  the plan's absolute path) powering automatic iteration diffing. `render` reads a plan path's
+  snapshot as the diff baseline, then overwrites it with the current source ("changes since you last
+  looked"). Best-effort: a read miss or write failure just means no diff, never a broken render.
+  Baseline resolution (`render.ts resolveBaseline`): explicit `--diff <path>` wins and does NOT touch
+  the cache; `--no-diff` (`diff === false`) disables both read and write; otherwise a file render
+  auto-diffs against (and refreshes) the snapshot. stdin (no path key) and `--stdout` (kept
+  deterministic) never auto-diff. The diff itself is injected by `compile.ts planDiffPlugin`
+  (`__VP_DIFF__`, mirroring `planSharePlugin`) when `BuildOptions.baseline` is set, shared by the
+  one-shot build, `--watch`, and `--review`.
 - `src/config.ts` — the persistent CLI config at `~/.vplan/config.json` (literal path via
   `homedir()`, deliberately NOT `env-paths`). Only setting today is `theme` (`light`|`dark`|
   `system`). `readConfig` is tolerant (missing/malformed/unknown-theme -> `{ theme: 'system' }`) so a

@@ -1,0 +1,108 @@
+/* Iteration diff cues. All fixed-position overlay (the plan DOM is never touched) and all colors are
+   theme.css CSS vars, so the cues track light/dark. Subtle by design: a quiet gutter bar and a small
+   chip that draw the eye to what changed without the page screaming. */
+
+@keyframes vp-diff-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* A change-indicator bar flush to the left edge of the viewport (left: 0 set inline), a dedicated
+   lane clear of the content gutter. Color set inline from the status (added = green, edited = amber). */
+.vp-diff-bar {
+  position: fixed;
+  z-index: 52;
+  width: 4px;
+  border-radius: 0 2px 2px 0;
+  pointer-events: none;
+  opacity: 0.75;
+  animation: vp-diff-fade-in 0.12s var(--vp-ease);
+}
+
+/* Inline word-level diff inside an edited section's prose: the background tint signals add (green) vs
+   remove (red), while the text keeps its normal color so the words stay readable (green-on-green is
+   not). Deletions are struck through. */
+.vp-main ins.vp-diff-ins {
+  color: var(--vp-text);
+  text-decoration: none;
+  background: color-mix(in srgb, var(--vp-done) 24%, transparent);
+  border-radius: 2px;
+  padding: 0 0.1em;
+}
+
+.vp-main del.vp-diff-del {
+  /* Keep the text readable (not red-on-red), but make the removal unmistakably red via a thick red
+     strike and a red tint. */
+  color: var(--vp-text);
+  text-decoration: line-through;
+  text-decoration-color: var(--vp-risk);
+  text-decoration-thickness: 2px;
+  background: color-mix(in srgb, var(--vp-risk) 18%, transparent);
+  border-radius: 2px;
+  padding: 0 0.1em;
+}
+
+/* Fades an unchanged section when "only changes" is on, so the changed ones stand out. */
+.vp-diff-scrim {
+  position: fixed;
+  z-index: 40;
+  pointer-events: none;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--vp-bg) 72%, transparent);
+  animation: vp-diff-fade-in 0.12s var(--vp-ease);
+}
+
+/* The summary chip, bottom-left, clear of the top-right cog/share. */
+.vp-diff-summary {
+  position: fixed;
+  z-index: 59;
+  bottom: 1rem;
+  left: 1rem;
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  padding: 0.32rem 0.6rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--vp-muted);
+  background: var(--vp-surface-2);
+  border: 1px solid var(--vp-border);
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+}
+
+/* In review mode the review DecisionBar owns the bottom edge, so lift the chip clear of it and
+   above its z-index. */
+.vp-diff-summary[data-review="true"] {
+  bottom: 4.75rem;
+  z-index: 71;
+}
+
+.vp-diff-toggle {
+  padding: 0.15rem 0.5rem;
+  font: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--vp-muted);
+  background: transparent;
+  border: 1px solid var(--vp-border);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    color 0.12s var(--vp-ease),
+    background 0.12s var(--vp-ease);
+}
+
+.vp-diff-toggle:hover {
+  color: var(--vp-text);
+}
+
+.vp-diff-toggle[data-active="true"] {
+  color: var(--vp-on-accent);
+  background: var(--vp-accent);
+  border-color: var(--vp-accent);
+}

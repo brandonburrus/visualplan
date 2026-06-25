@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect } from 'react'
+import { DiffCues } from './components/DiffCues.js'
 import { ReviewAnswersProvider } from './components/review/ReviewAnswers.js'
 import { ReviewLayer } from './components/review/ReviewLayer.js'
 import { ShareButton } from './components/ShareButton.js'
@@ -23,6 +24,7 @@ export function Layout({ children }: { children: ReactNode }) {
         <ShareButton />
         {!isThemeLocked() && <ThemeToggle />}
         <main className='vp-main'>{children}</main>
+        <DiffCues />
         <ReviewLayer />
       </div>
     </ReviewAnswersProvider>

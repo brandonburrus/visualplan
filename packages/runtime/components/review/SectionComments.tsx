@@ -234,16 +234,16 @@ export function SectionOverlays({
         return (
           <Fragment key={section.index}>
             {hovered && (
-              // A wide band hugging the section's content (heading + its elements), not the empty
-              // space up to the next section. Side-inset for breathing space; overlay only, so it
-              // never shifts the page layout.
+              // A wide band around the section's content (heading + its elements), not the empty
+              // space up to the next section. Padded ~8px beyond the content so the bordered frame
+              // reads as breathing room around it; overlay only, so it never shifts the page layout.
               <div
                 className='vp-review-highlight'
                 style={{
-                  top: content.top,
+                  top: content.top - 8,
                   left: 10,
                   right: 10,
-                  height: Math.max(content.bottom - content.top, 0),
+                  height: Math.max(content.bottom - content.top, 0) + 16,
                 }}
               />
             )}

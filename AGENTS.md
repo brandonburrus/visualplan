@@ -21,6 +21,11 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
   until then, prints the feedback to stdout, and exits (approve 0, deny 1, iterate 2, timeout 3).
   `--timeout` (default 15m) bounds the wait; a closed tab resolves as Deny. `-i/--iteration N` shows
   the revision number in the review bar (the agent increments it each re-review).
+- Iteration diffing: a render of a plan *file* snapshots its source (`~/.vplan/snapshots`, keyed by
+  the absolute path), and the next render of that path diffs the new source against the snapshot,
+  injecting `__VP_DIFF__` so the runtime marks added/edited sections git-gutter style. `--diff <path>`
+  forces an explicit baseline (no cache touch); `--no-diff` opts out. Works on render, `--watch`, and
+  `--review`; a `--stdout` render never auto-diffs (it stays deterministic for pipelines).
 - `vplan components` prints the component vocabulary cheat-sheet.
 - A programmatic API (`import { renderPlan, checkPlan } from 'vplan'`) renders/validates a plan from
   an in-memory MDX string, with a named export per catalog entry. See `packages/cli/src/api.ts`.
@@ -131,6 +136,12 @@ A release is cut by creating a GitHub release; the tag is the published version 
 
 ## Key Decisions
 
+- 2026-06-24: Iteration diffing is section-level and maps a status onto a DOM section by
+  **document-order index**, so `splitSections` (mdast, `@visualplan/compile`) and the runtime's
+  `collectSections` (DOM) MUST enumerate the same sections in the same order; two parity goldens
+  (compile + runtime) pin this. Why: index mapping avoids cross-boundary label/hash matching, and a
+  count mismatch degrades to "no cue" rather than a mislabeled one. Renames are detected by content
+  similarity (no authored section IDs) per the approved plan.
 - 2026-06-22: CLI config persists to `~/.vplan/config.json` (literal path via `homedir()`, NOT
   `env-paths`); the only setting is the default `theme`. The in-page theme cog overrides per-view via
   `localStorage` and never writes the file. Why: a static `file://` plan cannot reach the disk, so
