@@ -18,15 +18,21 @@ import type { CheckIssue } from './check.js'
  * good and weak plans: tune these numbers, not the rule logic, to move a rule's sensitivity.
  */
 
-/** A Phase with more than this many characters of prose and no structural child reads as an essay. */
-const WALL_OF_PROSE_CHARS = 600
+/** A Phase with more than this many characters of prose and no structural child reads as an essay.
+ * Calibrated against an editorial corpus: ~470-char prose-only phases still read as tight intent,
+ * ~560+ as a wall a reviewer would push back on. Good plans lead with a visual, so their phases
+ * carry structure and never reach this rule whatever their length. */
+const WALL_OF_PROSE_CHARS = 520
 /** A left-to-right flowchart with more than this many edges shrinks to illegibility inline. */
 const WIDE_MERMAID_EDGES = 6
 /** A Matrix cell longer than this forces a horizontal scrollbar (cells do not wrap). */
 const MATRIX_CELL_BUDGET = 32
 /** A chart whose largest series outscales its smallest by more than this ratio flattens the small
  * series onto the shared y-axis. Compared per series, not across the category axis: a single series
- * growing along its categories (a ramp, a funnel) is the data's shape, not a charting mistake. */
+ * growing along its categories (a ramp, a funnel) is the data's shape, not a charting mistake.
+ * Held conservative on purpose: a legitimate multi-series ramp (allowed vs rejected across a 100x
+ * traffic ramp) can have a ~40x peak spread, so a lower ratio would flag it. Catching 40-90x GROUPED
+ * charts without also flagging stacked ramps needs stacked-awareness, not a lower ratio. */
 const CHART_MAGNITUDE_RATIO = 100
 
 /** The components that count as "showing structure" for the all-prose rule. A `Callout` is excluded
