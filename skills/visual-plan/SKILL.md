@@ -28,22 +28,10 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
    `Matrix` cell, a `-- comment` on a `FileTree` move row, or a `Chart` with wildly mismatched
    series scales (the Gotchas below). These surface as warnings and **a warning fails `check`**, so
    fix them too; they are not advisory.
-3. Render: `vplan <file>.mdx` writes a self-contained `<file>.plan.html` next to the source and
-   **opens it in the browser**. Opening the rendered plan is the whole point of this tool, so let
-   it open by default. While you are iterating on the plan with the user, prefer
-   `vplan --watch <file>.mdx`: it starts a live-reloading dev server so your edits show up in the
-   open page without a re-run. `--watch` is a long-running foreground server (run it in the
-   background; it serves a local URL, writes no file, and only stops on Ctrl+C), so for a final
-   one-shot HTML output use the plain render, not `--watch`. `--out <path>` sets the output
-   location.
-
-   **Do not pass `--no-open`.** A plan the user never sees defeats the tool. Only suppress the
-   browser when the user has explicitly asked for the HTML file alone (e.g. for CI or a headless
-   run); a plan being generated for the user to read is never that case.
-4. **To get the user's decision on the plan** (a sign-off, not just a viewing), render with
-   `vplan render --review <file>.mdx`. It opens the plan with a feedback layer where the user comments
-   on whole sections or on selected text, **answers any `<Questions>` directly** (each question
-   becomes an inline answer field, printed back as `Answer to "<question>":`), then clicks
+3. **Present the plan with `vplan render --review <file>.mdx`. This is the default way to deliver a
+   plan, not a special mode reserved for sign-off.** It opens the plan with a feedback layer where the
+   user comments on whole sections or on selected text, **answers any `<Questions>` directly** (each
+   question becomes an inline answer field, printed back as `Answer to "<question>":`), then clicks
    Approve / Deny / Iterate. It **blocks** until they submit, prints the decision, comments, and
    answers to stdout, and exits: approve 0, deny 1, iterate 2, timeout 3 (`--timeout`, default 15m;
    closing the tab counts as deny). It is a long-running foreground server, so run it in the
@@ -55,15 +43,24 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
      the file path), so the next render automatically marks what changed since the last view with a
      subtle git-gutter accent and a "N changed" summary, letting the user re-review only the delta.
      Pass `--diff <baseline.mdx>` to diff against an explicit file instead of the snapshot, or
-     `--no-diff` to suppress diffing (e.g. a clean first look). The diff also shows on a plain
-     `vplan render`, not just `--review`.
+     `--no-diff` to suppress diffing (e.g. a clean first look).
    - **Deny** -> stop and reconsider; do not proceed.
 
-   **Strongly prefer `--review` as the way to iterate on any non-trivial plan with the user.** It is
-   the default loop for refining a plan together: the targeted comments drive sharper revisions than
-   back-and-forth chat, and the loop ends in an explicit Approve so you know when it is settled. Fall
-   back to a plain render (or `--watch`) only when the user just wants to look at the plan, not shape
-   or decide on it.
+   **Default to `--review` for every non-trivial plan; treat it as the standard way to show a plan,
+   not an opt-in.** It is the loop for presenting and refining a plan together: the targeted comments
+   drive sharper revisions than back-and-forth chat, the user answers your open `<Questions>` in
+   place, and the loop ends in an explicit Approve so you know when it is settled. Reach for the plain
+   render in step 4 only in the narrow cases below.
+4. **Plain render is the fallback, for when the user only wants to look at a plan, not shape or decide
+   on it.** `vplan <file>.mdx` writes a self-contained `<file>.plan.html` next to the source and
+   **opens it in the browser** (`--out <path>` sets the output location). While iterating visually,
+   `vplan --watch <file>.mdx` starts a live-reloading dev server so edits show up without a re-run (a
+   long-running foreground server: run it in the background; it serves a local URL, writes no file,
+   and stops on Ctrl+C). The iteration diff shows on a plain render too, not just `--review`.
+
+   **Do not pass `--no-open`.** A plan the user never sees defeats the tool. Only suppress the browser
+   when the user has explicitly asked for the HTML file alone (e.g. for CI or a headless run); a plan
+   being generated for the user to read is never that case.
 5. **To export a plan as a static file**, run `vplan export <pdf|jpg> <file>.mdx`. It builds the
    same self-contained page and captures it headless: `pdf` prints a paginated A4 document, `jpg` a
    full-page hi-dpi screenshot. Output defaults to `<file>.pdf` / `<file>.jpg` (override with
