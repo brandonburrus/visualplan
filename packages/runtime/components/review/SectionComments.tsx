@@ -217,6 +217,10 @@ export function SectionOverlays({
   onAdd: (section: Section) => void
   onView: (section: Section) => void
 }) {
+  // Which section's comment control the pointer is on. The highlight band tracks THIS, not the
+  // section band: the add button appears on section hover, but the band only lights up once the
+  // pointer reaches a comment control, so an idle hover over the prose stays quiet.
+  const [activeControl, setActiveControl] = useState<number | null>(null)
   return (
     <>
       {sections.map(section => {
@@ -231,9 +235,12 @@ export function SectionOverlays({
           Math.max((content.top + content.bottom) / 2 - 15, 8),
           window.innerHeight - 72,
         )
+        const onControlEnter = () => setActiveControl(section.index)
+        const onControlLeave = () =>
+          setActiveControl(active => (active === section.index ? null : active))
         return (
           <Fragment key={section.index}>
-            {hovered && (
+            {section.index === activeControl && (
               // A wide band around the section's content (heading + its elements), not the empty
               // space up to the next section. Padded ~8px beyond the content so the bordered frame
               // reads as breathing room around it; overlay only, so it never shifts the page layout.
@@ -254,6 +261,8 @@ export function SectionOverlays({
                 // Out in the right gutter with breathing room from the content, clamped on-screen.
                 style={{ top: controlTop, left: Math.min(rect.right + 18, window.innerWidth - 42) }}
                 onClick={() => onAdd(section)}
+                onMouseEnter={onControlEnter}
+                onMouseLeave={onControlLeave}
                 aria-label={`Comment on "${section.label}"`}
                 title={`Comment on "${section.label}"`}
               >
@@ -267,6 +276,8 @@ export function SectionOverlays({
                 // Out in the left gutter with breathing room from the content, clamped on-screen.
                 style={{ top: controlTop, left: Math.max(rect.left - 46, 10) }}
                 onClick={() => onView(section)}
+                onMouseEnter={onControlEnter}
+                onMouseLeave={onControlLeave}
                 aria-label={`${count} comment${count === 1 ? '' : 's'} on "${section.label}"`}
                 title={`View ${count} comment${count === 1 ? '' : 's'}`}
               >
