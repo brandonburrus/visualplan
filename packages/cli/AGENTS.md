@@ -98,7 +98,17 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
   error box at render time). It also rejects markdown images (`![](url)`), which would compile to a
   live `<img>` and break the self-contained output. It imports `CHILD_BLOCK_COMPONENTS`
   and `parseBlockChildren` from `@visualplan/compile` so its static checks agree with what render
-  parses.
+  parses. `CheckIssue` carries an optional `severity` (absent = `error`); the syntax checks here omit
+  it, the quality lint emits `warn`. Both fail `check`; severity only changes the printed label.
+- `src/build/lint.ts` — the author-time quality lint, run by the `check` COMMAND (not `checkSource`,
+  so `render`/`share`/the API never block a stylistically-weak-but-valid plan from rendering). The
+  `check` command runs the syntax check first and only lints when it passes clean, so lint warnings
+  never bury a real error and the lint parse never sees malformed MDX. Rules flag the visual-plan
+  skill's "tell, don't show" mistakes (wall-of-prose Phase, all-prose plan, wide LR mermaid, long
+  Matrix cell, commented FileTree move row, multi-series chart with mismatched scales). Every rule's
+  threshold is a named constant at the top of the file for calibration; the chart rule compares
+  per-series peaks (NOT global min/max) so a single series ramping along its category axis is never
+  flagged. A lint `warn` fails `check` (exit 1) like an error.
 - The remark plugins (`remark-mermaid`, `remark-math`, `remark-plan-blocks`), the `plan-blocks`
   parser, the Expressive Code options, and the Material file-icons plugin now live in
   `packages/compile` (`@visualplan/compile`), shared with the `/view` browser compiler so both
