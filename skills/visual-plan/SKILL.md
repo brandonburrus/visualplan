@@ -23,6 +23,11 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
    the components below. You never write `import` statements; the components are always in scope.
 2. Validate before showing the user: `vplan check <file>.mdx`. Fix any reported
    `file:line:col` issues (it names the valid values for bad enums and flags unknown components).
+   Beyond syntax, `check` also runs an author-time **quality lint** that flags weak renders, an
+   all-prose plan, a wall-of-prose `Phase`, a wide left-to-right mermaid diagram, an over-long
+   `Matrix` cell, a `-- comment` on a `FileTree` move row, or a `Chart` with wildly mismatched
+   series scales (the Gotchas below). These surface as warnings and **a warning fails `check`**, so
+   fix them too; they are not advisory.
 3. Render: `vplan <file>.mdx` writes a self-contained `<file>.plan.html` next to the source and
    **opens it in the browser**. Opening the rendered plan is the whole point of this tool, so let
    it open by default. While you are iterating on the plan with the user, prefer
@@ -264,6 +269,10 @@ it in paragraphs. Prose is the connective tissue between visuals, never the subs
   ` ```mermaid ` diagram for anything visual, or describe it in text.
 
 ## Gotchas
+
+Several of these (a wall-of-prose phase, a wide LR mermaid diagram, an over-long `Matrix` cell, a
+commented `FileTree` move row, a wildly-scaled `Chart`) are now enforced by the `check` quality lint
+and will fail it, so they are hard rules, not just style advice.
 
 - **`<`, `{`, and `}` are MDX syntax in prose.** A bare `<Thing>` or `{value}` can break the render.
   Wrap literal angle brackets, braces, generics (`List<T>`), or tag-like text in backticks or a code
