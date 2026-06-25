@@ -82,7 +82,8 @@ vplan export <pdf|jpg> <file.mdx>
 
 Builds the same self-contained page, then renders it to a static file with a headless Chromium:
 `pdf` prints a paginated A4 document, `jpg` a full-page hi-dpi screenshot. The output goes to
-`<file>.pdf` / `<file>.jpg` next to the source and opens.
+`<file>.pdf` / `<file>.jpg` next to the source and opens. See [Exporting](/docs/export/) for when to
+reach for it over the HTML page.
 
 | Flag | Effect |
 |------|--------|
