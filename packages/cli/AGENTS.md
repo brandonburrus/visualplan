@@ -174,6 +174,13 @@ them. The `tests/compile.test.ts` "renders a plan outside any node project" case
   `dependencies`; `fflate` (the codec's dep) likewise.
 - **Publish with `pnpm publish`** so the `workspace:*` protocol is rewritten. `prepack` runs
   `vendor.mjs` then `tsup`.
+- **The quality lint (`build/lint.ts`) runs in the `check` COMMAND only, never in `checkSource`.**
+  `render`/`share`/the public API must keep rendering a stylistically-weak-but-valid plan (the point
+  is to SEE it). A lint `warn` fails `check` (exit 1): deliberately NO advisory mode and NO `--strict`
+  flag, so a weak plan blocks. Don't move lint into `checkSource` or add an advisory/`--strict` mode
+  without a deliberate reversal. Thresholds are calibrated against an eval corpus (precision-first,
+  since a warn blocks); chart-magnitude is held high on purpose so a legit ~40x stacked ramp is not
+  flagged.
 - The icon/highlighting deps (`material-icon-theme`, `expressive-code-color-chips`,
   `@expressive-code/core`, `hast-util-from-html`) are real prod `dependencies` (also declared by
   `@visualplan/compile`, which owns the plugins now). `material-icon-theme` ships `icons/*.svg` +
