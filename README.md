@@ -88,6 +88,23 @@ flowchart LR
  - `Checklist`
  - syntax-highlighted code blocks with file titles
 
+## Review mode
+
+To get a decision on a plan, not just show it, render with `--review`:
+
+```bash
+vplan render --review plan.mdx
+```
+
+This opens the plan as an interactive session: the reviewer comments on any section, answers the
+plan's open `Questions` inline, and clicks Approve, Deny, or Iterate. The CLI blocks until they
+decide, prints the feedback to stdout, and exits with a decision-specific code (Approve `0`, Deny
+`1`, Iterate `2`), so an agent knows when the plan is settled and what to revise if it is not. On an
+Iterate, the next render diffs the revision against the last view so the reviewer re-reviews only the
+delta.
+
+See the [Review mode guide](https://visualplan.dev/docs/review/) for a live, interactive demo.
+
 ## Share a plan
 
 Every rendered plan has a share button that copies a link encoding the entire plan. The plan
