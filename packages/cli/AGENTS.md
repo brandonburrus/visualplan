@@ -98,7 +98,17 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
   error box at render time). It also rejects markdown images (`![](url)`), which would compile to a
   live `<img>` and break the self-contained output. It imports `CHILD_BLOCK_COMPONENTS`
   and `parseBlockChildren` from `@visualplan/compile` so its static checks agree with what render
-  parses.
+  parses. `CheckIssue` carries an optional `severity` (absent = `error`); the syntax checks here omit
+  it, the quality lint emits `warn`. Both fail `check`; severity only changes the printed label.
+- `src/build/lint.ts` — the author-time quality lint, run by the `check` COMMAND (not `checkSource`,
+  so `render`/`share`/the API never block a stylistically-weak-but-valid plan from rendering). The
+  `check` command runs the syntax check first and only lints when it passes clean, so lint warnings
+  never bury a real error and the lint parse never sees malformed MDX. Rules flag the visual-plan
+  skill's "tell, don't show" mistakes (wall-of-prose Phase, all-prose plan, wide LR mermaid, long
+  Matrix cell, commented FileTree move row, multi-series chart with mismatched scales). Every rule's
+  threshold is a named constant at the top of the file for calibration; the chart rule compares
+  per-series peaks (NOT global min/max) so a single series ramping along its category axis is never
+  flagged. A lint `warn` fails `check` (exit 1) like an error.
 - The remark plugins (`remark-mermaid`, `remark-math`, `remark-plan-blocks`), the `plan-blocks`
   parser, the Expressive Code options, and the Material file-icons plugin now live in
   `packages/compile` (`@visualplan/compile`), shared with the `/view` browser compiler so both
@@ -164,6 +174,13 @@ them. The `tests/compile.test.ts` "renders a plan outside any node project" case
   `dependencies`; `fflate` (the codec's dep) likewise.
 - **Publish with `pnpm publish`** so the `workspace:*` protocol is rewritten. `prepack` runs
   `vendor.mjs` then `tsup`.
+- **The quality lint (`build/lint.ts`) runs in the `check` COMMAND only, never in `checkSource`.**
+  `render`/`share`/the public API must keep rendering a stylistically-weak-but-valid plan (the point
+  is to SEE it). A lint `warn` fails `check` (exit 1): deliberately NO advisory mode and NO `--strict`
+  flag, so a weak plan blocks. Don't move lint into `checkSource` or add an advisory/`--strict` mode
+  without a deliberate reversal. Thresholds are calibrated against an eval corpus (precision-first,
+  since a warn blocks); chart-magnitude is held high on purpose so a legit ~40x stacked ramp is not
+  flagged.
 - The icon/highlighting deps (`material-icon-theme`, `expressive-code-color-chips`,
   `@expressive-code/core`, `hast-util-from-html`) are real prod `dependencies` (also declared by
   `@visualplan/compile`, which owns the plugins now). `material-icon-theme` ships `icons/*.svg` +

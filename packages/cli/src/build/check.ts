@@ -16,6 +16,9 @@ export interface CheckIssue {
   line: number
   column: number
   message: string
+  /** Defaults to 'error' when absent. The syntax checks here omit it (all errors); the quality lint
+   * emits 'warn'. Both fail `check` (exit 1); severity only changes the printed label. */
+  severity?: 'error' | 'warn'
 }
 
 interface JsxAttribute {
