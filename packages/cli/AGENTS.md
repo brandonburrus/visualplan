@@ -7,7 +7,7 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
 ## Structure
 
 - `src/index.ts` — commander dispatch (the `bin`). `src/commands/` — one file per command (render,
-  check, components, config, share). `config` is a parent command: bare `config` shows the settings
+  check, components, config, share, export). `config` is a parent command: bare `config` shows the settings
   + path, `config get <key>` / `config set <key> <value>` / `config path` are subcommands. Invalid
   key/value throws, which the top-level catch turns into a stderr message + exit 1.
 - `src/commands/input.ts` — `readPlanSource(file?)`, the shared input layer for `render` and
@@ -16,6 +16,25 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
   interactive terminal throws rather than hang. `render` routes stdin output to stdout by default,
   and `--stdout`/`--out`/`--watch`/`--review` have mutual-exclusion guards (watch needs a real file
   to re-read; review is a server, not a file output).
+- `src/commands/export.ts` + `src/build/capture.ts` — `vplan export <pdf|jpg> [file]`. `export.ts`
+  validates with `checkSource` (same gate as render), resolves the out path (`<stem>.pdf`/`.jpg`
+  beside the input, or `--out`; stdin requires `--out`), builds via `buildHtml` with
+  `{ theme, lockTheme: true, enableSharing: false }` (a static artifact: fixed scheme, no share
+  payload), and hands the HTML to `capture.ts`. `capture.ts` writes the HTML to a temp file, loads it
+  as `file://`, injects `COMMON_EXPORT_CSS` (hides the cog/share/expand chrome) plus, for PDF only,
+  `PDF_EXPORT_CSS` (removes the Questions blue glow, which prints as a muddy box). It then waits for
+  recharts charts to paint (`waitForChartsSettled`: a `ResponsiveContainer` emits no SVG until
+  measured, so a `networkidle` capture can catch a blank chart), then `page.pdf` (A4, `printBackground`,
+  0.5in top/bottom margin so content clears the sheet edge across breaks, 0 left/right so the column is
+  not squeezed) or `page.screenshot` clipped to the `.vp-shell` column (NOT `fullPage`, which captures
+  the wide empty margins beside the centered column), deviceScaleFactor 2 for a crisp hi-dpi JPG.
+  **No `break-inside: avoid`**: with pagination a figure forced whole that exceeds a page gets clipped
+  by Chromium (content lost), worse than an occasional split (content kept). Browser
+  discovery is system-first: `--browser`/`VPLAN_CHROMIUM` override, then a Chrome/Edge `channel`, then
+  a `playwright`-installed Chromium in the per-OS cache (same resolution as the review e2e test), else
+  an error naming `npx playwright install chromium`. **`playwright-core` is a prod dependency** for
+  this path (it ships no browser binary, so the install stays small). The capture e2e in
+  `tests/export.test.ts` is `skipIf`-gated on a locally installed Chromium, like the review e2e.
 - `src/review/` — interactive review mode (`--review`). `session.ts` `runReview` serves the plan via
   `startReviewServer`, opens it, and races `server.feedback` against `--timeout` (`ms`-parsed); it
   prints the feedback to **stdout** (the agent reads it) and status to **stderr**, sets the exit code

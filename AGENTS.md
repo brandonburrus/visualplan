@@ -26,6 +26,12 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
   injecting `__VP_DIFF__` so the runtime marks added/edited sections git-gutter style. `--diff <path>`
   forces an explicit baseline (no cache touch); `--no-diff` opts out. Works on render, `--watch`, and
   `--review`; a `--stdout` render never auto-diffs (it stays deterministic for pipelines).
+- `vplan export <pdf|jpg> <file.mdx>` builds the same self-contained page, then renders it to a
+  static file via a headless Chromium (`playwright-core`): `pdf` prints a paginated A4 document,
+  `jpg` a full-page hi-dpi screenshot. Output defaults to `<file>.pdf` / `<file>.jpg` (`--out`
+  overrides; stdin input requires it); `--theme` overrides the baked scheme, `--no-open` suppresses
+  opening. Chromium is sourced system-first (Chrome/Edge channel) then a `playwright`-installed one,
+  with `--browser`/`VPLAN_CHROMIUM` overrides, else an error naming `npx playwright install chromium`.
 - `vplan components` prints the component vocabulary cheat-sheet.
 - A programmatic API (`import { renderPlan, checkPlan } from 'vplan'`) renders/validates a plan from
   an in-memory MDX string, with a named export per catalog entry. See `packages/cli/src/api.ts`.
@@ -136,6 +142,10 @@ A release is cut by creating a GitHub release; the tag is the published version 
 
 ## Key Decisions
 
+- 2026-06-24: `vplan export` renders headless via `playwright-core` (a prod dep) and sources Chromium
+  system-first, never bundling a browser binary. Why: a bundled `playwright` would add a huge
+  postinstall to a CLI whose whole point is a small self-contained package; reusing a present Chrome
+  keeps the install tiny. PDF paginates (A4) and JPG is one full-page image, per the approved plan.
 - 2026-06-24: The single-file render bundles only the heavy renderers the plan authors (a
   source-token scan stubs unused `Mermaid`->elkjs and `Chart`->recharts at the component boundary,
   one-shot build only). Why: elkjs alone was 62% of every bundle; a renderer-free plan drops from

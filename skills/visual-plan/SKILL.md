@@ -59,6 +59,13 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
    back-and-forth chat, and the loop ends in an explicit Approve so you know when it is settled. Fall
    back to a plain render (or `--watch`) only when the user just wants to look at the plan, not shape
    or decide on it.
+5. **To export a plan as a static file**, run `vplan export <pdf|jpg> <file>.mdx`. It builds the
+   same self-contained page and captures it headless: `pdf` prints a paginated A4 document, `jpg` a
+   full-page hi-dpi screenshot. Output defaults to `<file>.pdf` / `<file>.jpg` (override with
+   `--out`); `--theme` overrides the baked color scheme, `--no-open` suppresses opening the result.
+   This needs a Chromium: it uses a system Chrome/Edge or a `playwright`-installed one, and otherwise
+   prints `npx playwright install chromium`. Use this when the user wants a shareable file rather than
+   the interactive HTML page.
 
 Run `vplan components` anytime for the exact prop signatures.
 

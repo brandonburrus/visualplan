@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { collectSections } from '../components/review/SectionComments.js'
+import { collectSections, sectionContent } from '../components/review/SectionComments.js'
 
 afterEach(() => {
   document.body.innerHTML = ''
@@ -8,6 +8,12 @@ afterEach(() => {
 /** Build a `.vp-main` from a list of child element HTML strings, as the rendered plan would have. */
 function setMain(...children: string[]): void {
   document.body.innerHTML = `<main class="vp-main">${children.join('')}</main>`
+}
+
+/** jsdom does no layout, so stub the box an element reports for the content-rect math. */
+function stubRect(el: Element, top: number, bottom: number): void {
+  el.getBoundingClientRect = () =>
+    ({ top, bottom, left: 0, right: 0, width: 0, height: bottom - top, x: 0, y: top }) as DOMRect
 }
 
 describe('collectSections', () => {
@@ -75,6 +81,40 @@ describe('collectSections', () => {
       'stat',
       'questions',
     ])
+  })
+})
+
+describe('sectionContent', () => {
+  it('trims a phase last-element bottom padding so the band hugs content, not the gap (golden)', () => {
+    setMain(
+      '<div class="vp-phase" style="padding-bottom: 30px"><div class="vp-phase__title">Build</div></div>',
+    )
+    const [section] = collectSections()
+    if (!section) throw new Error('expected a section')
+    // Single phase: element === lastElement; its 130px-tall box ends 30px past the real content.
+    stubRect(section.element, 100, 230)
+    expect(sectionContent(section)).toEqual({ top: 100, bottom: 200 })
+  })
+
+  it('leaves a section whose last element has no bottom padding unchanged (edge)', () => {
+    setMain('<h2>Heading</h2>', '<p>body</p>')
+    const [section] = collectSections()
+    if (!section) throw new Error('expected a section')
+    stubRect(section.element, 10, 20)
+    stubRect(section.lastElement, 25, 60)
+    expect(sectionContent(section).bottom).toBe(60)
+  })
+
+  it('does NOT trim a card section: its bottom padding is inner inset, not a structural gap (edge)', () => {
+    // A callout's padding-bottom is the card's own content inset; trimming it would pull the band up
+    // across the card and clip it, so the band must reach the card's full box bottom.
+    setMain(
+      '<aside class="vp-callout" style="padding-bottom: 24px"><div class="vp-callout__label">Note</div></aside>',
+    )
+    const [section] = collectSections()
+    if (!section) throw new Error('expected a section')
+    stubRect(section.element, 50, 174)
+    expect(sectionContent(section).bottom).toBe(174)
   })
 })
 

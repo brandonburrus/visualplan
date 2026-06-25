@@ -4,6 +4,8 @@ import { DEFAULT_DEV_PORT } from './build/compile.js'
 import { runCheck } from './commands/check.js'
 import { runComponents } from './commands/components.js'
 import { runConfigGet, runConfigPath, runConfigSet, runConfigShow } from './commands/config.js'
+import { type ExportOptions, parseExportFormat, parseTheme, runExport } from './commands/export.js'
+import type { ExportFormat } from './build/capture.js'
 import {
   DEFAULT_REVIEW_TIMEOUT_MS,
   parseIteration,
@@ -45,6 +47,19 @@ program
   .option('--no-diff', 'skip iteration diffing (do not read or write the snapshot cache)')
   .option('--no-open', 'do not open the result in a browser')
   .action((file: string | undefined, options: RenderOptions) => runRender(file, options))
+
+program
+  .command('export')
+  .description('Render a plan to a PDF or JPG (headless via Chromium)')
+  .argument('<format>', 'pdf or jpg', parseExportFormat)
+  .argument('[file]', 'the plan .mdx file; - or omit to read from stdin')
+  .option('--out <path>', 'output path (defaults to <file>.<pdf|jpg>; required for stdin)')
+  .option('--theme <theme>', 'override the baked theme: light | dark | system', parseTheme)
+  .option('--browser <path>', 'Chromium binary to render with (else auto-discovered)')
+  .option('--no-open', 'do not open the exported file')
+  .action((format: ExportFormat, file: string | undefined, options: ExportOptions) =>
+    runExport(format, file, options),
+  )
 
 program
   .command('share')

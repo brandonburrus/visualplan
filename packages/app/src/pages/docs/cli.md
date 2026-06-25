@@ -40,6 +40,26 @@ images (which would break the self-contained output).
 
 Run `check` before showing a plan to a user, so they never see a broken render.
 
+## export
+
+```bash
+vplan export <pdf|jpg> <file.mdx>
+```
+
+Builds the same self-contained page, then renders it to a static file with a headless Chromium:
+`pdf` prints a paginated A4 document, `jpg` a full-page hi-dpi screenshot. The output goes to
+`<file>.pdf` / `<file>.jpg` next to the source and opens.
+
+| Flag | Effect |
+|------|--------|
+| `--out <path>` | Write to `<path>` instead of `<file>.<pdf\|jpg>`. Required when reading from stdin. |
+| `--theme <theme>` | Override the baked color scheme: `light`, `dark`, or `system`. |
+| `--browser <path>` | Render with a specific Chromium binary instead of auto-discovering one. |
+| `--no-open` | Do not open the exported file. |
+
+Export needs a Chromium. It uses a system Chrome or Edge if present, then a `playwright`-installed
+Chromium; if none is found it tells you to run `npx playwright install chromium`.
+
 ## components
 
 ```bash

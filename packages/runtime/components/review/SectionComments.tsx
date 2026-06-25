@@ -86,11 +86,19 @@ export function sectionBand(
 }
 
 /** The rect wrapping a section's actual content (anchor top to its last owned element's bottom), so
- * the highlight hugs the content instead of the empty space running up to the next section. */
+ * the highlight hugs the content instead of the empty space running up to the next section. A
+ * `<Phase>` box ends with a large structural `padding-bottom` (the gap down to the next step), so the
+ * band would overshoot into that gap; trim it back. Only phases get this trim: on a card (callout,
+ * questions) the bottom padding is the card's own inner inset, and trimming it would pull the band up
+ * across the card and clip it. */
 export function sectionContent(section: Section): { top: number; bottom: number } {
+  const last = section.lastElement
+  const structuralPad = last.classList.contains('vp-phase')
+    ? Number.parseFloat(getComputedStyle(last).paddingBottom) || 0
+    : 0
   return {
     top: section.element.getBoundingClientRect().top,
-    bottom: section.lastElement.getBoundingClientRect().bottom,
+    bottom: last.getBoundingClientRect().bottom - structuralPad,
   }
 }
 

@@ -37,6 +37,10 @@
    tint band (positioned edge to edge inline), faded in so moving between sections does not pop. */
 .vp-review-highlight {
   position: fixed;
+  /* Above the plan content so the faint tint frames the whole hovered section (cards included). The
+     one element that must NOT be dimmed by it, the phase number node, is lifted above this band
+     instead (see `.vp-phase__node` in theme.css), which keeps the number crisp without pushing the
+     band under opaque cards. */
   z-index: 54;
   pointer-events: none;
   border-radius: 10px;
