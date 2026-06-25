@@ -295,7 +295,9 @@ body {
 
 .vp-phase__node {
   position: relative;
-  z-index: 1;
+  /* Sits above the review-mode hover band (`.vp-review-highlight`, z-index 54) so the number is
+     never dimmed by its tint; harmless in a normal render where nothing else is near the rail. */
+  z-index: 55;
   flex: 0 0 auto;
   width: 34px;
   height: 34px;
