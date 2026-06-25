@@ -239,6 +239,52 @@ function planDiffPlugin(readSource: () => string, baseline: string): Plugin {
   }
 }
 
+/**
+ * The two heaviest renderers dominate the single-file output, and both sit in the always-imported
+ * `components` map, so a plan ships them even when it uses neither: `Mermaid` pulls in
+ * beautiful-mermaid + elkjs (a ~1.5MB graph-layout engine) and `Chart` pulls in recharts (~450KB).
+ * Each regex matches the only authoring token that can make that component render: a ` ```mermaid `
+ * fence for `Mermaid`, a `<Chart` tag for `Chart` (the `<Mermaid`/`<Chart` JSX forms are matched too,
+ * defensively). Detection is biased toward inclusion, so a false positive only costs bytes while a
+ * miss can never drop a renderer a plan actually uses.
+ */
+const STUBBABLE_RENDERERS: Record<string, RegExp> = {
+  Chart: /<Chart[\s/>]/,
+  Mermaid: /(?:^|\n)[ \t]{0,3}[`~]{3,}[ \t]*mermaid\b|<Mermaid[\s/>]/,
+}
+
+/**
+ * Replace each heavy renderer the plan does not use with a `() => null` stub, dropping its transitive
+ * dep subtree (recharts, or beautiful-mermaid + elkjs) from the bundle. Stubbing at the component
+ * boundary (the one `./components/<Name>.js` specifier `index.tsx` imports) is robust: it needs only
+ * the component's single named export, not a mirror of the underlying library's surface, and a missed
+ * match degrades to the full bundle rather than a broken render. The stub is never invoked, because it
+ * is installed only when the source contains no token that could render that component. Used only by
+ * the one-shot `buildHtml` (the saved `.plan.html`), never the `--watch` server, where a watched plan
+ * could add a diagram or chart after the bundle's renderers were chosen.
+ */
+function stubUnusedRenderersPlugin(source: string): Plugin {
+  const stubbed = Object.entries(STUBBABLE_RENDERERS)
+    .filter(([, token]) => !token.test(source))
+    .map(([name]) => name)
+  const STUB_PREFIX = '\0visualplan-stub:'
+  return {
+    name: 'visualplan:stub-unused-renderers',
+    enforce: 'pre',
+    resolveId(id) {
+      for (const name of stubbed) {
+        if (id === `./components/${name}.js` || id.endsWith(`/components/${name}.js`)) {
+          return STUB_PREFIX + name
+        }
+      }
+    },
+    load(id) {
+      if (id.startsWith(STUB_PREFIX))
+        return `export const ${id.slice(STUB_PREFIX.length)} = () => null`
+    },
+  }
+}
+
 /** How a plan is rendered, beyond its source. Defaults match the CLI (cog + share both on). */
 export interface BuildOptions {
   /** Default color scheme baked into the page. Default `system`. */
@@ -334,7 +380,7 @@ export async function buildHtml(source: string, options: BuildOptions = {}): Pro
     const config = baseConfig(paths, source, options)
     await build({
       ...config,
-      plugins: [...(config.plugins ?? []), viteSingleFile()],
+      plugins: [...(config.plugins ?? []), stubUnusedRenderersPlugin(source), viteSingleFile()],
       build: {
         outDir,
         emptyOutDir: true,
