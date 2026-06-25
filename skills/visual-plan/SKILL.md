@@ -19,15 +19,13 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
 
 ## Workflow
 
-1. Write the plan to a `.mdx` file. Start with a `# Title` heading (no frontmatter), then use
-   the components below. You never write `import` statements; the components are always in scope.
-2. Validate before showing the user: `vplan check <file>.mdx`. Fix any reported
-   `file:line:col` issues (it names the valid values for bad enums and flags unknown components).
-   Beyond syntax, `check` also runs an author-time **quality lint** that flags weak renders, an
-   all-prose plan, a wall-of-prose `Phase`, a wide left-to-right mermaid diagram, an over-long
-   `Matrix` cell, a `-- comment` on a `FileTree` move row, or a `Chart` with wildly mismatched
-   series scales (the Gotchas below). These surface as warnings and **a warning fails `check`**, so
-   fix them too; they are not advisory.
+1. Write the plan to a `.mdx` file, starting with a single `# Title` heading (it becomes the plan
+   title; no frontmatter). Then use the components below; you never write `import` statements, they
+   are always in scope.
+2. Validate before showing the user: `vplan check <file>.mdx`. Fix every reported `file:line:col`
+   issue (it names valid enum values and flags unknown components). `check` also runs a **quality
+   lint** that flags weak renders (the enforced Gotchas below); its warnings fail `check`, so fix
+   them too.
 3. **Present the plan with `vplan render --review <file>.mdx`. This is the default way to deliver a
    plan, not a special mode reserved for sign-off.** It opens the plan with a feedback layer where the
    user comments on whole sections or on selected text, **answers any `<Questions>` directly** (each
@@ -46,21 +44,14 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
      `--no-diff` to suppress diffing (e.g. a clean first look).
    - **Deny** -> stop and reconsider; do not proceed.
 
-   **Default to `--review` for every non-trivial plan; treat it as the standard way to show a plan,
-   not an opt-in.** It is the loop for presenting and refining a plan together: the targeted comments
-   drive sharper revisions than back-and-forth chat, the user answers your open `<Questions>` in
-   place, and the loop ends in an explicit Approve so you know when it is settled. Reach for the plain
-   render in step 4 only in the narrow cases below.
-4. **Plain render is the fallback, for when the user only wants to look at a plan, not shape or decide
-   on it.** `vplan <file>.mdx` writes a self-contained `<file>.plan.html` next to the source and
-   **opens it in the browser** (`--out <path>` sets the output location). While iterating visually,
-   `vplan --watch <file>.mdx` starts a live-reloading dev server so edits show up without a re-run (a
-   long-running foreground server: run it in the background; it serves a local URL, writes no file,
-   and stops on Ctrl+C). The iteration diff shows on a plain render too, not just `--review`.
-
-   **Do not pass `--no-open`.** A plan the user never sees defeats the tool. Only suppress the browser
-   when the user has explicitly asked for the HTML file alone (e.g. for CI or a headless run); a plan
-   being generated for the user to read is never that case.
+   **Default to `--review` for every non-trivial plan.** Targeted comments and in-place `<Questions>`
+   answers drive sharper revisions than back-and-forth chat, and the loop ends in an explicit Approve
+   so you know it is settled. Use the plain render (step 4) only when the user just wants to look.
+4. **Plain render is the fallback, for when the user only wants to look, not shape or decide.**
+   `vplan <file>.mdx` writes `<file>.plan.html` next to the source and opens it (`--out <path>` sets
+   the location). While iterating visually, `vplan --watch <file>.mdx` starts a live-reloading dev
+   server (a long-running foreground server: run it in the background; it writes no file and stops on
+   Ctrl+C). The iteration diff shows on a plain render too, not just `--review`.
 5. **To export a plan as a static file**, run `vplan export <pdf|jpg> <file>.mdx`. It builds the
    same self-contained page and captures it headless: `pdf` prints a paginated A4 document, `jpg` a
    full-page hi-dpi screenshot. Output defaults to `<file>.pdf` / `<file>.jpg` (override with
@@ -70,14 +61,6 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
    the interactive HTML page.
 
 Run `vplan components` anytime for the exact prop signatures.
-
-## Title
-
-Begin the file with a single `# Heading`; it becomes the plan title. There is no frontmatter.
-
-```mdx
-# Add rate limiting to the API
-```
 
 ## Components
 
@@ -114,20 +97,13 @@ brace errors that break a render.
   </FileTree>
   ```
 - `<Chart type="bar|line|area|scatter|radar|gauge|funnel|treemap|pie" title="...">` —
-  estimates/metrics. For a single series, one bullet per point, `- <label>: <value>` (value is a
-  number). For multiple series (`bar`/`line`/`area`/`radar`), write a table whose header is
-  `category | series1 | series2`; the header cells after the first name the series (they become the
-  legend), and the first column is the category axis. The new types take these shapes:
-  - `area` — like `line`: a single-series list or a multi-series table.
-  - `scatter` — a table with exactly **two** value columns, read as x and y: `| point | x | y |`.
-  - `radar` — a multi-series options-by-dimensions table, same shape as a multi-series `bar`.
-  - `gauge` — a single-series list of values on a 0-100 scale.
-  - `funnel` — a single-series list of descending stage values.
-  - `treemap` — a single-series list of `- <label>: <value>`.
-
-  `pie`/`gauge`/`funnel`/`treemap` are always single-series, so use the list form (a table is
-  rejected). Add the `stacked` attribute to a multi-series `bar` or `area`
-  (`<Chart type="bar" stacked>`) to stack the series instead of grouping them.
+  estimates/metrics. Single series: one bullet per point, `- <label>: <value>` (a number).
+  Multi-series (`bar`/`line`/`area`/`radar`): a table whose header is `category | series1 | series2`
+  (cells after the first name the series and become the legend; the first column is the category
+  axis). Specifics: `scatter` is a table with exactly **two** value columns read as x and y
+  (`| point | x | y |`); `pie`/`gauge`/`funnel`/`treemap` are always single-series, list form only (a
+  table is rejected), with `gauge` on a 0-100 scale and `funnel` descending. Add `stacked` to a
+  multi-series `bar`/`area` (`<Chart type="bar" stacked>`) to stack rather than group.
 
   ```mdx
   <Chart type="bar" title="Effort (days)">
@@ -140,10 +116,6 @@ brace errors that break a render.
   |-------|-----|-----|
   | Auth  | 12  | 30  |
   | DB    | 40  | 120 |
-  </Chart>
-
-  <Chart type="gauge" title="Error budget remaining (%)">
-  - Remaining: 78
   </Chart>
   ```
 - `<Compare>` — weigh approaches side by side as pros/cons cards. Each option is a `## Name`
@@ -240,9 +212,8 @@ it in paragraphs. Prose is the connective tissue between visuals, never the subs
 - **Right-size what you show.** A large effort opens with a diagram and several phases; a
   two-or-three-file change may need only a short `<FileTree>` and a `<Checklist>`. Do not add a
   diagram or phase that carries no information: an empty 2-node flowchart shows nothing and is worse
-  than one plain sentence. Show when there is structure to show; otherwise a tight sentence is fine.
-  The same applies to `<Stat>`: reach for it only when the plan has genuinely meaningful headline
-  numbers, not as a default header on every plan.
+  than one plain sentence. Show when there is structure to show; otherwise a tight sentence is fine
+  (this applies to `<Stat>` too, as its own entry notes).
 
 ## Composing a plan
 
@@ -256,11 +227,8 @@ it in paragraphs. Prose is the connective tissue between visuals, never the subs
 
 ## Rules
 
-- **Always `vplan check` before presenting, and fix every reported `file:line:col` issue first.**
-  The user should never see a broken render.
-- **Let the plan open; never pass `--no-open` for a user-facing plan.** The point of a visual plan
-  is that the user sees it. Use the plain render (which opens the page) to deliver, or `--watch`
-  while iterating. Reserve `--no-open` for an explicit headless/CI request only.
+- **Never pass `--no-open` for a user-facing plan.** The point is that the user sees it; the plain
+  render and `--watch` open automatically. Reserve `--no-open` for an explicit headless/CI request.
 - **No images or external assets.** The page is a single self-contained file, so a markdown image
   (`![](url)`) or any external asset cannot be embedded, and `check` rejects markdown images. Use a
   ` ```mermaid ` diagram for anything visual, or describe it in text.
