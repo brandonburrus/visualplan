@@ -43,7 +43,14 @@ export default defineConfig({
   // react() renders the @visualplan/runtime plan components (Chart hydrates as an island);
   // mdx() lets the authoring page mix prose, code samples, and live component demos.
   integrations: [react(), mdx()],
-  vite: { plugins: [materialIconClones()] },
+  vite: {
+    plugins: [materialIconClones()],
+    // `@visualplan/runtime` is a workspace package consumed as source, so without this the dev
+    // server can resolve a second React copy for its deep-imported components (the interactive
+    // review demo mounts many at once), triggering an "invalid hook call" / `useState` of null.
+    // The production build already dedupes via Rollup; this makes dev match it.
+    resolve: { dedupe: ['react', 'react-dom'] },
+  },
   markdown: {
     // Dual-theme Shiki to match the rendered-plan highlighting (github light/dark).
     // `defaultColor: false` emits only `--shiki-light` / `--shiki-dark` CSS vars

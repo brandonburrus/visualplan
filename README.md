@@ -39,10 +39,14 @@ npx vplan plan.mdx
 ## Usage
 
 ```bash
-vplan plan.mdx           # render to plan.plan.html and open it
-vplan plan.mdx --watch   # live-reloading dev server while you edit
-vplan check plan.mdx     # validate a plan without rendering it
-vplan components         # print the component vocabulary
+vplan plan.mdx              # render to plan.plan.html and open it
+vplan plan.mdx --watch      # live-reloading dev server while you edit
+vplan plan.mdx --review     # interactive review session, blocks for sign-off
+vplan check plan.mdx        # validate a plan (syntax + quality lint) without rendering
+vplan export pdf plan.mdx   # render to a static PDF or JPG via headless Chromium
+vplan share plan.mdx        # print a shareable visualplan.dev link
+vplan components            # print the component vocabulary
+vplan config                # view or change persistent settings (default theme)
 ```
 
 A plan is an MDX file that starts with a `# Title` (no frontmatter) and uses a fixed set of
@@ -84,12 +88,30 @@ flowchart LR
  - `Checklist`
  - syntax-highlighted code blocks with file titles
 
+## Review mode
+
+To get a decision on a plan, not just show it, render with `--review`:
+
+```bash
+vplan render --review plan.mdx
+```
+
+This opens the plan as an interactive session: the reviewer comments on any section, answers the
+plan's open `Questions` inline, and clicks Approve, Deny, or Iterate. The CLI blocks until they
+decide, prints the feedback to stdout, and exits with a decision-specific code (Approve `0`, Deny
+`1`, Iterate `2`), so an agent knows when the plan is settled and what to revise if it is not. On an
+Iterate, the next render diffs the revision against the last view so the reviewer re-reviews only the
+delta.
+
+See the [Review mode guide](https://visualplan.dev/docs/review/) for a live, interactive demo.
+
 ## Share a plan
 
 Every rendered plan has a share button that copies a link encoding the entire plan. The plan
 is base64url encoded into a query param where it is securely decompressed into a sandboxed iframe
 in the browser at [visualplan.dev](https://visualplan.dev). This means you can share a plan with
-anyone simply by sharing the URL, without having to send files or make any kind of account.
+anyone simply by sharing the URL, without having to send files or make any kind of account. Run
+`vplan share plan.mdx` to print the same link from the CLI without rendering first.
 
 ## Documentation
 

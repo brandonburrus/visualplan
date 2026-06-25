@@ -1,0 +1,22 @@
+---
+import { ReviewDemo } from '../components/ReviewDemo'
+import '@visualplan/runtime/theme.css'
+
+// The contents of the iframe embedded by /docs/review. It mounts the real review layer over a dummy
+// plan in demo mode (no CLI server), so the viewport-fixed review chrome stays scoped to this frame
+// instead of floating over the docs page. noindex: it is only meaningful inside that embed.
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Review mode demo</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  </head>
+  <body>
+    <ReviewDemo client:only="react" />
+  </body>
+</html>

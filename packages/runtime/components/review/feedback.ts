@@ -10,6 +10,16 @@ export function isReviewMode(): boolean {
   return (globalThis as { __VP_REVIEW__?: boolean }).__VP_REVIEW__ === true
 }
 
+/**
+ * True when the page is a self-contained **demo** of review mode (the docs site), with no CLI server
+ * behind it. In demo mode the decision buttons are live but stay in-page: nothing is POSTed, the tab
+ * is never closed, and the beforeunload prompt and keepalive/draft server chatter are skipped. Set by
+ * the embedding page (`__VP_REVIEW_DEMO__`), mirroring how the CLI injects `__VP_REVIEW__`.
+ */
+export function isReviewDemo(): boolean {
+  return (globalThis as { __VP_REVIEW_DEMO__?: boolean }).__VP_REVIEW_DEMO__ === true
+}
+
 /** The plan revision number from the CLI's `--iteration` flag, or null when it was not passed. */
 export function reviewIteration(): number | null {
   const value = (globalThis as { __VP_REVIEW_ITERATION__?: number }).__VP_REVIEW_ITERATION__

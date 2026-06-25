@@ -8,8 +8,8 @@ description: What Visual Plan is and why it exists.
 
 Visual Plan renders an AI agent's implementation and design plans as polished, visual web pages
 instead of walls of text. A plan is written as MDX and compiled to a single self-contained HTML
-page with architecture diagrams, charts, file-change trees, option comparisons, callouts, and a
-numbered phase timeline.
+page with architecture diagrams, charts, metric cards, file-change trees, option comparisons,
+callouts, math, and a numbered phase timeline.
 
 It comes in two parts that work together:
 

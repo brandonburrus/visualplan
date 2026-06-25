@@ -37,7 +37,11 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   closes the connection drops and the CLI resolves Deny with that draft. This replaced an unload
   `sendBeacon`, which is dropped on a real close (it only survived navigation). A `beforeunload` prompt
   while undecided is now just a courtesy, the actual Deny no longer depends on the page sending
-  anything during unload.
+  anything during unload. **Demo mode** (`isReviewDemo()`, gated on an injected `__VP_REVIEW_DEMO__`,
+  used by the docs site's Review-mode page) keeps a session fully in-page: `decide` records the verdict
+  and stops instead of POSTing or calling `window.close()`, and the keepalive, draft, and `beforeunload`
+  effects are all skipped, so the embedded preview is safe to click through and reset. It is never set
+  by the CLI.
 - `components/DiffCues.tsx` renders iteration diff cues when the CLI injected `__VP_DIFF__` (any
   render/watch/review with a baseline, NOT review-gated). Always on: a change bar **flush to the left
   edge of the viewport** (`left: 0`, a dedicated lane clear of the content gutter so it never piles up

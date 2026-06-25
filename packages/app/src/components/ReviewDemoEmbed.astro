@@ -1,0 +1,77 @@
+---
+// Embeds the interactive review-mode demo (/review-demo-frame) in a contained, resettable frame.
+// The review layer is viewport-fixed (built as a full-page takeover), so it must live in its own
+// iframe to stay inside the docs page rather than overlaying it. Reset simply reloads the frame,
+// which clears every staged comment, answer, and decision.
+---
+
+<figure class="review-embed">
+  <figcaption class="review-embed__bar">
+    <span>
+      Live demo: hover a section to comment, answer a question inline, then Approve, Deny, or
+      Iterate. Nothing leaves this page.
+    </span>
+    <button type="button" class="review-embed__reset" data-review-reset>Reset</button>
+  </figcaption>
+  <iframe
+    class="review-embed__frame"
+    src="/review-demo-frame/"
+    title="Interactive demo of vplan review mode"
+    loading="lazy"></iframe>
+</figure>
+
+<script>
+  const frame = document.querySelector<HTMLIFrameElement>('.review-embed__frame')
+  const reset = document.querySelector<HTMLButtonElement>('[data-review-reset]')
+  // Reloading the frame is the simplest full reset: it drops all in-page review state.
+  reset?.addEventListener('click', () => {
+    if (frame) frame.src = frame.src
+  })
+</script>
+
+<style>
+  .review-embed {
+    margin: 2rem 0;
+    border: 1px solid var(--vp-border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--vp-bg);
+  }
+
+  .review-embed__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem 0.9rem;
+    background: var(--vp-surface);
+    border-bottom: 1px solid var(--vp-border);
+    font-size: 0.85rem;
+    color: var(--vp-muted);
+  }
+
+  .review-embed__reset {
+    flex: none;
+    padding: 0.35rem 0.85rem;
+    border: 1px solid var(--vp-border);
+    border-radius: 7px;
+    background: var(--vp-bg);
+    color: var(--vp-text);
+    font: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: border-color 0.15s var(--vp-ease);
+  }
+
+  .review-embed__reset:hover {
+    border-color: var(--vp-accent);
+  }
+
+  .review-embed__frame {
+    display: block;
+    width: 100%;
+    height: 720px;
+    border: 0;
+    background: var(--vp-bg);
+  }
+</style>

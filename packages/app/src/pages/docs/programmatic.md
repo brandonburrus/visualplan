@@ -93,8 +93,10 @@ checkPlan(source: string): Promise<CheckIssue[]>
 ```
 
 Validates a plan's MDX source without rendering it, returning the issues (an empty array when the
-plan is valid). Each issue has a `line`, `column`, and `message`, the same checks the CLI's
-`vplan check` runs:
+plan is valid). Each issue has a `line`, `column`, and `message`. This runs the static checks
+(compile errors, component and enum validation, mermaid and math), the same ones `renderPlan` throws
+on. The author-time quality lint (wall of prose, wide diagram, over-long `Matrix` cell, and the like)
+runs only on the `vplan check` CLI command, not here:
 
 ```ts
 const issues = await checkPlan(source)
