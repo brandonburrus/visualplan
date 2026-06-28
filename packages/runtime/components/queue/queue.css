@@ -23,6 +23,32 @@
   min-height: 0;
   border-right: 1px solid var(--vp-border);
   background: var(--vp-surface);
+  /* The rail mounts when a second plan joins (solo -> queue); ease it in rather than popping. */
+  animation: vp-queue-sidebar-in 0.18s var(--vp-ease) both;
+}
+
+@keyframes vp-queue-sidebar-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Visually-hidden but exposed to assistive tech: status labels and the live-region announcer. */
+.vp-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .vp-queue__head {
@@ -68,12 +94,15 @@
   transition: background 0.12s var(--vp-ease);
 }
 
-.vp-queue__row:hover {
+.vp-queue__row:hover:not([data-active="true"]) {
   background: var(--vp-surface-2);
 }
 
+/* The active plan is the one the main pane shows, so it gets the strongest weight in the rail: an
+ * ink-tinted fill (distinct from the plain-grey hover) plus a bolder, full-contrast title. No side
+ * accent bar (a design ban); the fill + weight carry it. */
 .vp-queue__row[data-active="true"] {
-  background: var(--vp-surface-2);
+  background: color-mix(in srgb, var(--vp-accent) 9%, var(--vp-surface));
   border-color: var(--vp-border-strong);
 }
 
@@ -81,10 +110,16 @@
   color: var(--vp-muted);
 }
 
+/* Placed after the done rule so a reopened (done) plan that is also active reads as active. */
+.vp-queue__row[data-active="true"] .vp-queue__rowtitle {
+  font-weight: 600;
+  color: var(--vp-text);
+}
+
 .vp-queue__status {
   display: inline-flex;
   flex: none;
-  color: var(--vp-faint);
+  color: var(--vp-muted);
 }
 
 .vp-queue__row[data-done="true"] .vp-queue__status {
@@ -108,7 +143,9 @@
 
 .vp-queue__rowdir {
   font-size: 0.68rem;
-  color: var(--vp-faint);
+  /* --vp-muted, not --vp-faint: this label disambiguates plans across projects, so it must clear the
+   * 4.5:1 AA text floor (--vp-faint measured ~3.1:1 at this size). */
+  color: var(--vp-muted);
   font-family: var(--vp-mono);
   white-space: nowrap;
   overflow: hidden;
@@ -141,4 +178,13 @@
 .vp-queue__empty p {
   margin: 0;
   font-size: 0.9rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vp-queue__sidebar {
+    animation: none;
+  }
+  .vp-queue__row {
+    transition: none;
+  }
 }

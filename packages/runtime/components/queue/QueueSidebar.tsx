@@ -28,16 +28,25 @@ export function QueueSidebar({
         </span>
       </header>
       <ul className='vp-queue__list'>
-        {entries.map(entry => {
+        {entries.map((entry, index) => {
           const done = entry.status === 'done'
+          const isActive = entry.id === activeId
+          // Roving tabindex: only the active row is in the tab order (arrow/j-k move between rows),
+          // so focus and the active plan stay in sync. When nothing is active yet, the first row is
+          // the entry point so the list is never unreachable by keyboard.
+          const tabbable = activeId ? isActive : index === 0
           return (
             <li key={entry.id}>
               <button
                 type='button'
                 className='vp-queue__row'
-                data-active={entry.id === activeId}
+                data-active={isActive}
                 data-done={done}
-                aria-current={entry.id === activeId ? 'true' : undefined}
+                tabIndex={tabbable ? 0 : -1}
+                aria-current={isActive ? 'true' : undefined}
+                // The status icon is decorative (aria-hidden), so the row name carries it in words,
+                // and separates the title from the origin dir that otherwise ran together.
+                aria-label={`${entry.title}, ${entry.dir}, ${done ? 'reviewed' : 'to review'}`}
                 onClick={() => onSelect(entry.id)}
               >
                 <span className='vp-queue__status' aria-hidden='true'>

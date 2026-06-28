@@ -167,3 +167,39 @@ describe('QueueShell single-plan vs queue', () => {
     expect(sidebar()).toBeNull()
   })
 })
+
+describe('QueueShell accessibility', () => {
+  function rows(): HTMLButtonElement[] {
+    return Array.from(container.querySelectorAll('.vp-queue__row'))
+  }
+
+  it('announces review progress and the active plan in a polite live region (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'done'), entry('b'), entry('c')]))
+    const live = container.querySelector('[aria-live="polite"]')
+    expect(live?.textContent).toContain('1 of 3 plans reviewed')
+    expect(live?.textContent).toContain('Now reviewing Plan b')
+  })
+
+  it('names each row with its origin dir and review status, not by color alone (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'done'), entry('b')]))
+    expect(rows()[0].getAttribute('aria-label')).toBe('Plan a, dir-a, reviewed')
+    expect(rows()[1].getAttribute('aria-label')).toBe('Plan b, dir-b, to review')
+  })
+
+  it('keeps only the active row in the tab order (roving tabindex) (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'done'), entry('b'), entry('c')]))
+    // The active plan defaults to the first pending one (b); only it is tabbable.
+    const tabindices = rows().map(r => r.getAttribute('tabindex'))
+    expect(tabindices).toEqual(['-1', '0', '-1'])
+  })
+
+  it('makes the first row tabbable when no plan is active yet (edge)', () => {
+    render()
+    // All done means nothing is active; the list must still be reachable by keyboard.
+    act(() => source().emitQueue([entry('a', 'done'), entry('b', 'done')]))
+    expect(rows().map(r => r.getAttribute('tabindex'))).toEqual(['0', '-1'])
+  })
+})
