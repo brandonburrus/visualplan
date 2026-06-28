@@ -43,7 +43,7 @@ Plans use a fixed, tiny component vocabulary (`Phase`, `FileTree`, `Chart`, `Com
 `Callout`, `Questions`, `Checklist`, and ` ```mermaid ` / ` ```math ` fences) with no imports — the
 components are auto-injected into MDX scope. A plan starts with a `# Title` heading; there
 is no frontmatter. `Phase` sections render as a numbered vertical timeline; no sidebar. The
-data components (`FileTree`, `Chart`, `Compare`, `Matrix`, `Questions`, `Checklist`) are authored
+data components (`FileTree`, `Chart`, `Stat`, `Compare`, `Matrix`, `Questions`, `Checklist`) are authored
 as **markdown children** (a bullet/task list, `Compare` headings, or a GFM table for `Matrix` and
 a multi-series `Chart`), not inline object-array props; only scalar settings (`title`, `type`,
 `status`) are attributes.
