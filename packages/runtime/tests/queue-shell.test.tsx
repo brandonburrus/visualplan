@@ -74,6 +74,10 @@ function iframeSrc(): string | null {
   return container.querySelector('iframe')?.getAttribute('src') ?? null
 }
 
+function sidebar(): Element | null {
+  return container.querySelector('.vp-queue__sidebar')
+}
+
 describe('QueueShell', () => {
   it('opens the events stream for liveness on mount (golden)', () => {
     render()
@@ -132,5 +136,34 @@ describe('QueueShell', () => {
     const es = source()
     act(() => root.unmount())
     expect(es.closed).toBe(true)
+  })
+})
+
+// The queue chrome is for navigating BETWEEN plans, so a lone plan should look like an ordinary
+// single review (no sidebar); the sidebar appears only once a second plan is in the queue.
+describe('QueueShell single-plan vs queue', () => {
+  it('hides the sidebar and shows the plan full-width when only one plan is queued (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a')]))
+    expect(sidebar()).toBeNull()
+    // The single plan still renders; it just has no queue rail beside it.
+    expect(iframeSrc()).toBe('/plan/a')
+  })
+
+  it('reveals the sidebar when a second plan joins the queue mid-review (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a')]))
+    expect(sidebar()).toBeNull()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    expect(sidebar()).not.toBeNull()
+  })
+
+  it('hides the sidebar again if the queue drops back to a single plan (edge)', () => {
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    expect(sidebar()).not.toBeNull()
+    // A caller abandoning its plan removes it; back to one plan means back to no chrome.
+    act(() => source().emitQueue([entry('a')]))
+    expect(sidebar()).toBeNull()
   })
 })

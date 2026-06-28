@@ -12,6 +12,11 @@
   font-family: var(--vp-font);
 }
 
+/* A single queued plan drops the sidebar, so the plan fills the tab like an ordinary review. */
+.vp-queue--solo {
+  grid-template-columns: 1fr;
+}
+
 .vp-queue__sidebar {
   display: flex;
   flex-direction: column;

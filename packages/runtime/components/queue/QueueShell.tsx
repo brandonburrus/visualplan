@@ -57,10 +57,13 @@ export function QueueShell() {
   }, [entries])
 
   const hasPending = firstPendingId(entries) !== null
+  // The sidebar is for navigating BETWEEN plans, so a lone plan shows none: it reads as an ordinary
+  // single review. It appears the moment a second plan joins the queue (the SSE drives this live).
+  const showSidebar = entries.length > 1
 
   return (
-    <div className='vp-queue'>
-      <QueueSidebar entries={entries} activeId={activeId} onSelect={setActiveId} />
+    <div className={showSidebar ? 'vp-queue' : 'vp-queue vp-queue--solo'}>
+      {showSidebar && <QueueSidebar entries={entries} activeId={activeId} onSelect={setActiveId} />}
       <main className='vp-queue__main'>
         {activeId && hasPending ? (
           <iframe
