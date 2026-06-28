@@ -1,9 +1,18 @@
 ---
 name: visual-plan
-description: Always use when planning anything non-trivial (an implementation, design, refactor, or migration), as the default and better way to show your plan visually instead of as a wall of text, especially in plan mode. Authors the plan as an MDX file and renders it to a self-contained HTML page with the `vplan` CLI, using a fixed component vocabulary. Also use when the user says "make a visual plan", "render this plan", "show me the plan", or asks for a plan with diagrams/charts, and when they want to review, approve, or sign off on a plan or give structured feedback on it ("let me review the plan", "I want to give feedback", "get my approval") via `vplan render --review`. Skip only for trivial one-step changes or prose-only notes.
+description: >-
+  This skill should be used whenever a plan for non-trivial work is being produced, presented, or
+  proposed (a feature, design, refactor, migration, or any multi-step task), including in plan mode
+  and together with whatever planning skill produced the plan. It is the default way to deliver a
+  plan: instead of a wall of text, it renders the plan as MDX to a scannable, self-contained HTML
+  page (diagrams, phases, file-change maps, comparisons) via the `vplan` CLI. It applies when the
+  user says "plan this", "what's the approach", "how should we approach X", "show me the plan",
+  "make a visual plan", "render this plan", or asks for a plan with diagrams/charts, and when they
+  want to review, approve, sign off on, or give feedback on a plan via `vplan render --review`. Skip
+  only for a trivial one-step change or when the user explicitly asks for plain prose.
 ---
 
-# Visual Plan
+## Purpose
 
 Render a plan as a visual MDX page instead of a wall of text, using the `vplan` CLI. The component
 vocabulary is general: although the examples below are code-flavored, it fits any structured plan
@@ -18,6 +27,12 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
 > (published on npm). Re-run the failed command afterward.
 
 ## Workflow
+
+- [ ] 1. Write the plan to a `.mdx` file (`# Title` first; components are always in scope).
+- [ ] 2. `vplan check <file>.mdx` and fix every reported issue, quality-lint warnings included.
+- [ ] 3. Present with `vplan render --review <file>.mdx` (the default), then act on the feedback.
+- [ ] 4. Or a plain `vplan <file>.mdx` when the user only wants to look, not shape or decide.
+- [ ] 5. `vplan export <pdf|jpg> <file>.mdx` when the user wants a shareable static file.
 
 1. Write the plan to a `.mdx` file, starting with a single `# Title` heading (it becomes the plan
    title; no frontmatter). Then use the components below; you never write `import` statements, they
@@ -70,19 +85,19 @@ and a multi-series `Chart`, a markdown table) between the tags. Only the scalar 
 (`title`, `type`, `status`) are attributes. This is fewer tokens and avoids the `{[{ ... }]}`
 brace errors that break a render.
 
-- `<Phase title="..." status="planned|active|done">` — one step in a numbered vertical
+- `<Phase title="..." status="planned|active|done">`: one step in a numbered vertical
   timeline; wraps markdown (ordered lists, prose, nested components). The steps auto-number in
   order. One per major step of the plan.
-- ` ```mermaid ` fenced block — diagrams: architecture (`flowchart`), `sequenceDiagram`,
+- ` ```mermaid ` fenced block, for diagrams: architecture (`flowchart`), `sequenceDiagram`,
   dependency graphs, `stateDiagram-v2`, `classDiagram`, `erDiagram`, and `xychart-beta`. Reach for
   this first for anything structural. (gantt and pie are not supported; use `<Chart>` for
   quantitative data. `check` now validates each diagram, so an unsupported type fails check with a
   `file:line:col` instead of rendering an error box.)
-- ` ```math ` fenced block — a display formula written in LaTeX, typeset as math (complexity
+- ` ```math ` fenced block, a display formula written in LaTeX, typeset as math (complexity
   bounds, probabilities, linear algebra). Example: ` ```math ` then `T(n) = O(n \log n)`.
-- `<Callout type="note|tip|risk|decision|warn">` — highlight a risk, decision, tip, or note; wraps
+- `<Callout type="note|tip|risk|decision|warn">`: highlight a risk, decision, tip, or note; wraps
   markdown. (`note` is blue, `tip` is green, `decision` is purple, `risk` is red, `warn` is yellow.)
-- `<FileTree>` — file-change map. One bullet per file, `- <change> <path>`, where `change` is
+- `<FileTree>`: file-change map. One bullet per file, `- <change> <path>`, where `change` is
   `add|modify|delete|move`. A move needs both ends, `- move <from> -> <to>` (the file renders at
   its destination with the origin shown). A path ending in `/` marks a whole directory (e.g.
   `- delete src/legacy/`). A colored file-type icon is added automatically from the path's
@@ -96,7 +111,7 @@ brace errors that break a render.
   - delete src/gateway/legacy/
   </FileTree>
   ```
-- `<Chart type="bar|line|area|scatter|radar|gauge|funnel|treemap|pie" title="...">` —
+- `<Chart type="bar|line|area|scatter|radar|gauge|funnel|treemap|pie" title="...">`:
   estimates/metrics. Single series: one bullet per point, `- <label>: <value>` (a number).
   Multi-series (`bar`/`line`/`area`/`radar`): a table whose header is `category | series1 | series2`
   (cells after the first name the series and become the legend; the first column is the category
@@ -118,7 +133,7 @@ brace errors that break a render.
   | DB    | 40  | 120 |
   </Chart>
   ```
-- `<Compare>` — weigh approaches side by side as pros/cons cards. Each option is a `## Name`
+- `<Compare>`: weigh approaches side by side as pros/cons cards. Each option is a `## Name`
   heading (append `(pick)` to mark the recommended one) followed by as many `- pro:` / `- con:`
   bullets as you need.
 
@@ -134,7 +149,7 @@ brace errors that break a render.
   - con: per-node only
   </Compare>
   ```
-- `<Matrix>` — a comparison grid (options across the columns, criteria down the rows) for scoring
+- `<Matrix>`: a comparison grid (options across the columns, criteria down the rows) for scoring
   several choices against several dimensions. Write a markdown table; the first column is the row
   labels, and you append `(pick)` to one column header to highlight it. Use `<Compare>` for
   pros/cons, `<Matrix>` for a scorecard.
@@ -147,7 +162,7 @@ brace errors that break a render.
   | Querying  | high            | medium     | low      |
   </Matrix>
   ```
-- `<Questions>` — open questions you want the reader to resolve before building, one per bullet.
+- `<Questions>`: open questions you want the reader to resolve before building, one per bullet.
   Use this instead of burying uncertainties in prose. The title defaults to "Open questions";
   override with `title="..."`. In a `--review` session each question is directly answerable, so
   prefer a `<Questions>` block over prose when you want the reviewer to answer specific questions.
@@ -158,7 +173,7 @@ brace errors that break a render.
   - Is a 15-minute access-token TTL acceptable?
   </Questions>
   ```
-- `<Checklist title="Done when">` — acceptance criteria / definition of done, as a markdown task
+- `<Checklist title="Done when">`: acceptance criteria / definition of done, as a markdown task
   list: `- [x]` for done, `- [ ]` for todo.
 
   ```mdx
@@ -167,7 +182,7 @@ brace errors that break a render.
   - [ ] Dashboards live
   </Checklist>
   ```
-- `<Stat>` — headline plan metrics as a grid of cards (files changed, estimated uptime, rollout).
+- `<Stat>`: headline plan metrics as a grid of cards (files changed, estimated uptime, rollout).
   One card per bullet, `- <label>: <value> (<intent>) -- <caption>`, where intent is one of
   `note|good|warn|risk` and both `(intent)` and `-- caption` are optional. The value is free text
   (`5 min`, `99.9%`), not a number. Use this for static facts, not time series (use `<Chart>` for
