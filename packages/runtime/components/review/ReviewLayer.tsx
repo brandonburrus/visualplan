@@ -4,7 +4,14 @@ import { useEffect, useRef, useState } from 'react'
 import { CommentModal } from './CommentModal.js'
 import { CommentsPopover } from './CommentsPopover.js'
 import { DecisionBar } from './DecisionBar.js'
-import { isReviewDemo, isReviewMode, openKeepalive, postDraft, postFeedback } from './feedback.js'
+import {
+  isQueueMode,
+  isReviewDemo,
+  isReviewMode,
+  openKeepalive,
+  postDraft,
+  postFeedback,
+} from './feedback.js'
 import { useQuestionAnswers } from './ReviewAnswers.js'
 import {
   type Section,
@@ -83,9 +90,11 @@ function ReviewSession() {
 
   // Hold a connection open so the server resolves Deny if the tab closes; the server, not an
   // unreliable unload beacon, detects the drop. Aborted on unmount (e.g. after a submitted decision).
-  // A demo has no server behind it, so there is nothing to keep alive.
+  // A demo has no server behind it, so there is nothing to keep alive. In queue mode the SHELL owns
+  // the daemon's lifecycle (its `/__vp_events` stream is the liveness signal), so a plan iframe must
+  // NOT open a keepalive: swapping the iframe to the next plan would otherwise deny this one.
   useEffect(() => {
-    if (isReviewDemo()) return
+    if (isReviewDemo() || isQueueMode()) return
     const connection = openKeepalive()
     return () => connection.abort()
   }, [])
@@ -110,8 +119,10 @@ function ReviewSession() {
   const submittedRef = useRef(submitted)
   submittedRef.current = submitted
   useEffect(() => {
-    // A demo is meant to be navigated away from and reset freely, so it never arms the prompt.
-    if (isReviewDemo()) return
+    // A demo is meant to be navigated away from and reset freely, so it never arms the prompt. In
+    // queue mode the plan iframe is swapped by the shell on every advance, so an unload prompt would
+    // fire on each swap; the shell, not the plan, owns the prompt-on-real-close.
+    if (isReviewDemo() || isQueueMode()) return
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!submittedRef.current) {
         event.preventDefault()
@@ -179,9 +190,11 @@ function ReviewSession() {
       // programmatic close (it still prompts on a manual browser close while undecided).
       submittedRef.current = decision
       setSubmitted(decision)
-      // Best-effort: close the tab now the review is done. Browsers block this for a user-opened
-      // tab, in which case the SubmittedNotice fallback tells them they can close it.
-      window.close()
+      // In queue mode the shell owns the tab and advances to the next plan once the daemon marks this
+      // one done; the plan iframe must not close the tab (that would tear the whole queue down). The
+      // submitted notice is shown instead. In standalone mode, best-effort close the now-done tab
+      // (browsers block this for a user-opened tab, where the notice tells them they can close it).
+      if (!isQueueMode()) window.close()
     } else {
       setBusy(false)
       window.alert('Could not reach the review server. Is the CLI still running?')

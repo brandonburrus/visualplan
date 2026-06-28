@@ -14,6 +14,8 @@ import {
   runRender,
   type RenderOptions,
 } from './commands/render.js'
+import { type ReviewQueueOptions, runReview } from './commands/review.js'
+import { runReviewDaemon } from './commands/review-daemon.js'
 import { runShare } from './commands/share.js'
 
 const program = new Command('vplan')
@@ -45,8 +47,32 @@ program
     'diff this render against a baseline plan .mdx (overrides the snapshot cache)',
   )
   .option('--no-diff', 'skip iteration diffing (do not read or write the snapshot cache)')
+  .option('--no-daemon', 'review without the shared Review Queue daemon (one-shot server)')
   .option('--no-open', 'do not open the result in a browser')
   .action((file: string | undefined, options: RenderOptions) => runRender(file, options))
+
+program
+  .command('review')
+  .description('Queue one or more plans for review in the shared Review Queue and print verdicts')
+  .argument('<files...>', 'the plan .mdx files to review')
+  .option('--json', 'print one JSON object keyed by file path instead of streaming text')
+  .option('--no-open', 'do not open the queue in a browser')
+  .action((files: string[], options: ReviewQueueOptions) => runReview(files, options))
+
+interface ReviewDaemonCliOptions {
+  port: number
+  idle: number
+}
+
+// Hidden: the detached daemon process `ensureDaemon` spawns. Not for direct human use.
+program
+  .command('__review-daemon', { hidden: true })
+  .description('internal: run the Review Queue daemon process')
+  .option('--port <number>', 'port to bind', parsePort, 9151)
+  .option('--idle <ms>', 'idle TTL in milliseconds', value => Number.parseInt(value, 10), 900_000)
+  .action((options: ReviewDaemonCliOptions) =>
+    runReviewDaemon({ port: options.port, idleMs: options.idle }),
+  )
 
 program
   .command('export')

@@ -3,10 +3,14 @@ import { basename, dirname, extname, join, resolve } from 'node:path'
 import { InvalidArgumentError } from 'commander'
 import ms from 'ms'
 import open from 'open'
+import type { Feedback } from '@visualplan/core'
 import { checkPlan, checkSource } from '../build/check.js'
 import { buildHtml, startDevServer } from '../build/compile.js'
 import { readSnapshot, writeSnapshot } from '../build/snapshots.js'
 import { readConfig } from '../config.js'
+import { awaitVerdict, type EnqueueResponse, enqueuePlan } from '../review/client.js'
+import { ensureDaemon } from '../review/ensure-daemon.js'
+import { exitCodeFor, formatFeedback } from '../review/format.js'
 import { runReview } from '../review/session.js'
 import { printIssues, resolvePlanFile } from './check.js'
 import { readPlanSource } from './input.js'
@@ -24,6 +28,10 @@ export interface RenderOptions {
   port?: number
   /** Open the plan as an interactive review session and print the reviewer's feedback. */
   review?: boolean
+  /** Bypass the shared Review Queue daemon and use the one-shot in-process review server instead.
+   * Set by `--no-daemon`; keeps the legacy single-server path for environments where the daemon's
+   * detached process or lock cannot be used. */
+  noDaemon?: boolean
   /** Max wait (ms) for review feedback before timing out; parsed from a duration by `parseTimeout`. */
   timeout?: number
   /** Iteration number shown in the review bar (the agent sets it as it revises the plan). */
@@ -125,14 +133,36 @@ export async function runRender(file: string | undefined, options: RenderOptions
       return
     }
     const baseline = await resolveBaseline(options, source, snapshotKey(file, fromStdin))
-    await runReview(
-      source,
-      theme,
-      options.timeout ?? DEFAULT_REVIEW_TIMEOUT_MS,
-      options.open !== false,
-      options.iteration,
-      baseline,
-    )
+    // Default: route through the shared Review Queue daemon so several plans in a session share one
+    // warm tab. `--no-daemon` keeps the legacy one-shot in-process review server.
+    if (options.noDaemon) {
+      await runReview(
+        source,
+        theme,
+        options.timeout ?? DEFAULT_REVIEW_TIMEOUT_MS,
+        options.open !== false,
+        options.iteration,
+        baseline,
+      )
+      return
+    }
+    const { daemonTimeout } = await readConfig()
+    await runReviewViaDaemon(source, reviewDir(file, fromStdin), options, {
+      ensureDaemon: () => ensureDaemon({ idleMs: daemonTimeout }),
+      enqueue: (port, src) =>
+        enqueuePlan(port, {
+          source: src,
+          theme,
+          iteration: options.iteration,
+          dir: reviewDir(file, fromStdin),
+          baseline,
+        }),
+      awaitVerdict,
+      openBrowser: async (port: number) => {
+        await open(`http://localhost:${port}/`)
+      },
+      stdout: process.stdout,
+    })
     return
   }
 
@@ -186,4 +216,66 @@ export async function runRender(file: string | undefined, options: RenderOptions
   await writeFile(out, html)
   process.stdout.write(`Rendered ${out}\n`)
   if (options.open !== false) await open(out)
+}
+
+/** The `dir` label for a reviewed plan: the basename of its directory, or `cwd` for piped stdin
+ * (which has no originating file). Shown beside the title in the queue sidebar. */
+function reviewDir(file: string | undefined, fromStdin: boolean): string {
+  if (fromStdin || file === undefined || file === '-') return basename(process.cwd())
+  return basename(dirname(resolve(file)))
+}
+
+/** Injectable collaborators for the single-plan daemon review flow, so it is unit-testable without a
+ * real daemon, build, or browser. */
+export interface DaemonReviewDeps {
+  ensureDaemon: () => Promise<{ port: number }>
+  enqueue: (port: number, source: string) => Promise<EnqueueResponse>
+  awaitVerdict: (port: number, id: string, signal?: AbortSignal) => Promise<Feedback>
+  openBrowser: (port: number) => Promise<void>
+  stdout: NodeJS.WriteStream
+}
+
+/**
+ * Review a single plan through the shared Review Queue daemon: enqueue it, open the browser only if
+ * no shell tab is already connected, then wait for its verdict (bounded by `--timeout`, exit code 3
+ * on timeout). Prints the formatted feedback to stdout and sets the exit code from the decision,
+ * matching the one-shot `runReview` contract so the daemon path is a drop-in for it.
+ */
+export async function runReviewViaDaemon(
+  source: string,
+  _dir: string,
+  options: RenderOptions,
+  deps: DaemonReviewDeps,
+): Promise<void> {
+  const { port } = await deps.ensureDaemon()
+  const { id, shellConnected } = await deps.enqueue(port, source)
+  if (!shellConnected && options.open !== false) await deps.openBrowser(port)
+
+  // The caller may time out waiting for ITS verdict even though the daemon lives on; aborting the
+  // long-poll lets the daemon drop the abandoned plan.
+  const controller = new AbortController()
+  const timeoutMs = options.timeout ?? DEFAULT_REVIEW_TIMEOUT_MS
+  let timer: ReturnType<typeof setTimeout> | undefined
+  const timeout = new Promise<'timeout'>(resolve => {
+    timer = setTimeout(() => {
+      controller.abort()
+      resolve('timeout')
+    }, timeoutMs)
+  })
+
+  try {
+    const result = await Promise.race([
+      deps.awaitVerdict(port, id, controller.signal).catch(() => 'timeout' as const),
+      timeout,
+    ])
+    if (result === 'timeout') {
+      process.stderr.write(`\nReview timed out after ${ms(timeoutMs, { long: true })}.\n`)
+      process.exitCode = exitCodeFor('timeout')
+      return
+    }
+    deps.stdout.write(`${formatFeedback(result)}\n`)
+    process.exitCode = exitCodeFor(result.decision)
+  } finally {
+    clearTimeout(timer)
+  }
 }

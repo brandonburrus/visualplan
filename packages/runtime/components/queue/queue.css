@@ -1,0 +1,139 @@
+/* Review Queue shell chrome. The design tokens (--vp-*) come from theme.css, which the queue entry
+ * imports alongside this file. Monochrome ink register matching the plan page: off-white/off-black
+ * surfaces, a 1px border rail, semantic green only for the reviewed-status check. */
+
+.vp-queue {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  height: 100vh;
+  width: 100vw;
+  background: var(--vp-bg);
+  color: var(--vp-text);
+  font-family: var(--vp-font);
+}
+
+.vp-queue__sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--vp-border);
+  background: var(--vp-surface);
+}
+
+.vp-queue__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.85rem 0.9rem 0.7rem;
+  border-bottom: 1px solid var(--vp-border);
+}
+
+.vp-queue__title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.vp-queue__count {
+  font-size: 0.72rem;
+  color: var(--vp-muted);
+}
+
+.vp-queue__list {
+  list-style: none;
+  margin: 0;
+  padding: 0.4rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.vp-queue__row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.5rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s var(--vp-ease);
+}
+
+.vp-queue__row:hover {
+  background: var(--vp-surface-2);
+}
+
+.vp-queue__row[data-active="true"] {
+  background: var(--vp-surface-2);
+  border-color: var(--vp-border-strong);
+}
+
+.vp-queue__row[data-done="true"] .vp-queue__rowtitle {
+  color: var(--vp-muted);
+}
+
+.vp-queue__status {
+  display: inline-flex;
+  flex: none;
+  color: var(--vp-faint);
+}
+
+.vp-queue__row[data-done="true"] .vp-queue__status {
+  color: var(--vp-done);
+}
+
+.vp-queue__rowtext {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.vp-queue__rowtitle {
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vp-queue__rowdir {
+  font-size: 0.68rem;
+  color: var(--vp-faint);
+  font-family: var(--vp-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vp-queue__main {
+  position: relative;
+  min-width: 0;
+  background: var(--vp-bg);
+}
+
+.vp-queue__frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.vp-queue__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  height: 100%;
+  color: var(--vp-muted);
+}
+
+.vp-queue__empty p {
+  margin: 0;
+  font-size: 0.9rem;
+}

@@ -48,6 +48,29 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
   are added), and `GET /__vp_alive` (a connection the page holds open; its drop resolves Deny with the
   latest draft). Detecting that socket close server-side is what makes a real tab close reliable,
   where an unload-time `sendBeacon` is not (verified: the beacon survives navigation but not a close).
+- Review Queue daemon (`src/review/daemon.ts`, default path for `--review` and the `review` command;
+  `--no-daemon` keeps the one-shot `session.ts` path). One machine-wide, long-lived `http.createServer`
+  (NOT Vite) holding an in-memory queue: each enqueued plan is built once via `compile.ts buildHtml`
+  with `review: { planId, iteration }` and served from `/plan/<id>`; a browser "shell" lists the queue.
+  The HTTP/SSE contract is FROZEN (the runtime shell depends on exact endpoint/field/frame shapes):
+  `GET /__vp_ping` (liveness), `GET /` (shell, cached), `GET /plan/<id>`, `POST /__vp_enqueue`
+  (-> `{ id, shellConnected }`; cancel idle timer BEFORE the slow build or a short idleMs shuts the
+  daemon mid-enqueue), `GET /__vp_verdict?id` (long-held; caller disconnect drops the plan),
+  `POST /__vp_feedback` + `POST /__vp_draft` (both validated by `feedbackSchema`, routed by `planId`;
+  feedback is idempotent once settled), `GET /__vp_events` (SSE `event: queue` = `QueueEntry[]`; the
+  shell's liveness signal). Lifecycle: idle TTL fires when no `pending` plans remain (a new enqueue
+  cancels it); the LAST events client closing starts a 1500ms grace (survives a reload), after which
+  all still-pending plans are denied (with their draft) and the daemon shuts down. One idempotent
+  `shutdown()` ends every held connection so `close()` cannot hang on an SSE (the same regression the
+  one-shot server guards). `lockfile.ts` is discovery + the mutex: `~/.vplan/review-daemon.json`
+  (`{ port, pid }`), claimed via `writeFile`'s `wx` flag (atomic create-or-fail collapses racing
+  daemons), `isDaemonAlive` pings. `ensure-daemon.ts` reuses a live daemon or spawns the detached
+  `__review-daemon` process (`cli-entry.ts` derives the entry from `process.argv[1]`) and polls.
+  `commands/review-daemon.ts` owns the mutex (start -> `wx` claim; lost race or stale lock handled);
+  `commands/review.ts` is the `review <files...>` orchestration (stream each verdict as it resolves,
+  exit 0 iff all approved, `--json` for one keyed object). `client.ts` is `enqueuePlan`/`awaitVerdict`.
+  All of these take injectable seams so the routing/lifecycle is unit-tested in-process with a fake
+  shell and short idleMs; the real-spawn path has ONE `VP_DAEMON_E2E`-gated test.
 - `src/build/snapshots.ts` — the per-plan snapshot cache (`~/.vplan/snapshots`, keyed by a hash of
   the plan's absolute path) powering automatic iteration diffing. `render` reads a plan path's
   snapshot as the diff baseline, then overwrites it with the current source ("changes since you last

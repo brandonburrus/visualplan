@@ -26,13 +26,41 @@ export function reviewIteration(): number | null {
   return typeof value === 'number' ? value : null
 }
 
+/**
+ * The id of this plan within the Review Queue, or null in standalone single-review mode. Injected as
+ * `__VP_REVIEW_PLAN_ID__` by the daemon (its PRESENCE is what marks queue mode). An empty id cannot
+ * route a verdict, so it is treated as absent (and matches `feedbackSchema`'s `planId.min(1)`).
+ */
+export function reviewPlanId(): string | null {
+  const value = (globalThis as { __VP_REVIEW_PLAN_ID__?: string }).__VP_REVIEW_PLAN_ID__
+  return typeof value === 'string' && value.length > 0 ? value : null
+}
+
+/**
+ * True when this plan iframe is one of several in the daemon's Review Queue. In queue mode the
+ * feedback/draft POSTs carry the plan id so the daemon routes them, and the SHELL (not the plan)
+ * owns daemon lifecycle, so the plan must not open the keepalive or arm the unload prompt.
+ */
+export function isQueueMode(): boolean {
+  return reviewPlanId() !== null
+}
+
+/**
+ * Tag the feedback with the queue plan id when in queue mode, so the daemon routes the verdict to the
+ * right caller. In standalone single-review mode the id is absent and the payload is unchanged.
+ */
+function withPlanId(feedback: Feedback): Feedback {
+  const planId = reviewPlanId()
+  return planId ? { ...feedback, planId } : feedback
+}
+
 /** POST the explicit decision to the CLI, which resolves the blocking session. Returns whether it was accepted. */
 export async function postFeedback(feedback: Feedback): Promise<boolean> {
   try {
     const res = await fetch(FEEDBACK_ENDPOINT, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(feedback),
+      body: JSON.stringify(withPlanId(feedback)),
     })
     return res.ok
   } catch {
@@ -48,7 +76,7 @@ export function postDraft(feedback: Feedback): void {
   void fetch(DRAFT_ENDPOINT, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(feedback),
+    body: JSON.stringify(withPlanId(feedback)),
   }).catch(() => {})
 }
 
