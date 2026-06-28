@@ -297,6 +297,11 @@ export interface BuildOptions {
   /** A previous version of the plan's MDX source. When set, the section diff against it is injected
    * as `__VP_DIFF__` so the runtime marks added/edited sections. Omitted = no diff (the default). */
   baseline?: string
+  /** Bake the page into review mode (`__VP_REVIEW__`), so it mounts the feedback layer with no
+   * server behind it but the daemon serving it. `planId` tags the feedback so the Review Queue
+   * daemon can route the verdict; `iteration` shows the revision number in the bar. Omitted = a
+   * plain, non-review render (the default). Mirrors `reviewPlugin` on the dev-server path. */
+  review?: { planId?: string; iteration?: number }
 }
 
 /**
@@ -343,6 +348,8 @@ function baseConfig(paths: RuntimePaths, input: PlanInput, options: BuildOptions
   if (enableSharing) plugins.push(planSharePlugin(readSource))
   // Diff cues render only when a baseline is given, so omitting the plugin leaves a plain render.
   if (options.baseline !== undefined) plugins.push(planDiffPlugin(readSource, options.baseline))
+  // Review mode mounts the feedback layer; the plan iframe in the Review Queue is built this way.
+  if (options.review !== undefined) plugins.push(reviewInjectPlugin(options.review))
   return {
     root: paths.runtimeDir,
     configFile: false,
@@ -445,6 +452,42 @@ function readRequestBody(
     req.on('end', () => resolve(raw))
     req.on('error', reject)
   })
+}
+
+/**
+ * Inject the review-mode globals into a one-shot `buildHtml` page (the dev-server path uses
+ * `reviewPlugin` instead). `__VP_REVIEW__` mounts the feedback layer; `__VP_REVIEW_PLAN_ID__` tags
+ * every feedback/draft POST so the Review Queue daemon routes the verdict to the right caller; the
+ * optional iteration shows the revision number in the bar. `planId` and `iteration` are CLI-side
+ * values (a generated id, a validated number), so they are safe to inline as JSON.
+ */
+function reviewInjectPlugin(review: { planId?: string; iteration?: number }): Plugin {
+  return {
+    name: 'visualplan:review-inject',
+    transformIndexHtml: {
+      order: 'pre',
+      handler() {
+        const tags = [
+          { tag: 'script', injectTo: 'head' as const, children: 'globalThis.__VP_REVIEW__=true' },
+        ]
+        if (review.iteration !== undefined) {
+          tags.push({
+            tag: 'script',
+            injectTo: 'head' as const,
+            children: `globalThis.__VP_REVIEW_ITERATION__=${review.iteration}`,
+          })
+        }
+        if (review.planId !== undefined) {
+          tags.push({
+            tag: 'script',
+            injectTo: 'head' as const,
+            children: `globalThis.__VP_REVIEW_PLAN_ID__=${JSON.stringify(review.planId)}`,
+          })
+        }
+        return tags
+      },
+    },
+  }
 }
 
 /** Mutable holder for the payload to resolve with if the tab closes; kept current by `/__vp_draft`. */
