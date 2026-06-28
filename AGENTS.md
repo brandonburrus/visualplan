@@ -20,7 +20,20 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
   comments on sections (or selected text) and clicks Approve / Deny / Iterate, and the CLI blocks
   until then, prints the feedback to stdout, and exits (approve 0, deny 1, iterate 2, timeout 3).
   `--timeout` (default 15m) bounds the wait; a closed tab resolves as Deny. `-i/--iteration N` shows
-  the revision number in the review bar (the agent increments it each re-review).
+  the revision number in the review bar (the agent increments it each re-review). By default the
+  review joins a shared **Review Queue daemon** (see below) so plans from many sessions land in one
+  tab; `--no-daemon` forces the legacy one-shot server (one tab per review, no queue).
+- `vplan review <files...>` queues several plans for review at once and prints each verdict: it
+  enqueues every file into the shared daemon, opens the queue tab (if not already open), and streams
+  each plan's feedback the instant it is decided (exit 0 iff all approved); `--json` prints one
+  record keyed by file path instead. The **Review Queue daemon** is a per-user background process the
+  first `--review`/`review` auto-starts (detached; an atomic `~/.vplan/review-daemon.json` lockfile
+  mutex collapses simultaneous launches to one). It owns one browser tab with a left sidebar of
+  queued plans (title + origin-dir basename + status), serves each plan as a same-origin review-mode
+  iframe, routes each plan's verdict back to the caller waiting on it, drops a plan whose caller
+  disconnects, denies every queued plan and exits when the tab closes, and lingers `daemonTimeout`
+  (config, default 15m) after the queue empties so a re-plan reuses the warm tab. See
+  `packages/cli/AGENTS.md` (daemon) and `packages/runtime/AGENTS.md` (shell).
 - Iteration diffing: a render of a plan *file* snapshots its source (`~/.vplan/snapshots`, keyed by
   the absolute path), and the next render of that path diffs the new source against the snapshot,
   injecting `__VP_DIFF__` so the runtime marks added/edited sections git-gutter style. `--diff <path>`
@@ -36,8 +49,9 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
 - A programmatic API (`import { renderPlan, checkPlan } from 'vplan'`) renders/validates a plan from
   an in-memory MDX string, with a named export per catalog entry. See `packages/cli/src/api.ts`.
 - A persistent CLI config at `~/.vplan/config.json` (`packages/cli/src/config.ts`) sets the default
-  `theme` (`light`|`dark`|`system`) baked into a rendered plan; the plan's in-page cog overrides it
-  per-view via `localStorage`. `vplan config [get|set|path]` views and edits it.
+  `theme` (`light`|`dark`|`system`) baked into a rendered plan (the plan's in-page cog overrides it
+  per-view via `localStorage`) and `daemonTimeout` (the Review Queue daemon's idle TTL in ms, default
+  15m). `vplan config [get|set|path]` views and edits it.
 
 Plans use a fixed, tiny component vocabulary (`Phase`, `FileTree`, `Chart`, `Compare`, `Matrix`,
 `Callout`, `Questions`, `Checklist`, and ` ```mermaid ` / ` ```math ` fences) with no imports — the
@@ -142,6 +156,16 @@ A release is cut by creating a GitHub release; the tag is the published version 
 
 ## Key Decisions
 
+- 2026-06-28: The Review Queue is a single per-user **detached daemon process** (not a server hosted
+  inside the first caller). Why: a caller must return its own verdict to its agent promptly while the
+  queue keeps serving other sessions, which a caller-hosted server cannot do. One shared machine-wide
+  queue (the sidebar shows each plan's origin-dir basename to disambiguate projects), per the
+  approved plan; a `~/.vplan/review-daemon.json` `wx` lockfile is the start-race mutex.
+- 2026-06-28: Each queued plan keeps its review chrome **inside its own same-origin iframe** rather
+  than lifting commenting into the parent shell. Why: the plans are the user's own local plans (no
+  untrusted-input threat, unlike the docs site's sandboxed `/plan-frame`), so same-origin reuses the
+  existing `ReviewLayer` whole and avoids a cross-frame selection bridge. The shell owns only the
+  sidebar, navigation, and the `/__vp_events` SSE that doubles as the daemon's tab-close kill switch.
 - 2026-06-24: `vplan export` renders headless via `playwright-core` (a prod dep) and sources Chromium
   system-first, never bundling a browser binary. Why: a bundled `playwright` would add a huge
   postinstall to a CLI whose whole point is a small self-contained package; reusing a present Chrome
