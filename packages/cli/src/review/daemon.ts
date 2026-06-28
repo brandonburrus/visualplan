@@ -68,6 +68,9 @@ function titleFromSource(source: string): string {
 /** One queued plan's full server-side state. */
 interface QueuedPlan {
   entry: QueueEntry
+  /** A stable identity for the plan across iterations (the originating file path), so a requeued
+   * version replaces its predecessor in the queue. Undefined for stdin (no stable key). */
+  key?: string
   /** The plan's self-contained HTML, served from `/plan/<id>`. */
   html: string
   /** Resolvers of held `/__vp_verdict` connections waiting on this plan's decision. */
@@ -86,6 +89,8 @@ interface EnqueueBody {
   iteration?: number
   dir: string
   baseline?: string
+  /** The plan's stable identity (its file path); a new enqueue with the same key replaces the old. */
+  key?: string
 }
 
 export async function startDaemon(opts: StartDaemonOptions): Promise<DaemonInstance> {
@@ -130,6 +135,9 @@ export async function startDaemon(opts: StartDaemonOptions): Promise<DaemonInsta
     plan.settled = true
     plan.settledFeedback = feedback
     plan.entry.status = 'done'
+    // Record the verdict so the sidebar shows the matching icon (approve/deny/iterate), not a
+    // generic "done" mark.
+    plan.entry.decision = feedback.decision
     for (const resolve of plan.waiters) resolve(feedback)
     plan.waiters = []
     broadcast()
@@ -234,6 +242,16 @@ export async function startDaemon(opts: StartDaemonOptions): Promise<DaemonInsta
     // Cancel the idle timer up front: the build below can take longer than a short idleMs, and the
     // daemon must not shut down mid-enqueue. The enqueue itself proves the daemon is wanted.
     cancelIdle()
+    // A requeue (same key) replaces its predecessor, so a plan and its iterations appear once. Drop
+    // the prior version, unblocking any caller still waiting on it (deny) so it cannot hang.
+    if (body.key !== undefined) {
+      for (const [oldId, oldPlan] of plans) {
+        if (oldPlan.key !== body.key) continue
+        for (const resolve of oldPlan.waiters) resolve(oldPlan.draft)
+        oldPlan.waiters = []
+        plans.delete(oldId)
+      }
+    }
     counter += 1
     const id = `p${counter}`
     const html = await buildHtml(body.source, {
@@ -246,8 +264,16 @@ export async function startDaemon(opts: StartDaemonOptions): Promise<DaemonInsta
       title: titleFromSource(body.source),
       dir: body.dir,
       status: 'pending',
+      iteration: body.iteration,
     }
-    plans.set(id, { entry, html, waiters: [], draft: { ...DEFAULT_DENY }, settled: false })
+    plans.set(id, {
+      entry,
+      key: body.key,
+      html,
+      waiters: [],
+      draft: { ...DEFAULT_DENY },
+      settled: false,
+    })
     broadcast()
     res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' })
     res.end(JSON.stringify({ id, shellConnected: eventClients.size > 0 }))

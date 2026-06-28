@@ -156,6 +156,9 @@ export async function runRender(file: string | undefined, options: RenderOptions
           iteration: options.iteration,
           dir: reviewDir(file, fromStdin),
           baseline,
+          // Key by file path so a requeued iteration replaces the prior one in the sidebar; stdin
+          // has no stable path, so it always enqueues a fresh entry.
+          key: !fromStdin && file && file !== '-' ? resolve(file) : undefined,
         }),
       awaitVerdict,
       openBrowser: async (port: number) => {

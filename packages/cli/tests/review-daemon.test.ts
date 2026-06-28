@@ -350,3 +350,74 @@ describe('daemon shell-close deny-all', () => {
     await d.close()
   }, 60_000)
 })
+
+describe('daemon queue entries: version, decision, requeue dedupe', () => {
+  let d: DaemonInstance
+  afterEach(async () => {
+    await d?.close()
+  })
+
+  it('carries the iteration onto the queued entry (golden)', async () => {
+    d = await fakeDaemon()
+    await enqueue(d, { iteration: 3, key: '/p/a.mdx' })
+    const ctrl = new AbortController()
+    const queue = (await firstQueueEvent(d, ctrl.signal)) as Array<{ iteration?: number }>
+    ctrl.abort()
+    expect(queue).toHaveLength(1)
+    expect(queue[0].iteration).toBe(3)
+  }, 60_000)
+
+  it('records the locked-in decision on the entry once settled (golden)', async () => {
+    d = await fakeDaemon()
+    const { id } = await enqueue(d)
+    await fetch(url(d, '/__vp_feedback'), {
+      method: 'POST',
+      body: JSON.stringify({ decision: 'deny', planId: id }),
+    })
+    const ctrl = new AbortController()
+    const queue = (await firstQueueEvent(d, ctrl.signal)) as Array<{
+      status: string
+      decision?: string
+    }>
+    ctrl.abort()
+    expect(queue[0].status).toBe('done')
+    expect(queue[0].decision).toBe('deny')
+  }, 60_000)
+
+  it('replaces the prior version when requeued with the same key (golden)', async () => {
+    d = await fakeDaemon()
+    const first = await enqueue(d, { key: '/p/a.mdx', iteration: 1 })
+    const second = await enqueue(d, { key: '/p/a.mdx', iteration: 2 })
+    const ctrl = new AbortController()
+    const queue = (await firstQueueEvent(d, ctrl.signal)) as Array<{
+      id: string
+      iteration?: number
+    }>
+    ctrl.abort()
+    expect(queue).toHaveLength(1)
+    expect(queue[0].id).toBe(second.id)
+    expect(queue[0].id).not.toBe(first.id)
+    expect(queue[0].iteration).toBe(2)
+  }, 60_000)
+
+  it('keeps plans with distinct keys as separate entries (edge)', async () => {
+    d = await fakeDaemon()
+    await enqueue(d, { key: '/p/a.mdx' })
+    await enqueue(d, { key: '/p/b.mdx' })
+    const ctrl = new AbortController()
+    const queue = (await firstQueueEvent(d, ctrl.signal)) as unknown[]
+    ctrl.abort()
+    expect(queue).toHaveLength(2)
+  }, 60_000)
+
+  it('unblocks a caller still waiting on the superseded version with a deny (edge)', async () => {
+    d = await fakeDaemon()
+    const first = await enqueue(d, { key: '/p/a.mdx' })
+    const verdict = fetch(url(d, `/__vp_verdict?id=${first.id}`)).then(
+      r => r.json() as Promise<{ decision: string }>,
+    )
+    await new Promise(resolve => setTimeout(resolve, 50))
+    await enqueue(d, { key: '/p/a.mdx' })
+    expect((await verdict).decision).toBe('deny')
+  }, 60_000)
+})

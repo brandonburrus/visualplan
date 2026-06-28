@@ -65,6 +65,12 @@ export const queueEntrySchema = z.object({
   title: z.string(),
   dir: z.string(),
   status: z.enum(QUEUE_STATUS_VALUES).default('pending'),
+  // The revision number when this plan is a re-review (`--iteration N`); the sidebar shows it as a
+  // `vN` chip for N >= 2. Absent on a first review.
+  iteration: z.number().int().positive().optional(),
+  // The locked-in verdict once the plan is `done`, so the sidebar shows the matching icon (check /
+  // cross / iterate) rather than a generic one. Absent while pending.
+  decision: z.enum(REVIEW_DECISION_VALUES).optional(),
 })
 
 export type QueueStatus = (typeof QUEUE_STATUS_VALUES)[number]

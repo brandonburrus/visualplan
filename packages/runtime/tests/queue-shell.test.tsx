@@ -40,8 +40,12 @@ class FakeEventSource {
   }
 }
 
-function entry(id: string, status: QueueEntry['status'] = 'pending'): QueueEntry {
-  return { id, title: `Plan ${id}`, dir: `dir-${id}`, status }
+function entry(
+  id: string,
+  status: QueueEntry['status'] = 'pending',
+  extra: Partial<QueueEntry> = {},
+): QueueEntry {
+  return { id, title: `Plan ${id}`, dir: `dir-${id}`, status, ...extra }
 }
 
 let container: HTMLDivElement
@@ -183,8 +187,8 @@ describe('QueueShell accessibility', () => {
 
   it('names each row with its origin dir and review status, not by color alone (golden)', () => {
     render()
-    act(() => source().emitQueue([entry('a', 'done'), entry('b')]))
-    expect(rows()[0].getAttribute('aria-label')).toBe('Plan a, dir-a, reviewed')
+    act(() => source().emitQueue([entry('a', 'done', { decision: 'approve' }), entry('b')]))
+    expect(rows()[0].getAttribute('aria-label')).toBe('Plan a, dir-a, approved')
     expect(rows()[1].getAttribute('aria-label')).toBe('Plan b, dir-b, to review')
   })
 
@@ -201,5 +205,44 @@ describe('QueueShell accessibility', () => {
     // All done means nothing is active; the list must still be reachable by keyboard.
     act(() => source().emitQueue([entry('a', 'done'), entry('b', 'done')]))
     expect(rows().map(r => r.getAttribute('tabindex'))).toEqual(['0', '-1'])
+  })
+})
+
+describe('QueueShell decision icons and version chips', () => {
+  function rows(): HTMLButtonElement[] {
+    return Array.from(container.querySelectorAll('.vp-queue__row'))
+  }
+
+  it('marks each decided row with its locked-in verdict, not a generic done (golden)', () => {
+    render()
+    act(() =>
+      source().emitQueue([
+        entry('a', 'done', { decision: 'approve' }),
+        entry('b', 'done', { decision: 'deny' }),
+        entry('c', 'done', { decision: 'iterate' }),
+      ]),
+    )
+    expect(rows().map(r => r.getAttribute('data-decision'))).toEqual(['approve', 'deny', 'iterate'])
+  })
+
+  it('carries no decision attribute while a plan is pending (edge)', () => {
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    expect(rows()[0].getAttribute('data-decision')).toBeNull()
+  })
+
+  it('shows a version chip for an iteration but not for a first review (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'pending', { iteration: 3 }), entry('b')]))
+    const chips = Array.from(container.querySelectorAll('.vp-queue__chip')).map(c => c.textContent)
+    expect(chips).toEqual(['v3'])
+  })
+
+  it('names a row with its version and locked-in verdict (golden)', () => {
+    render()
+    act(() =>
+      source().emitQueue([entry('a', 'done', { decision: 'approve', iteration: 2 }), entry('b')]),
+    )
+    expect(rows()[0].getAttribute('aria-label')).toBe('Plan a, dir-a, v2, approved')
   })
 })

@@ -122,8 +122,17 @@
   color: var(--vp-muted);
 }
 
-.vp-queue__row[data-done="true"] .vp-queue__status {
+/* The decided icon takes the verdict's color, matching the in-plan review bar's done state. */
+.vp-queue__row[data-decision="approve"] .vp-queue__status {
   color: var(--vp-done);
+}
+
+.vp-queue__row[data-decision="deny"] .vp-queue__status {
+  color: var(--vp-risk);
+}
+
+.vp-queue__row[data-decision="iterate"] .vp-queue__status {
+  color: var(--vp-gold);
 }
 
 .vp-queue__rowtext {
@@ -139,6 +148,20 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Revision chip (v2, v3, ...) pushed to the row's trailing edge; present only on re-reviews. */
+.vp-queue__chip {
+  flex: none;
+  margin-left: auto;
+  padding: 0.05rem 0.32rem;
+  border: 1px solid var(--vp-border-strong);
+  border-radius: 5px;
+  background: var(--vp-bg);
+  color: var(--vp-muted);
+  font-family: var(--vp-mono);
+  font-size: 0.64rem;
+  line-height: 1.4;
 }
 
 .vp-queue__rowdir {

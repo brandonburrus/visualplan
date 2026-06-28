@@ -105,7 +105,8 @@ export async function runReview(files: string[], options: ReviewQueueOptions): P
       (await readFile(resolvePlanFile(file), 'utf8')).replace(/^﻿/, ''),
     check: checkSource,
     ensureDaemon: () => ensureDaemon({ idleMs: daemonTimeout }),
-    enqueue: (port, source, file) => enqueuePlan(port, { source, theme, dir: planDir(file) }),
+    enqueue: (port, source, file) =>
+      enqueuePlan(port, { source, theme, dir: planDir(file), key: resolve(file) }),
     awaitVerdict: (port, id) => awaitVerdict(port, id),
     openBrowser: async (port: number) => {
       await open(`http://localhost:${port}/`)

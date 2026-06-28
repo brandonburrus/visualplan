@@ -29,4 +29,26 @@ describe('queueEntrySchema', () => {
   it('exposes the three sidebar statuses (golden)', () => {
     expect(QUEUE_STATUS_VALUES).toEqual(['pending', 'active', 'done'])
   })
+
+  it('carries an optional iteration and decision for re-reviews (golden)', () => {
+    const parsed = queueEntrySchema.parse({
+      id: 'p-1',
+      title: 'Plan',
+      dir: 'proj',
+      status: 'done',
+      iteration: 2,
+      decision: 'deny',
+    })
+    expect(parsed.iteration).toBe(2)
+    expect(parsed.decision).toBe('deny')
+  })
+
+  it('rejects a zero/negative iteration or an unknown decision (error)', () => {
+    expect(() =>
+      queueEntrySchema.parse({ id: 'p-1', title: 'P', dir: 'd', iteration: 0 }),
+    ).toThrow()
+    expect(() =>
+      queueEntrySchema.parse({ id: 'p-1', title: 'P', dir: 'd', decision: 'maybe' }),
+    ).toThrow()
+  })
 })
