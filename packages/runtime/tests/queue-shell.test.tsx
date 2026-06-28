@@ -208,6 +208,29 @@ describe('QueueShell accessibility', () => {
   })
 })
 
+describe('QueueShell titles', () => {
+  it('labels the sidebar "Plans to Review" (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    expect(container.querySelector('.vp-queue__title')?.textContent ?? '').toBe('Plans to Review')
+  })
+
+  it('sets the tab title to the active plan being reviewed (golden)', () => {
+    render()
+    act(() =>
+      source().emitQueue([entry('a', 'done', { decision: 'approve' }), entry('b'), entry('c')]),
+    )
+    // The active plan defaults to the first pending one (b).
+    expect(document.title).toBe('Plan b')
+  })
+
+  it('falls back to the queue name when no plan is active (edge)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'done', { decision: 'approve' })]))
+    expect(document.title).toBe('Plans to Review')
+  })
+})
+
 describe('QueueShell decision icons and version chips', () => {
   function rows(): HTMLButtonElement[] {
     return Array.from(container.querySelectorAll('.vp-queue__row'))

@@ -135,6 +135,17 @@
   color: var(--vp-gold);
 }
 
+/* The iterate verdict means another round is coming, so its icon spins to read as in-progress. */
+.vp-queue__row[data-decision="iterate"] .vp-queue__status svg {
+  animation: vp-queue-spin 1.5s linear infinite;
+}
+
+@keyframes vp-queue-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .vp-queue__rowtext {
   display: flex;
   flex-direction: column;
@@ -209,5 +220,8 @@
   }
   .vp-queue__row {
     transition: none;
+  }
+  .vp-queue__row[data-decision="iterate"] .vp-queue__status svg {
+    animation: none;
   }
 }

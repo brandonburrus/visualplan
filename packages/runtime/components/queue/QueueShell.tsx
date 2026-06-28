@@ -79,6 +79,12 @@ export function QueueShell() {
   // Announced to assistive tech as the queue changes (a plan reviewed, the active plan advancing, a
   // new plan arriving), which are otherwise silent visual updates.
   const activeTitle = entries.find(entry => entry.id === activeId)?.title ?? null
+
+  // The tab title tracks the plan being reviewed, so a backgrounded tab is identifiable; it falls
+  // back to the queue name when nothing is active (empty or all reviewed).
+  useEffect(() => {
+    document.title = activeTitle || 'Plans to Review'
+  }, [activeTitle])
   const announcement =
     entries.length === 0
       ? ''

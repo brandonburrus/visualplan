@@ -45,7 +45,7 @@ export function QueueSidebar({
   return (
     <aside className='vp-queue__sidebar'>
       <header className='vp-queue__head'>
-        <span className='vp-queue__title'>Review queue</span>
+        <span className='vp-queue__title'>Plans to Review</span>
         <span className='vp-queue__count'>
           {reviewed} of {entries.length} reviewed
         </span>
