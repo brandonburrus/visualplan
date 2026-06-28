@@ -85,15 +85,15 @@ const config = program
 
 config
   .command('get')
-  .description('Print a setting (theme)')
+  .description('Print a setting (theme, daemonTimeout)')
   .argument('<key>', 'the setting to read')
   .action((key: string) => runConfigGet(key))
 
 config
   .command('set')
   .description('Change a setting and persist it')
-  .argument('<key>', 'the setting to change (theme)')
-  .argument('<value>', 'the new value (theme: light | dark | system)')
+  .argument('<key>', 'the setting to change (theme, daemonTimeout)')
+  .argument('<value>', 'the new value (theme: light | dark | system; daemonTimeout: 15m, 30s, 1h)')
   .action((key: string, value: string) => runConfigSet(key, value))
 
 config

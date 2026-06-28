@@ -12,11 +12,22 @@ export type Theme = 'light' | 'dark' | 'system'
 
 export interface Config {
   theme: Theme
+  /**
+   * Idle TTL in milliseconds that the Review Queue daemon lingers after its queue empties before
+   * exiting. A re-plan during a planning session within this window reuses the warm tab instead of
+   * paying a cold daemon start. Default 15 minutes. This is distinct from a single review's
+   * `--timeout` (how long one caller waits for its own plan's verdict).
+   */
+  daemonTimeout: number
 }
 
 /** The valid `theme` values, in menu order. */
 export const THEMES: readonly Theme[] = ['light', 'dark', 'system']
-const DEFAULT_CONFIG: Config = { theme: 'system' }
+
+/** Default Review Queue daemon idle TTL: 15 minutes (matches the default review `--timeout`). */
+export const DEFAULT_DAEMON_TIMEOUT_MS = 15 * 60 * 1000
+
+const DEFAULT_CONFIG: Config = { theme: 'system', daemonTimeout: DEFAULT_DAEMON_TIMEOUT_MS }
 
 /** `~/.vplan` — the config directory. */
 export const configDir = join(homedir(), '.vplan')
@@ -30,16 +41,29 @@ function isTheme(value: unknown): value is Theme {
   return typeof value === 'string' && (THEMES as readonly string[]).includes(value)
 }
 
+/** A valid `daemonTimeout` is a positive, finite integer count of milliseconds. */
+function isDaemonTimeout(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
+}
+
 /**
  * Read the persisted config. Returns defaults when the file is missing or malformed (an absent or
- * hand-broken config must never break a render), and ignores an unknown `theme` value. `dir`
- * overrides the config directory for tests; production calls it with the default `~/.vplan`.
+ * hand-broken config must never break a render), and ignores an unknown `theme` or a non-positive
+ * `daemonTimeout` value, falling back to the default for each field independently. `dir` overrides
+ * the config directory for tests; production calls it with the default `~/.vplan`.
  */
 export async function readConfig(dir: string = configDir): Promise<Config> {
   try {
-    const parsed: unknown = JSON.parse(await readFile(configFilePath(dir), 'utf8'))
-    const theme = (parsed as { theme?: unknown } | null)?.theme
-    return { theme: isTheme(theme) ? theme : DEFAULT_CONFIG.theme }
+    const parsed = JSON.parse(await readFile(configFilePath(dir), 'utf8')) as {
+      theme?: unknown
+      daemonTimeout?: unknown
+    } | null
+    return {
+      theme: isTheme(parsed?.theme) ? parsed.theme : DEFAULT_CONFIG.theme,
+      daemonTimeout: isDaemonTimeout(parsed?.daemonTimeout)
+        ? parsed.daemonTimeout
+        : DEFAULT_CONFIG.daemonTimeout,
+    }
   } catch {
     return DEFAULT_CONFIG
   }
