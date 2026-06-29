@@ -8,13 +8,14 @@ import ReviewDemoEmbed from '../../components/ReviewDemoEmbed.astro'
 
 # Review mode
 
-Most of the time you render a plan just to read it. **Review mode** is for when you want a decision:
-it opens the plan as an interactive session where you comment on the plan, answer its open questions,
-and end with an explicit Approve, Deny, or Iterate. The CLI blocks on that verdict and hands it back
-to the agent, so the agent knows exactly when the plan is settled and what to change if it is not.
+Rendering a plan opens an interactive **review** by default: a session where you comment on the
+plan, answer its open questions, and end with an explicit Approve, Deny, or Iterate. The CLI blocks
+on that verdict and hands it back to the agent, so the agent knows exactly when the plan is settled
+and what to change if it is not. (Reach for `--static` when you only want to read a plan, not decide
+on it.)
 
 ```bash
-vplan render --review plan.mdx
+vplan plan.mdx          # opens a review session (the default)
 ```
 
 The demo below is the real review layer running over a dummy plan, in a self-contained mode with no
@@ -59,8 +60,37 @@ git-gutter accent and an "N changed" summary, so you re-review only the delta. T
 Deny.
 
 ```bash
-vplan render --review plan.mdx -i 2   # second review round, shows the diff since round 1
+vplan plan.mdx -i 2   # second review round, shows the diff since round 1
 ```
+
+## Review queue
+
+When several plans are in flight at once, they share one tab instead of opening one each. The first
+review starts a small background daemon that owns a single browser tab with a left sidebar of every
+queued plan; reviews launched from any other session join the same tab. You clear them like an
+inbox: decide a plan and it is checked off and the next one opens, and each plan's verdict returns to
+the session that queued it.
+
+Queue several plans at once:
+
+```bash
+vplan review plan-a.mdx plan-b.mdx plan-c.mdx
+```
+
+Or open the queue tab on its own, so later reviews have somewhere to land (it starts the daemon if
+one is not already running):
+
+```bash
+vplan open
+```
+
+In the sidebar each plan shows its title, its origin directory, and a status icon for the verdict it
+locked in (a green check for Approve, a red cross for Deny, a spinning mark for Iterate); a
+re-reviewed plan carries a `vN` version chip, and requeuing a plan replaces its prior version in
+place. Reselect a decided plan to revisit its locked-in verdict with your answers preserved. The
+daemon lingers for a configurable idle window after the queue empties so a quick re-plan reuses the
+warm tab, and closing the tab denies anything still pending. Pass `--no-daemon` for a one-shot tab
+per review instead.
 
 See the [CLI reference](/docs/cli/#review-mode) for the full flag list, including `--timeout`,
 `--diff`, and `--no-diff`.
