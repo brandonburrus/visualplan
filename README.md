@@ -3,9 +3,7 @@
 </p>
 
 Turn an AI agent's implementation and design plans into polished, visual web pages instead of
-walls of text. A plan is written as MDX and compiled to a single self-contained HTML page:
-architecture diagrams, charts, metric cards, file-change trees, option comparisons, callouts,
-math, and a numbered phase timeline.
+walls of text. A plan is written as MDX and compiled to a single self-contained HTML page.
 
 **Documentation and live examples: [visualplan.dev](https://visualplan.dev)**
 
@@ -38,26 +36,29 @@ npx vplan plan.mdx
 
 ### Example Plan
 
-````mdx
-# Add rate limiting to the API
+<p align="center">
+  <img src="https://raw.githubusercontent.com/brandonburrus/visualplan/main/assets/example.jpg" alt="An MDX plan file on the left compiled to a polished rendered plan on the right" width="100%">
+</p>
 
-We add a sliding-window limiter at the gateway, behind a flag.
+A plan is a single MDX file: a `# Title`, then normal Markdown mixed with a small set of built-in
+components like `Phase`, `Chart`, `Compare`, and `FileTree`. `vplan` turns it into one polished,
+self-contained page you can open or share.
 
-```mermaid
-flowchart LR
-  Client --> Gateway --> Limiter --> API
-```
+Browse these example plans rendered live in the browser:
 
-<Phase title="Build the limiter" status="active">
-  Implement the Redis-backed window and return 429 over the limit.
-</Phase>
-
-<Callout type="risk">
-  A Redis outage must fail open, not closed.
-</Callout>
-````
+ - [Add rate limiting to the API](https://visualplan.dev/examples/rate-limiting.html)
+ - [Zero-downtime migration of the orders table](https://visualplan.dev/examples/schema-migration.html)
+ - [Add SSO with OAuth2 and OIDC](https://visualplan.dev/examples/add-sso-auth.html)
+ - [Train and ship a churn prediction model](https://visualplan.dev/examples/churn-model.html)
+ - [Sev1 incident response runbook](https://visualplan.dev/examples/incident-runbook.html)
 
 ### All components
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/brandonburrus/visualplan/main/assets/components.jpg" alt="The component vocabulary: diagrams, charts, code, comparisons, file trees, scorecards, callouts, and checklists" width="100%">
+</p>
+
+Plans are built from a small, fixed set of components:
 
  - ` ```mermaid ` (flowchart, sequence, state, class, ER, and XY diagrams)
  - ` ```math ` (LaTeX, typeset as MathML)
@@ -72,41 +73,39 @@ flowchart LR
  - `Checklist`
  - syntax-highlighted code blocks with file titles
 
-## Review mode
+## Review Mode
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/brandonburrus/visualplan/main/assets/review.jpg" alt="Review mode: comment on any section, answer the plan's questions inline, then Approve, Iterate, or Deny" width="100%">
+</p>
 
 Rendering a plan opens an interactive review by default, so you get a decision, not just a view:
 
 ```bash
-vplan plan.mdx          # interactive review (default); --static renders without it
+vplan plan.mdx
 ```
 
-This opens the plan as an interactive session: the reviewer comments on any section, answers the
-plan's open `Questions` inline, and clicks Approve, Deny, or Iterate. The CLI blocks until they
-decide, prints the feedback to stdout, and exits with a decision-specific code (Approve `0`, Deny
-`1`, Iterate `2`), so an agent knows when the plan is settled and what to revise if it is not. On an
-Iterate, the next render diffs the revision against the last view so the reviewer re-reviews only the
-delta.
+The reviewer comments on any section, answers the plan's open `Questions` inline, and clicks Approve,
+Iterate, or Deny. The agent waits for that decision: on Iterate it revises the plan and shows it
+again, with what changed highlighted, so you converge on a plan before any code is written.
 
 ### Review Queue
 
-When you have several plans in flight, queue them instead of reviewing one at a time. The first
-`--review` (or `vplan review a.mdx b.mdx ...`) starts a small background daemon that owns one browser
-tab with a left sidebar of every queued plan; reviews launched from any other session join the same
-tab. You clear the queue like an inbox: decide a plan and it is checked off and the next one opens.
-Each plan's verdict returns to whichever session queued it. Closing the tab denies everything still
-pending; the daemon lingers briefly (the `daemonTimeout` setting, default 15m) after the queue empties
-so a quick re-plan reuses the warm tab. Pass `--no-daemon` to opt out and use a one-shot tab per
-review.
+<p align="center">
+  <img src="https://raw.githubusercontent.com/brandonburrus/visualplan/main/assets/queue.jpg" alt="Review Queue: several plans queued in one browser tab and reviewed one after another" width="100%">
+</p>
+
+When you have several plans in flight, queue them into a single tab and review them one after
+another, like clearing an inbox: decide a plan and the next one opens. Queue several at once with
+`vplan review a.mdx b.mdx ...`.
 
 See the [Review mode guide](https://visualplan.dev/docs/review/) for a live, interactive demo.
 
 ## Share a plan
 
-Every rendered plan has a share button that copies a link encoding the entire plan. The plan
-is base64url encoded into a query param where it is securely decompressed into a sandboxed iframe
-in the browser at [visualplan.dev](https://visualplan.dev). This means you can share a plan with
-anyone simply by sharing the URL, without having to send files or make any kind of account. Run
-`vplan share plan.mdx` to print the same link from the CLI without rendering first.
+Every rendered plan has a share button that copies a link with the whole plan encoded in it, opened
+at [visualplan.dev](https://visualplan.dev). Share a plan with anyone just by sending the URL, no
+files to send and no account needed. Run `vplan share plan.mdx` to print the same link from the CLI.
 
 ## Documentation
 
