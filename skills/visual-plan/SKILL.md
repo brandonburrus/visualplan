@@ -8,8 +8,8 @@ description: >-
   page (diagrams, phases, file-change maps, comparisons) via the `vplan` CLI. It applies when the
   user says "plan this", "what's the approach", "how should we approach X", "show me the plan",
   "make a visual plan", "render this plan", or asks for a plan with diagrams/charts, and when they
-  want to review, approve, sign off on, or give feedback on a plan via `vplan render --review`. Skip
-  only for a trivial one-step change or when the user explicitly asks for plain prose.
+  want to review, approve, sign off on, or give feedback on a plan. Skip only for a trivial 
+  one-step change or when the user explicitly asks for plain prose.
 ---
 
 ## Purpose
@@ -31,7 +31,7 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
 - [ ] 1. Write the plan to a `.mdx` file (`# Title` first; components are always in scope).
 - [ ] 2. `vplan check <file>.mdx` and fix every reported issue, quality-lint warnings included.
 - [ ] 3. Present with `vplan <file>.mdx` (an interactive review is the default), then act on the feedback.
-- [ ] 4. For a static page, a live preview, or a PDF/JPG instead, see `references/static-exports.md`.
+- [ ] 4. For a static page, a live preview, or a PDF/JPG instead, load `references/static-exports.md`.
 
 1. Write the plan to a `.mdx` file, starting with a single `# Title` heading (it becomes the plan
    title; no frontmatter). Then use the components below; you never write `import` statements, they
@@ -48,7 +48,7 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
    answers to stdout, and exits: approve 0, deny 1, iterate 2, timeout 3 (`--timeout`, default 15m;
    closing the tab counts as deny). It is a long-running foreground server, so run it in the
    background. (The explicit `--review` flag still works but is redundant now that review is the
-   default; `--static` opts out into a one-shot page, see step 4.) Then act on the printed feedback:
+   default.) Then act on the printed feedback:
    - **Approve** -> proceed with the plan as written.
    - **Iterate** -> revise the plan addressing each comment, then review again with `-i N`
      (`--iteration N`) incremented so the bar shows the round; repeat until Approve or Deny. **Edit
@@ -64,9 +64,10 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
    explicit Approve so you know it is settled. Reach for a static render (step 4) only when the user
    just wants to look, not shape or decide.
 4. **A static page, a live-reloading preview, or a PDF/JPG export** are the non-review outputs, for
-   when the user only wants to look or wants a shareable file. They opt out of the review default via
-   `--static`, `--watch`, `--stdout`, or `vplan export`. See **`references/static-exports.md`** for
-   all of them; authoring the plan (everything below) is identical whichever output you choose.
+   when the user only wants to look or wants a shareable file rather than review one. When you need
+   one, **load `references/static-exports.md`**; it holds the commands and flags for these (kept out
+   of here so review stays the default path). Authoring the plan (everything below) is identical
+   whichever output you choose.
 
 Run `vplan components` anytime for the exact prop signatures.
 
@@ -236,8 +237,7 @@ it in paragraphs. Prose is the connective tissue between visuals, never the subs
 ## Rules
 
 - **Never pass `--no-open` for a user-facing plan.** The point is that the user sees it; the review
-  session and a static render both open automatically. Reserve `--no-open` for an explicit
-  headless/CI request.
+  session opens automatically. Reserve `--no-open` for an explicit headless/CI request.
 - **No images or external assets.** The page is a single self-contained file, so a markdown image
   (`![](url)`) or any external asset cannot be embedded, and `check` rejects markdown images. Use a
   ` ```mermaid ` diagram for anything visual, or describe it in text.
