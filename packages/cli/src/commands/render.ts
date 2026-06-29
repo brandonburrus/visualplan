@@ -26,7 +26,11 @@ export interface RenderOptions {
   stdout?: boolean
   /** Port for the `--watch` dev server; ignored for a one-shot file render. */
   port?: number
-  /** Open the plan as an interactive review session and print the reviewer's feedback. */
+  /** Render a static HTML file and open it (the pre-review default). Opts out of the now-default
+   * review session; set by `--static`. */
+  static?: boolean
+  /** Open the plan as an interactive review session and print the reviewer's feedback. Review is now
+   * the default, so this flag is redundant; it is kept for backwards compatibility. */
   review?: boolean
   /** Bypass the shared Review Queue daemon and use the one-shot in-process review server instead.
    * Set by `--no-daemon`; keeps the legacy single-server path for environments where the daemon's
@@ -104,8 +108,18 @@ function defaultOutPath(absMdx: string): string {
 }
 
 /**
- * `vplan render [file]` — validate, then build a static page or start a watch server. Input comes
- * from a file, an explicit `-`, or piped stdin; output goes to a file (and opens) or to stdout.
+ * Whether a render should open an interactive review session. Review is the default; any static
+ * output flag (`--static`, `--watch`, `--stdout`, `--out`) opts out into a one-shot artifact render.
+ * `--review` explicitly selects the default and is kept only for backwards compatibility.
+ */
+export function rendersReview(options: RenderOptions): boolean {
+  return !(options.static || options.watch || options.stdout || options.out !== undefined)
+}
+
+/**
+ * `vplan render [file]` — validate, then open an interactive review session (the default) or, with a
+ * static flag, build a static page / start a watch server. Input comes from a file, an explicit `-`,
+ * or piped stdin; static output goes to a file (and opens) or to stdout.
  */
 export async function runRender(file: string | undefined, options: RenderOptions): Promise<void> {
   if (options.stdout && options.out) {
@@ -116,15 +130,15 @@ export async function runRender(file: string | undefined, options: RenderOptions
       '--stdout cannot be combined with --watch; the watch server has no file output.',
     )
   }
-  if (options.review && (options.watch || options.stdout || options.out)) {
-    throw new Error('--review cannot be combined with --watch, --stdout, or --out.')
+  if (options.review && !rendersReview(options)) {
+    throw new Error('--review cannot be combined with --static, --watch, --stdout, or --out.')
   }
 
   const { theme } = await readConfig()
 
-  // Review is a one-shot server that blocks on human feedback; it accepts a file or piped stdin
+  // Review (the default) is a server that blocks on human feedback; it accepts a file or piped stdin
   // because it serves a snapshot read once (no watching), unlike --watch.
-  if (options.review) {
+  if (rendersReview(options)) {
     const { source, label, fromStdin } = await readPlanSource(file)
     const issues = await checkSource(source)
     if (issues.length > 0) {

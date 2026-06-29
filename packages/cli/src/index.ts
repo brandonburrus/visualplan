@@ -24,13 +24,17 @@ const program = new Command('vplan')
 
 program
   .command('render', { isDefault: true })
-  .description('Compile a plan .mdx to a self-contained HTML page (default command)')
+  .description('Review a plan .mdx interactively (default), or render it to a static page')
   .argument('[file]', 'the plan .mdx file; - or omit to read from stdin')
+  .option('--static', 'render a static HTML page and open it, instead of the review session')
   .option('--watch', 'start a hot-reloading dev server instead of writing a file')
   .option('--port <number>', 'port for the --watch dev server', parsePort, DEFAULT_DEV_PORT)
-  .option('--out <path>', 'output HTML path (defaults to <file>.plan.html)')
-  .option('--stdout', 'write the rendered HTML to stdout instead of a file')
-  .option('--review', 'open an interactive review session and print the reviewer feedback')
+  .option('--out <path>', 'output HTML path (defaults to <file>.plan.html; implies --static)')
+  .option('--stdout', 'write the rendered HTML to stdout instead of a file (implies --static)')
+  .option(
+    '--review',
+    'open the interactive review session (now the default; kept for compatibility)',
+  )
   .option(
     '-i, --iteration <number>',
     'plan revision number shown in the review bar',

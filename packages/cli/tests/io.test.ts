@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
@@ -130,6 +130,14 @@ describe('runRender output routing', () => {
     const out = capture('stdout')
     await runRender(path, { stdout: true, open: false })
     const html = out()
+    expect(html.startsWith('<!doctype html>')).toBe(true)
+    expect(html).toContain('id="root"')
+  }, 60_000)
+
+  it('writes <file>.plan.html with --static (the pre-review default) (golden)', async () => {
+    const path = await writePlan('render-static.mdx', VALID_PLAN)
+    await runRender(path, { static: true, open: false })
+    const html = await readFile(path.replace(/\.mdx$/, '.plan.html'), 'utf8')
     expect(html.startsWith('<!doctype html>')).toBe(true)
     expect(html).toContain('id="root"')
   }, 60_000)
