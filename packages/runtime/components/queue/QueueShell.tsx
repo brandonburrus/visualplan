@@ -1,7 +1,14 @@
 import type { QueueEntry } from '@visualplan/core'
 import { IconChecklist } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
-import { firstPendingId, moveSelection, nextActiveId, reviewedCount } from './logic.js'
+import { setActivityDot } from './favicon.js'
+import {
+  firstPendingId,
+  hasNewActivity,
+  moveSelection,
+  nextActiveId,
+  reviewedCount,
+} from './logic.js'
 import { QueueSidebar } from './QueueSidebar.js'
 import './queue.css'
 
@@ -29,10 +36,18 @@ export function QueueShell() {
   // follows the selection then but never gets yanked out from under the user on a background update.
   const keyboardNavRef = useRef(false)
 
+  // A favicon dot raised when the queue gains activity (a plan added or updated) while the tab is
+  // backgrounded, cleared when the user focuses the tab again; prevEntriesRef diffs against the
+  // last queue to tell new activity from a no-op redraw.
+  const [unseen, setUnseen] = useState(false)
+  const prevEntriesRef = useRef<QueueEntry[]>([])
+
   useEffect(() => {
     const source = new EventSource(EVENTS_ENDPOINT)
     const onQueue = (event: MessageEvent) => {
       const next = JSON.parse(event.data) as QueueEntry[]
+      if (document.hidden && hasNewActivity(prevEntriesRef.current, next)) setUnseen(true)
+      prevEntriesRef.current = next
       setEntries(next)
       // Default to the first pending plan, and auto-advance once the active plan is marked done.
       setActiveId(nextActiveId(next, activeRef.current))
@@ -43,6 +58,19 @@ export function QueueShell() {
       source.close()
     }
   }, [])
+
+  // Clear the activity dot once the tab is in the foreground again; reflect the flag on the favicon.
+  useEffect(() => {
+    const onVisible = () => {
+      if (!document.hidden) setUnseen(false)
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [])
+
+  useEffect(() => {
+    setActivityDot(unseen)
+  }, [unseen])
 
   // j/k or arrow keys move the active selection; the in-iframe review UI handles every other key.
   useEffect(() => {
@@ -83,7 +111,7 @@ export function QueueShell() {
   // The tab title tracks the plan being reviewed, so a backgrounded tab is identifiable; it falls
   // back to the queue name when nothing is active (empty or all reviewed).
   useEffect(() => {
-    document.title = activeTitle || 'Plans to Review'
+    document.title = activeTitle || 'Visual Plan Review Queue'
   }, [activeTitle])
   const announcement =
     entries.length === 0

@@ -2,6 +2,7 @@ import type { QueueEntry } from '@visualplan/core'
 import { describe, expect, it } from 'vitest'
 import {
   firstPendingId,
+  hasNewActivity,
   moveSelection,
   nextActiveId,
   reviewedCount,
@@ -86,5 +87,39 @@ describe('reviewedCount', () => {
 
   it('is zero for an empty queue (error)', () => {
     expect(reviewedCount([])).toBe(0)
+  })
+})
+
+describe('hasNewActivity', () => {
+  const at = (
+    id: string,
+    status: QueueEntry['status'] = 'pending',
+    iteration?: number,
+  ): QueueEntry => ({
+    id,
+    title: `Plan ${id}`,
+    dir: 'proj',
+    status,
+    iteration,
+  })
+
+  it('flags an added plan (golden)', () => {
+    expect(hasNewActivity([at('a')], [at('a'), at('b')])).toBe(true)
+  })
+
+  it('flags a status change on an existing plan (golden)', () => {
+    expect(hasNewActivity([at('a', 'pending')], [at('a', 'done')])).toBe(true)
+  })
+
+  it('flags a version bump on a requeued plan (golden)', () => {
+    expect(hasNewActivity([at('a', 'pending', 2)], [at('a', 'pending', 3)])).toBe(true)
+  })
+
+  it('does not flag an unchanged queue (edge)', () => {
+    expect(hasNewActivity([at('a'), at('b')], [at('a'), at('b')])).toBe(false)
+  })
+
+  it('does not flag a plan only being removed (edge)', () => {
+    expect(hasNewActivity([at('a'), at('b')], [at('a')])).toBe(false)
   })
 })

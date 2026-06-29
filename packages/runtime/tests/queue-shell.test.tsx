@@ -224,10 +224,53 @@ describe('QueueShell titles', () => {
     expect(document.title).toBe('Plan b')
   })
 
-  it('falls back to the queue name when no plan is active (edge)', () => {
+  it('falls back to the default queue title when no plan is active (edge)', () => {
     render()
     act(() => source().emitQueue([entry('a', 'done', { decision: 'approve' })]))
-    expect(document.title).toBe('Plans to Review')
+    expect(document.title).toBe('Visual Plan Review Queue')
+  })
+})
+
+describe('QueueShell background activity dot', () => {
+  function setHidden(hidden: boolean): void {
+    Object.defineProperty(document, 'hidden', { value: hidden, configurable: true })
+    Object.defineProperty(document, 'visibilityState', {
+      value: hidden ? 'hidden' : 'visible',
+      configurable: true,
+    })
+  }
+
+  function faviconHasDot(): boolean {
+    const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+    return decodeURIComponent(link?.href ?? '').includes('<circle')
+  }
+
+  afterEach(() => setHidden(false))
+
+  it('raises the favicon dot when a plan arrives while the tab is hidden (golden)', () => {
+    setHidden(true)
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    expect(faviconHasDot()).toBe(true)
+  })
+
+  it('leaves the favicon plain when the tab is in the foreground (edge)', () => {
+    setHidden(false)
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    expect(faviconHasDot()).toBe(false)
+  })
+
+  it('clears the dot when the tab returns to the foreground (golden)', () => {
+    setHidden(true)
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    expect(faviconHasDot()).toBe(true)
+    act(() => {
+      setHidden(false)
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    expect(faviconHasDot()).toBe(false)
   })
 })
 

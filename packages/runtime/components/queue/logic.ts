@@ -49,3 +49,15 @@ export function moveSelection(
 export function reviewedCount(entries: QueueEntry[]): number {
   return entries.filter(isDone).length
 }
+
+/**
+ * Whether `next` represents new queue activity versus `prev`: a plan was added (a new id) or an
+ * existing plan changed status or version (a re-review). A plan only being removed is not activity
+ * to flag. Used to badge the tab while it is backgrounded.
+ */
+export function hasNewActivity(prev: QueueEntry[], next: QueueEntry[]): boolean {
+  return next.some(entry => {
+    const before = prev.find(p => p.id === entry.id)
+    return !before || before.status !== entry.status || before.iteration !== entry.iteration
+  })
+}
