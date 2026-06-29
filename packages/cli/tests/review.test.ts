@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it } from 'vitest'
 import { type ReviewServer, startReviewServer } from '../src/build/compile.js'
-import { parseIteration, parseTimeout, runRender } from '../src/commands/render.js'
+import { parseIteration, parseTimeout, rendersReview, runRender } from '../src/commands/render.js'
 import { exitCodeFor, formatFeedback } from '../src/review/format.js'
 
 const PLAN = '# Plan\n\ntext\n'
@@ -78,10 +78,35 @@ describe('parseIteration', () => {
   })
 })
 
+describe('rendersReview (review is the default)', () => {
+  it('defaults to review with no flags, and when --review is explicit (golden)', () => {
+    expect(rendersReview({})).toBe(true)
+    expect(rendersReview({ review: true })).toBe(true)
+  })
+
+  it('opts out of review for any static output flag (golden)', () => {
+    expect(rendersReview({ static: true })).toBe(false)
+    expect(rendersReview({ watch: true })).toBe(false)
+    expect(rendersReview({ stdout: true })).toBe(false)
+    expect(rendersReview({ out: 'plan.html' })).toBe(false)
+  })
+
+  it('keeps review when only review-adjacent flags are set (edge)', () => {
+    // --no-daemon, --iteration, --timeout, and --diff all refine a review; they do not opt out.
+    expect(rendersReview({ noDaemon: true, iteration: 2, timeout: 1000, diff: false })).toBe(true)
+  })
+})
+
 describe('runRender --review guards', () => {
   it('rejects --review combined with an output flag (error)', async () => {
     await expect(runRender('plan.mdx', { review: true, stdout: true })).rejects.toThrow(
       /--review cannot be combined/,
+    )
+  })
+
+  it('rejects --review combined with --static (error)', async () => {
+    await expect(runRender('plan.mdx', { review: true, static: true })).rejects.toThrow(
+      /--review cannot be combined with --static/,
     )
   })
 })

@@ -39,9 +39,10 @@ npx vplan plan.mdx
 ## Usage
 
 ```bash
-vplan plan.mdx              # render to plan.plan.html and open it
+vplan plan.mdx              # open an interactive review session (the default), blocks for sign-off
+vplan plan.mdx --static     # render to plan.plan.html and open it, no review
 vplan plan.mdx --watch      # live-reloading dev server while you edit
-vplan plan.mdx --review     # interactive review session, blocks for sign-off
+vplan review a.mdx b.mdx    # queue several plans, review them in one tab, stream verdicts
 vplan check plan.mdx        # validate a plan (syntax + quality lint) without rendering
 vplan export pdf plan.mdx   # render to a static PDF or JPG via headless Chromium
 vplan share plan.mdx        # print a shareable visualplan.dev link
@@ -90,10 +91,10 @@ flowchart LR
 
 ## Review mode
 
-To get a decision on a plan, not just show it, render with `--review`:
+Rendering a plan opens an interactive review by default, so you get a decision, not just a view:
 
 ```bash
-vplan render --review plan.mdx
+vplan plan.mdx          # interactive review (default); --static renders without it
 ```
 
 This opens the plan as an interactive session: the reviewer comments on any section, answers the
@@ -102,6 +103,17 @@ decide, prints the feedback to stdout, and exits with a decision-specific code (
 `1`, Iterate `2`), so an agent knows when the plan is settled and what to revise if it is not. On an
 Iterate, the next render diffs the revision against the last view so the reviewer re-reviews only the
 delta.
+
+### Review Queue
+
+When you have several plans in flight, queue them instead of reviewing one at a time. The first
+`--review` (or `vplan review a.mdx b.mdx ...`) starts a small background daemon that owns one browser
+tab with a left sidebar of every queued plan; reviews launched from any other session join the same
+tab. You clear the queue like an inbox: decide a plan and it is checked off and the next one opens.
+Each plan's verdict returns to whichever session queued it. Closing the tab denies everything still
+pending; the daemon lingers briefly (the `daemonTimeout` setting, default 15m) after the queue empties
+so a quick re-plan reuses the warm tab. Pass `--no-daemon` to opt out and use a one-shot tab per
+review.
 
 See the [Review mode guide](https://visualplan.dev/docs/review/) for a live, interactive demo.
 

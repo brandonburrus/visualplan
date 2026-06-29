@@ -1,0 +1,227 @@
+/* Review Queue shell chrome. The design tokens (--vp-*) come from theme.css, which the queue entry
+ * imports alongside this file. Monochrome ink register matching the plan page: off-white/off-black
+ * surfaces, a 1px border rail, semantic green only for the reviewed-status check. */
+
+.vp-queue {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  height: 100vh;
+  width: 100vw;
+  background: var(--vp-bg);
+  color: var(--vp-text);
+  font-family: var(--vp-font);
+}
+
+/* A single queued plan drops the sidebar, so the plan fills the tab like an ordinary review. */
+.vp-queue--solo {
+  grid-template-columns: 1fr;
+}
+
+.vp-queue__sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-right: 1px solid var(--vp-border);
+  background: var(--vp-surface);
+  /* The rail mounts when a second plan joins (solo -> queue); ease it in rather than popping. */
+  animation: vp-queue-sidebar-in 0.18s var(--vp-ease) both;
+}
+
+@keyframes vp-queue-sidebar-in {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Visually-hidden but exposed to assistive tech: status labels and the live-region announcer. */
+.vp-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.vp-queue__head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.85rem 0.9rem 0.7rem;
+  border-bottom: 1px solid var(--vp-border);
+}
+
+.vp-queue__title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.vp-queue__count {
+  font-size: 0.72rem;
+  color: var(--vp-muted);
+}
+
+.vp-queue__list {
+  list-style: none;
+  margin: 0;
+  padding: 0.4rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.vp-queue__row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.5rem 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s var(--vp-ease);
+}
+
+.vp-queue__row:hover:not([data-active="true"]) {
+  background: var(--vp-surface-2);
+}
+
+/* The active plan is the one the main pane shows, so it gets the strongest weight in the rail: an
+ * ink-tinted fill (distinct from the plain-grey hover) plus a bolder, full-contrast title. No side
+ * accent bar (a design ban); the fill + weight carry it. */
+.vp-queue__row[data-active="true"] {
+  background: color-mix(in srgb, var(--vp-accent) 9%, var(--vp-surface));
+  border-color: var(--vp-border-strong);
+}
+
+.vp-queue__row[data-done="true"] .vp-queue__rowtitle {
+  color: var(--vp-muted);
+}
+
+/* Placed after the done rule so a reopened (done) plan that is also active reads as active. */
+.vp-queue__row[data-active="true"] .vp-queue__rowtitle {
+  font-weight: 600;
+  color: var(--vp-text);
+}
+
+.vp-queue__status {
+  display: inline-flex;
+  flex: none;
+  color: var(--vp-muted);
+}
+
+/* The decided icon takes the verdict's color, matching the in-plan review bar's done state. */
+.vp-queue__row[data-decision="approve"] .vp-queue__status {
+  color: var(--vp-done);
+}
+
+.vp-queue__row[data-decision="deny"] .vp-queue__status {
+  color: var(--vp-risk);
+}
+
+.vp-queue__row[data-decision="iterate"] .vp-queue__status {
+  color: var(--vp-gold);
+}
+
+/* The iterate verdict means another round is coming, so its icon spins to read as in-progress. */
+.vp-queue__row[data-decision="iterate"] .vp-queue__status svg {
+  animation: vp-queue-spin 1.5s linear infinite;
+}
+
+@keyframes vp-queue-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.vp-queue__rowtext {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.vp-queue__rowtitle {
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Revision chip (v2, v3, ...) pushed to the row's trailing edge; present only on re-reviews. */
+.vp-queue__chip {
+  flex: none;
+  margin-left: auto;
+  padding: 0.05rem 0.32rem;
+  border: 1px solid var(--vp-border-strong);
+  border-radius: 5px;
+  background: var(--vp-bg);
+  color: var(--vp-muted);
+  font-family: var(--vp-mono);
+  font-size: 0.64rem;
+  line-height: 1.4;
+}
+
+.vp-queue__rowdir {
+  font-size: 0.68rem;
+  /* --vp-muted, not --vp-faint: this label disambiguates plans across projects, so it must clear the
+   * 4.5:1 AA text floor (--vp-faint measured ~3.1:1 at this size). */
+  color: var(--vp-muted);
+  font-family: var(--vp-mono);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vp-queue__main {
+  position: relative;
+  min-width: 0;
+  background: var(--vp-bg);
+}
+
+.vp-queue__frame {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+}
+
+.vp-queue__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  height: 100%;
+  color: var(--vp-muted);
+}
+
+.vp-queue__empty p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vp-queue__sidebar {
+    animation: none;
+  }
+  .vp-queue__row {
+    transition: none;
+  }
+  .vp-queue__row[data-decision="iterate"] .vp-queue__status svg {
+    animation: none;
+  }
+}

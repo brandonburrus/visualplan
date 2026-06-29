@@ -14,6 +14,9 @@ import {
   runRender,
   type RenderOptions,
 } from './commands/render.js'
+import { type OpenOptions, runOpen } from './commands/open.js'
+import { type ReviewQueueOptions, runReview } from './commands/review.js'
+import { runReviewDaemon } from './commands/review-daemon.js'
 import { runShare } from './commands/share.js'
 
 const program = new Command('vplan')
@@ -22,13 +25,17 @@ const program = new Command('vplan')
 
 program
   .command('render', { isDefault: true })
-  .description('Compile a plan .mdx to a self-contained HTML page (default command)')
+  .description('Review a plan .mdx interactively (default), or render it to a static page')
   .argument('[file]', 'the plan .mdx file; - or omit to read from stdin')
+  .option('--static', 'render a static HTML page and open it, instead of the review session')
   .option('--watch', 'start a hot-reloading dev server instead of writing a file')
   .option('--port <number>', 'port for the --watch dev server', parsePort, DEFAULT_DEV_PORT)
-  .option('--out <path>', 'output HTML path (defaults to <file>.plan.html)')
-  .option('--stdout', 'write the rendered HTML to stdout instead of a file')
-  .option('--review', 'open an interactive review session and print the reviewer feedback')
+  .option('--out <path>', 'output HTML path (defaults to <file>.plan.html; implies --static)')
+  .option('--stdout', 'write the rendered HTML to stdout instead of a file (implies --static)')
+  .option(
+    '--review',
+    'open the interactive review session (now the default; kept for compatibility)',
+  )
   .option(
     '-i, --iteration <number>',
     'plan revision number shown in the review bar',
@@ -45,8 +52,38 @@ program
     'diff this render against a baseline plan .mdx (overrides the snapshot cache)',
   )
   .option('--no-diff', 'skip iteration diffing (do not read or write the snapshot cache)')
+  .option('--no-daemon', 'review without the shared Review Queue daemon (one-shot server)')
   .option('--no-open', 'do not open the result in a browser')
   .action((file: string | undefined, options: RenderOptions) => runRender(file, options))
+
+program
+  .command('review')
+  .description('Queue one or more plans for review in the shared Review Queue and print verdicts')
+  .argument('<files...>', 'the plan .mdx files to review')
+  .option('--json', 'print one JSON object keyed by file path instead of streaming text')
+  .option('--no-open', 'do not open the queue in a browser')
+  .action((files: string[], options: ReviewQueueOptions) => runReview(files, options))
+
+program
+  .command('open')
+  .description('Open the Review Queue tab, starting the background daemon if needed')
+  .option('--no-open', 'just start the daemon and print the URL, without opening a browser')
+  .action((options: OpenOptions) => runOpen(options))
+
+interface ReviewDaemonCliOptions {
+  port: number
+  idle: number
+}
+
+// Hidden: the detached daemon process `ensureDaemon` spawns. Not for direct human use.
+program
+  .command('__review-daemon', { hidden: true })
+  .description('internal: run the Review Queue daemon process')
+  .option('--port <number>', 'port to bind', parsePort, 9151)
+  .option('--idle <ms>', 'idle TTL in milliseconds', value => Number.parseInt(value, 10), 900_000)
+  .action((options: ReviewDaemonCliOptions) =>
+    runReviewDaemon({ port: options.port, idleMs: options.idle }),
+  )
 
 program
   .command('export')
@@ -85,15 +122,15 @@ const config = program
 
 config
   .command('get')
-  .description('Print a setting (theme)')
+  .description('Print a setting (theme, daemonTimeout)')
   .argument('<key>', 'the setting to read')
   .action((key: string) => runConfigGet(key))
 
 config
   .command('set')
   .description('Change a setting and persist it')
-  .argument('<key>', 'the setting to change (theme)')
-  .argument('<value>', 'the new value (theme: light | dark | system)')
+  .argument('<key>', 'the setting to change (theme, daemonTimeout)')
+  .argument('<value>', 'the new value (theme: light | dark | system; daemonTimeout: 15m, 30s, 1h)')
   .action((key: string, value: string) => runConfigSet(key, value))
 
 config

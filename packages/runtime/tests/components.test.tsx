@@ -278,6 +278,50 @@ describe('Questions in review mode', () => {
   })
 })
 
+describe('Questions locked after a decision', () => {
+  type G = {
+    __VP_REVIEW__?: boolean
+    __VP_REVIEW_DECIDED__?: string
+    __VP_REVIEW_ANSWERS__?: unknown
+  }
+  afterEach(() => {
+    ;(globalThis as G).__VP_REVIEW__ = undefined
+    ;(globalThis as G).__VP_REVIEW_DECIDED__ = undefined
+    ;(globalThis as G).__VP_REVIEW_ANSWERS__ = undefined
+  })
+
+  it('keeps an answered question as a read-only field and drops an unanswered input once locked (golden)', () => {
+    ;(globalThis as G).__VP_REVIEW__ = true
+    ;(globalThis as G).__VP_REVIEW_DECIDED__ = 'approve'
+    ;(globalThis as G).__VP_REVIEW_ANSWERS__ = [
+      { question: 'Fail open or closed?', answer: 'Closed' },
+    ]
+    const html = renderToStaticMarkup(
+      <ReviewAnswersProvider>
+        <Questions items={['Fail open or closed?', 'TTL ok?']} />
+      </ReviewAnswersProvider>,
+    )
+    // Only the answered question keeps a field; it is read-only and shows its answer.
+    expect((html.match(/vp-questions__answer/g) || []).length).toBe(1)
+    expect(html).toMatch(/readonly/i)
+    expect(html).toContain('Closed')
+    // Both questions still appear as text.
+    expect(html).toContain('Fail open or closed?')
+    expect(html).toContain('TTL ok?')
+  })
+
+  it('keeps every answer field editable while the plan is undecided (edge)', () => {
+    ;(globalThis as G).__VP_REVIEW__ = true
+    const html = renderToStaticMarkup(
+      <ReviewAnswersProvider>
+        <Questions items={['A?', 'B?']} />
+      </ReviewAnswersProvider>,
+    )
+    expect((html.match(/vp-questions__answer/g) || []).length).toBe(2)
+    expect(html).not.toMatch(/readonly/i)
+  })
+})
+
 describe('JSON-string data prop (the remark-plan-blocks decode path)', () => {
   // At render the list components receive their data as a JSON string (the markdown
   // children, parsed by the CLI's remark plugin), not an array. Each must decode it.

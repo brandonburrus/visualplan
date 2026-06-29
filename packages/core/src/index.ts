@@ -40,12 +40,41 @@ export const feedbackSchema = z.object({
   comments: z.array(reviewCommentSchema).default([]),
   answers: z.array(reviewAnswerSchema).default([]),
   note: z.string().optional(),
+  // The queued plan this feedback resolves, set only in Review Queue mode so the daemon can route
+  // the verdict to the caller waiting on this id. Absent for a standalone single `--review`, where
+  // there is exactly one plan and nothing to disambiguate. `formatFeedback` ignores it.
+  planId: z.string().min(1).optional(),
 })
 
 export type ReviewDecision = (typeof REVIEW_DECISION_VALUES)[number]
 export type ReviewComment = z.infer<typeof reviewCommentSchema>
 export type ReviewAnswer = z.infer<typeof reviewAnswerSchema>
 export type Feedback = z.infer<typeof feedbackSchema>
+
+/** The sidebar status of a queued plan in Review Queue mode: waiting, currently shown, or decided. */
+export const QUEUE_STATUS_VALUES = ['pending', 'active', 'done'] as const
+
+/**
+ * One plan in the Review Queue, as the daemon streams it to the sidebar shell. `dir` is the
+ * basename of the directory the plan originated from, shown beside the title so plans from
+ * different projects stay distinguishable in the single machine-wide queue. Isomorphic so the
+ * daemon (which emits entries) and the shell (which renders them) share one contract.
+ */
+export const queueEntrySchema = z.object({
+  id: z.string().min(1),
+  title: z.string(),
+  dir: z.string(),
+  status: z.enum(QUEUE_STATUS_VALUES).default('pending'),
+  // The revision number when this plan is a re-review (`--iteration N`); the sidebar shows it as a
+  // `vN` chip for N >= 2. Absent on a first review.
+  iteration: z.number().int().positive().optional(),
+  // The locked-in verdict once the plan is `done`, so the sidebar shows the matching icon (check /
+  // cross / iterate) rather than a generic one. Absent while pending.
+  decision: z.enum(REVIEW_DECISION_VALUES).optional(),
+})
+
+export type QueueStatus = (typeof QUEUE_STATUS_VALUES)[number]
+export type QueueEntry = z.infer<typeof queueEntrySchema>
 
 export const STATUS_VALUES = ['planned', 'active', 'done'] as const
 export const CHANGE_VALUES = ['add', 'modify', 'delete', 'move'] as const

@@ -1,0 +1,329 @@
+import type { QueueEntry } from '@visualplan/core'
+import { act } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { QueueShell } from '../components/queue/QueueShell.js'
+
+/** A minimal EventSource stand-in the test drives directly, mirroring the daemon's `queue` event. */
+class FakeEventSource {
+  static last: FakeEventSource | null = null
+  url: string
+  closed = false
+  private listeners = new Map<string, ((event: MessageEvent) => void)[]>()
+
+  constructor(url: string) {
+    this.url = url
+    FakeEventSource.last = this
+  }
+
+  addEventListener(type: string, fn: (event: MessageEvent) => void): void {
+    const list = this.listeners.get(type) ?? []
+    list.push(fn)
+    this.listeners.set(type, list)
+  }
+
+  removeEventListener(type: string, fn: (event: MessageEvent) => void): void {
+    this.listeners.set(
+      type,
+      (this.listeners.get(type) ?? []).filter(f => f !== fn),
+    )
+  }
+
+  close(): void {
+    this.closed = true
+  }
+
+  /** Push a `queue` payload to the shell as the daemon would. */
+  emitQueue(entries: QueueEntry[]): void {
+    const event = new MessageEvent('queue', { data: JSON.stringify(entries) })
+    for (const fn of this.listeners.get('queue') ?? []) fn(event)
+  }
+}
+
+function entry(
+  id: string,
+  status: QueueEntry['status'] = 'pending',
+  extra: Partial<QueueEntry> = {},
+): QueueEntry {
+  return { id, title: `Plan ${id}`, dir: `dir-${id}`, status, ...extra }
+}
+
+let container: HTMLDivElement
+let root: Root
+
+beforeEach(() => {
+  container = document.createElement('div')
+  document.body.appendChild(container)
+  FakeEventSource.last = null
+  vi.stubGlobal('EventSource', FakeEventSource)
+})
+
+afterEach(() => {
+  act(() => root?.unmount())
+  container.remove()
+  vi.restoreAllMocks()
+})
+
+function render(): void {
+  root = createRoot(container)
+  act(() => root.render(<QueueShell />))
+}
+
+function source(): FakeEventSource {
+  if (!FakeEventSource.last) throw new Error('EventSource was not opened')
+  return FakeEventSource.last
+}
+
+function iframeSrc(): string | null {
+  return container.querySelector('iframe')?.getAttribute('src') ?? null
+}
+
+function sidebar(): Element | null {
+  return container.querySelector('.vp-queue__sidebar')
+}
+
+describe('QueueShell', () => {
+  it('opens the events stream for liveness on mount (golden)', () => {
+    render()
+    expect(source().url).toBe('/__vp_events')
+  })
+
+  it('renders a sidebar row per entry with title and originating dir (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    const text = container.textContent ?? ''
+    expect(text).toContain('Plan a')
+    expect(text).toContain('dir-a')
+    expect(text).toContain('Plan b')
+    expect(text).toContain('dir-b')
+  })
+
+  it('defaults the active iframe to the first pending plan (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'done'), entry('b'), entry('c')]))
+    expect(iframeSrc()).toBe('/plan/b')
+  })
+
+  it('auto-advances the iframe when the active plan is marked done (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    expect(iframeSrc()).toBe('/plan/a')
+    act(() => source().emitQueue([entry('a', 'done'), entry('b')]))
+    expect(iframeSrc()).toBe('/plan/b')
+  })
+
+  it('shows an all-reviewed empty state when every plan is done (edge)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'done'), entry('b', 'done')]))
+    expect(container.querySelector('iframe')).toBeNull()
+    expect((container.textContent ?? '').toLowerCase()).toContain('reviewed')
+  })
+
+  it('reloads a decided plan in the iframe when its row is reselected (golden)', () => {
+    render()
+    act(() =>
+      source().emitQueue([
+        entry('a', 'done', { decision: 'approve' }),
+        entry('b', 'done', { decision: 'deny' }),
+      ]),
+    )
+    // All done: nothing is auto-selected, so the empty state shows.
+    expect(container.querySelector('iframe')).toBeNull()
+    // Clicking a decided row loads it (the daemon serves it locked into its verdict).
+    act(() => container.querySelector<HTMLButtonElement>('.vp-queue__row')?.click())
+    expect(iframeSrc()).toBe('/plan/a')
+  })
+
+  it('shows a progress count of reviewed plans (edge)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'done'), entry('b'), entry('c')]))
+    expect(container.textContent ?? '').toContain('1 of 3')
+  })
+
+  it('moves the active plan with the j key (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b'), entry('c')]))
+    expect(iframeSrc()).toBe('/plan/a')
+    act(() => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j' }))
+    })
+    expect(iframeSrc()).toBe('/plan/b')
+  })
+
+  it('closes the events stream on unmount (error)', () => {
+    render()
+    const es = source()
+    act(() => root.unmount())
+    expect(es.closed).toBe(true)
+  })
+})
+
+// The queue chrome is for navigating BETWEEN plans, so a lone plan should look like an ordinary
+// single review (no sidebar); the sidebar appears only once a second plan is in the queue.
+describe('QueueShell single-plan vs queue', () => {
+  it('hides the sidebar and shows the plan full-width when only one plan is queued (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a')]))
+    expect(sidebar()).toBeNull()
+    // The single plan still renders; it just has no queue rail beside it.
+    expect(iframeSrc()).toBe('/plan/a')
+  })
+
+  it('reveals the sidebar when a second plan joins the queue mid-review (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a')]))
+    expect(sidebar()).toBeNull()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    expect(sidebar()).not.toBeNull()
+  })
+
+  it('hides the sidebar again if the queue drops back to a single plan (edge)', () => {
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    expect(sidebar()).not.toBeNull()
+    // A caller abandoning its plan removes it; back to one plan means back to no chrome.
+    act(() => source().emitQueue([entry('a')]))
+    expect(sidebar()).toBeNull()
+  })
+})
+
+describe('QueueShell accessibility', () => {
+  function rows(): HTMLButtonElement[] {
+    return Array.from(container.querySelectorAll('.vp-queue__row'))
+  }
+
+  it('announces review progress and the active plan in a polite live region (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'done'), entry('b'), entry('c')]))
+    const live = container.querySelector('[aria-live="polite"]')
+    expect(live?.textContent).toContain('1 of 3 plans reviewed')
+    expect(live?.textContent).toContain('Now reviewing Plan b')
+  })
+
+  it('names each row with its origin dir and review status, not by color alone (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'done', { decision: 'approve' }), entry('b')]))
+    expect(rows()[0].getAttribute('aria-label')).toBe('Plan a, dir-a, approved')
+    expect(rows()[1].getAttribute('aria-label')).toBe('Plan b, dir-b, to review')
+  })
+
+  it('keeps only the active row in the tab order (roving tabindex) (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'done'), entry('b'), entry('c')]))
+    // The active plan defaults to the first pending one (b); only it is tabbable.
+    const tabindices = rows().map(r => r.getAttribute('tabindex'))
+    expect(tabindices).toEqual(['-1', '0', '-1'])
+  })
+
+  it('makes the first row tabbable when no plan is active yet (edge)', () => {
+    render()
+    // All done means nothing is active; the list must still be reachable by keyboard.
+    act(() => source().emitQueue([entry('a', 'done'), entry('b', 'done')]))
+    expect(rows().map(r => r.getAttribute('tabindex'))).toEqual(['0', '-1'])
+  })
+})
+
+describe('QueueShell titles', () => {
+  it('labels the sidebar "Plans to Review" (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    expect(container.querySelector('.vp-queue__title')?.textContent ?? '').toBe('Plans to Review')
+  })
+
+  it('sets the tab title to the active plan being reviewed (golden)', () => {
+    render()
+    act(() =>
+      source().emitQueue([entry('a', 'done', { decision: 'approve' }), entry('b'), entry('c')]),
+    )
+    // The active plan defaults to the first pending one (b).
+    expect(document.title).toBe('Plan b')
+  })
+
+  it('falls back to the default queue title when no plan is active (edge)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'done', { decision: 'approve' })]))
+    expect(document.title).toBe('Visual Plan Review Queue')
+  })
+})
+
+describe('QueueShell background activity dot', () => {
+  function setHidden(hidden: boolean): void {
+    Object.defineProperty(document, 'hidden', { value: hidden, configurable: true })
+    Object.defineProperty(document, 'visibilityState', {
+      value: hidden ? 'hidden' : 'visible',
+      configurable: true,
+    })
+  }
+
+  function faviconHasDot(): boolean {
+    const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+    return decodeURIComponent(link?.href ?? '').includes('<circle')
+  }
+
+  afterEach(() => setHidden(false))
+
+  it('raises the favicon dot when a plan arrives while the tab is hidden (golden)', () => {
+    setHidden(true)
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    expect(faviconHasDot()).toBe(true)
+  })
+
+  it('leaves the favicon plain when the tab is in the foreground (edge)', () => {
+    setHidden(false)
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    expect(faviconHasDot()).toBe(false)
+  })
+
+  it('clears the dot when the tab returns to the foreground (golden)', () => {
+    setHidden(true)
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    expect(faviconHasDot()).toBe(true)
+    act(() => {
+      setHidden(false)
+      document.dispatchEvent(new Event('visibilitychange'))
+    })
+    expect(faviconHasDot()).toBe(false)
+  })
+})
+
+describe('QueueShell decision icons and version chips', () => {
+  function rows(): HTMLButtonElement[] {
+    return Array.from(container.querySelectorAll('.vp-queue__row'))
+  }
+
+  it('marks each decided row with its locked-in verdict, not a generic done (golden)', () => {
+    render()
+    act(() =>
+      source().emitQueue([
+        entry('a', 'done', { decision: 'approve' }),
+        entry('b', 'done', { decision: 'deny' }),
+        entry('c', 'done', { decision: 'iterate' }),
+      ]),
+    )
+    expect(rows().map(r => r.getAttribute('data-decision'))).toEqual(['approve', 'deny', 'iterate'])
+  })
+
+  it('carries no decision attribute while a plan is pending (edge)', () => {
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    expect(rows()[0].getAttribute('data-decision')).toBeNull()
+  })
+
+  it('shows a version chip for an iteration but not for a first review (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'pending', { iteration: 3 }), entry('b')]))
+    const chips = Array.from(container.querySelectorAll('.vp-queue__chip')).map(c => c.textContent)
+    expect(chips).toEqual(['v3'])
+  })
+
+  it('names a row with its version and locked-in verdict (golden)', () => {
+    render()
+    act(() =>
+      source().emitQueue([entry('a', 'done', { decision: 'approve', iteration: 2 }), entry('b')]),
+    )
+    expect(rows()[0].getAttribute('aria-label')).toBe('Plan a, dir-a, v2, approved')
+  })
+})

@@ -8,8 +8,8 @@ description: >-
   page (diagrams, phases, file-change maps, comparisons) via the `vplan` CLI. It applies when the
   user says "plan this", "what's the approach", "how should we approach X", "show me the plan",
   "make a visual plan", "render this plan", or asks for a plan with diagrams/charts, and when they
-  want to review, approve, sign off on, or give feedback on a plan via `vplan render --review`. Skip
-  only for a trivial one-step change or when the user explicitly asks for plain prose.
+  want to review, approve, sign off on, or give feedback on a plan. Skip only for a trivial 
+  one-step change or when the user explicitly asks for plain prose.
 ---
 
 ## Purpose
@@ -28,12 +28,6 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
 
 ## Workflow
 
-- [ ] 1. Write the plan to a `.mdx` file (`# Title` first; components are always in scope).
-- [ ] 2. `vplan check <file>.mdx` and fix every reported issue, quality-lint warnings included.
-- [ ] 3. Present with `vplan render --review <file>.mdx` (the default), then act on the feedback.
-- [ ] 4. Or a plain `vplan <file>.mdx` when the user only wants to look, not shape or decide.
-- [ ] 5. `vplan export <pdf|jpg> <file>.mdx` when the user wants a shareable static file.
-
 1. Write the plan to a `.mdx` file, starting with a single `# Title` heading (it becomes the plan
    title; no frontmatter). Then use the components below; you never write `import` statements, they
    are always in scope.
@@ -41,14 +35,15 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
    issue (it names valid enum values and flags unknown components). `check` also runs a **quality
    lint** that flags weak renders (the enforced Gotchas below); its warnings fail `check`, so fix
    them too.
-3. **Present the plan with `vplan render --review <file>.mdx`. This is the default way to deliver a
+3. **Present the plan with `vplan <file>.mdx`. An interactive review is the default way to deliver a
    plan, not a special mode reserved for sign-off.** It opens the plan with a feedback layer where the
    user comments on whole sections or on selected text, **answers any `<Questions>` directly** (each
    question becomes an inline answer field, printed back as `Answer to "<question>":`), then clicks
    Approve / Deny / Iterate. It **blocks** until they submit, prints the decision, comments, and
    answers to stdout, and exits: approve 0, deny 1, iterate 2, timeout 3 (`--timeout`, default 15m;
    closing the tab counts as deny). It is a long-running foreground server, so run it in the
-   background. Then act on the printed feedback:
+   background. (The explicit `--review` flag still works but is redundant now that review is the
+   default.) Then act on the printed feedback:
    - **Approve** -> proceed with the plan as written.
    - **Iterate** -> revise the plan addressing each comment, then review again with `-i N`
      (`--iteration N`) incremented so the bar shows the round; repeat until Approve or Deny. **Edit
@@ -59,21 +54,15 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
      `--no-diff` to suppress diffing (e.g. a clean first look).
    - **Deny** -> stop and reconsider; do not proceed.
 
-   **Default to `--review` for every non-trivial plan.** Targeted comments and in-place `<Questions>`
-   answers drive sharper revisions than back-and-forth chat, and the loop ends in an explicit Approve
-   so you know it is settled. Use the plain render (step 4) only when the user just wants to look.
-4. **Plain render is the fallback, for when the user only wants to look, not shape or decide.**
-   `vplan <file>.mdx` writes `<file>.plan.html` next to the source and opens it (`--out <path>` sets
-   the location). While iterating visually, `vplan --watch <file>.mdx` starts a live-reloading dev
-   server (a long-running foreground server: run it in the background; it writes no file and stops on
-   Ctrl+C). The iteration diff shows on a plain render too, not just `--review`.
-5. **To export a plan as a static file**, run `vplan export <pdf|jpg> <file>.mdx`. It builds the
-   same self-contained page and captures it headless: `pdf` prints a paginated A4 document, `jpg` a
-   full-page hi-dpi screenshot. Output defaults to `<file>.pdf` / `<file>.jpg` (override with
-   `--out`); `--theme` overrides the baked color scheme, `--no-open` suppresses opening the result.
-   This needs a Chromium: it uses a system Chrome/Edge or a `playwright`-installed one, and otherwise
-   prints `npx playwright install chromium`. Use this when the user wants a shareable file rather than
-   the interactive HTML page.
+   **Review is the right default for every non-trivial plan.** Targeted comments and in-place
+   `<Questions>` answers drive sharper revisions than back-and-forth chat, and the loop ends in an
+   explicit Approve so you know it is settled. Reach for a static render (step 4) only when the user
+   just wants to look, not shape or decide.
+4. **A static page, a live-reloading preview, or a PDF/JPG export** are the non-review outputs, for
+   when the user only wants to look or wants a shareable file rather than review one. When you need
+   one, **load `references/static-exports.md`**; it holds the commands and flags for these (kept out
+   of here so review stays the default path). Authoring the plan (everything below) is identical
+   whichever output you choose.
 
 Run `vplan components` anytime for the exact prop signatures.
 
@@ -242,8 +231,8 @@ it in paragraphs. Prose is the connective tissue between visuals, never the subs
 
 ## Rules
 
-- **Never pass `--no-open` for a user-facing plan.** The point is that the user sees it; the plain
-  render and `--watch` open automatically. Reserve `--no-open` for an explicit headless/CI request.
+- **Never pass `--no-open` for a user-facing plan.** The point is that the user sees it; the review
+  session opens automatically. Reserve `--no-open` for an explicit headless/CI request.
 - **No images or external assets.** The page is a single self-contained file, so a markdown image
   (`![](url)`) or any external asset cannot be embedded, and `check` rejects markdown images. Use a
   ` ```mermaid ` diagram for anything visual, or describe it in text.

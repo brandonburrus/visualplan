@@ -42,6 +42,26 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   and stops instead of POSTing or calling `window.close()`, and the keepalive, draft, and `beforeunload`
   effects are all skipped, so the embedded preview is safe to click through and reset. It is never set
   by the CLI.
+- `components/queue/` is the **Review Queue shell**: a second runtime entry (`queue.html` +
+  `queue-main.tsx`, mirroring `index.html`/`main.tsx`) the daemon serves at `/`. It renders NO plan
+  content: just `QueueShell` (chrome) hosting each active plan in a same-origin `<iframe src="/plan/<id>">`.
+  `QueueShell` opens `new EventSource('/__vp_events')` and holds it open for the page lifetime (it is
+  the daemon's liveness signal: closing the tab tears the daemon down, so the stream is closed only on
+  unmount). The daemon emits `event: queue` with a JSON `QueueEntry[]`; the shell defaults the active
+  iframe to the first pending plan and auto-advances when the active one is marked `done`. j/k or
+  arrow keys navigate. `components/queue/logic.ts` holds the **pure**, unit-tested navigation helpers
+  (`firstPendingId`, `nextActiveId`, `moveSelection`, `reviewedCount`); `QueueSidebar.tsx` is the rail
+  (title + muted originating `dir` + Tabler status icon + "N of M reviewed"); `queue.css` is the
+  colocated chrome (the entry imports `theme.css` for the shared `--vp-*` tokens). Built by the CLI's
+  `buildQueueShell()` (`packages/cli/src/build/queue-shell.ts`), a Vite single-file build of `queue.html`
+  with NO plan plugins (no `virtual:plan`/share/diff/review), so the shell ships self-contained.
+  **Queue mode inside a plan iframe** is gated on `__VP_REVIEW_PLAN_ID__` (`isQueueMode()` in
+  `feedback.ts`): its PRESENCE means the plan is one of several in the queue. In queue mode
+  `postFeedback`/`postDraft` tag the POST body with `planId` so the daemon routes the verdict, and
+  `ReviewLayer` does NOT open the `/__vp_alive` keepalive, arm the `beforeunload` prompt, or call
+  `window.close()` on submit (the SHELL owns daemon lifecycle; swapping the iframe must not deny the
+  plan). Draft posting stays ON so a real tab close can still deny-with-draft. An empty id is treated
+  as absent (matches `feedbackSchema`'s `planId.min(1)`).
 - `components/DiffCues.tsx` renders iteration diff cues when the CLI injected `__VP_DIFF__` (any
   render/watch/review with a baseline, NOT review-gated). Always on: a change bar **flush to the left
   edge of the viewport** (`left: 0`, a dedicated lane clear of the content gutter so it never piles up

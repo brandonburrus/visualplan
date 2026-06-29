@@ -31,3 +31,18 @@ describe('feedbackSchema answers', () => {
     expect(parsed.answers).toEqual([{ question: 'TTL ok?', answer: 'Yes, 15m' }])
   })
 })
+
+describe('feedbackSchema planId', () => {
+  it('carries a planId when the Review Queue tags the feedback (golden)', () => {
+    const parsed = feedbackSchema.parse({ decision: 'approve', planId: 'p-1' })
+    expect(parsed.planId).toBe('p-1')
+  })
+
+  it('omits planId for a standalone single review (edge)', () => {
+    expect(feedbackSchema.parse({ decision: 'approve' }).planId).toBeUndefined()
+  })
+
+  it('rejects an empty planId (error)', () => {
+    expect(() => feedbackSchema.parse({ decision: 'approve', planId: '' })).toThrow()
+  })
+})

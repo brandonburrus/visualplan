@@ -23,18 +23,31 @@ afterEach(async () => {
   await rm(dir, { recursive: true, force: true })
 })
 
+const DAEMON_15M = 15 * 60 * 1000
+
 describe('config set', () => {
   it('persists a valid theme and confirms it (golden)', async () => {
     await runConfigSet('theme', 'dark', dir)
-    expect(await readConfig(dir)).toEqual({ theme: 'dark' })
+    expect(await readConfig(dir)).toEqual({ theme: 'dark', daemonTimeout: DAEMON_15M })
     expect(out.join('')).toContain('Set theme = dark')
+  })
+
+  it('persists daemonTimeout as parsed milliseconds, preserving theme (golden)', async () => {
+    await runConfigSet('theme', 'light', dir)
+    out = []
+    await runConfigSet('daemonTimeout', '30m', dir)
+    expect(await readConfig(dir)).toEqual({ theme: 'light', daemonTimeout: 30 * 60 * 1000 })
+    expect(out.join('')).toContain(`Set daemonTimeout = ${30 * 60 * 1000}`)
   })
 
   it('rejects an invalid value or unknown key without writing (error)', async () => {
     await expect(runConfigSet('theme', 'neon', dir)).rejects.toThrow(/Invalid theme "neon"/)
     await expect(runConfigSet('color', 'dark', dir)).rejects.toThrow(/Unknown config key "color"/)
-    // Nothing was written, so a read still returns the default.
-    expect(await readConfig(dir)).toEqual({ theme: 'system' })
+    await expect(runConfigSet('daemonTimeout', 'soon', dir)).rejects.toThrow(
+      /Invalid daemonTimeout "soon"/,
+    )
+    // Nothing was written, so a read still returns the defaults.
+    expect(await readConfig(dir)).toEqual({ theme: 'system', daemonTimeout: DAEMON_15M })
   })
 })
 
@@ -52,11 +65,21 @@ describe('config get', () => {
 })
 
 describe('config show', () => {
-  it('prints the default theme and the path when no file exists yet (edge)', async () => {
+  it('prints the default settings and the path when no file exists yet (edge)', async () => {
     await runConfigShow(dir)
     const text = out.join('')
     expect(text).toContain('theme = system')
+    expect(text).toContain(`daemonTimeout = ${DAEMON_15M}`)
     expect(text).toContain(join(dir, 'config.json'))
+  })
+})
+
+describe('config get', () => {
+  it('prints daemonTimeout in milliseconds (golden)', async () => {
+    await runConfigSet('daemonTimeout', '1h', dir)
+    out = []
+    await runConfigGet('daemonTimeout', dir)
+    expect(out.join('')).toBe(`${60 * 60 * 1000}\n`)
   })
 })
 

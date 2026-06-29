@@ -1,10 +1,18 @@
 import type { Feedback, ReviewAnswer, ReviewComment, ReviewDecision } from '@visualplan/core'
-import { IconCheck, IconMessagePlus } from '@tabler/icons-react'
+import { IconCheck, IconMessagePlus, IconRefresh, IconX } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
 import { CommentModal } from './CommentModal.js'
 import { CommentsPopover } from './CommentsPopover.js'
 import { DecisionBar } from './DecisionBar.js'
-import { isReviewDemo, isReviewMode, openKeepalive, postDraft, postFeedback } from './feedback.js'
+import {
+  isQueueMode,
+  isReviewDemo,
+  isReviewMode,
+  openKeepalive,
+  postDraft,
+  postFeedback,
+  reviewDecided,
+} from './feedback.js'
 import { useQuestionAnswers } from './ReviewAnswers.js'
 import {
   type Section,
@@ -55,7 +63,9 @@ function ReviewSession() {
   const [composing, setComposing] = useState<CommentTarget | null>(null)
   const [viewing, setViewing] = useState<Section | null>(null)
   const [note, setNote] = useState('')
-  const [submitted, setSubmitted] = useState<ReviewDecision | null>(null)
+  // A plan the daemon re-serves after it was decided carries its verdict, so it opens locked into the
+  // submitted state instead of showing live controls.
+  const [submitted, setSubmitted] = useState<ReviewDecision | null>(reviewDecided())
   const [busy, setBusy] = useState(false)
   const [hoveredMark, setHoveredMark] = useState<{
     body: string
@@ -83,9 +93,11 @@ function ReviewSession() {
 
   // Hold a connection open so the server resolves Deny if the tab closes; the server, not an
   // unreliable unload beacon, detects the drop. Aborted on unmount (e.g. after a submitted decision).
-  // A demo has no server behind it, so there is nothing to keep alive.
+  // A demo has no server behind it, so there is nothing to keep alive. In queue mode the SHELL owns
+  // the daemon's lifecycle (its `/__vp_events` stream is the liveness signal), so a plan iframe must
+  // NOT open a keepalive: swapping the iframe to the next plan would otherwise deny this one.
   useEffect(() => {
-    if (isReviewDemo()) return
+    if (isReviewDemo() || isQueueMode()) return
     const connection = openKeepalive()
     return () => connection.abort()
   }, [])
@@ -110,8 +122,10 @@ function ReviewSession() {
   const submittedRef = useRef(submitted)
   submittedRef.current = submitted
   useEffect(() => {
-    // A demo is meant to be navigated away from and reset freely, so it never arms the prompt.
-    if (isReviewDemo()) return
+    // A demo is meant to be navigated away from and reset freely, so it never arms the prompt. In
+    // queue mode the plan iframe is swapped by the shell on every advance, so an unload prompt would
+    // fire on each swap; the shell, not the plan, owns the prompt-on-real-close.
+    if (isReviewDemo() || isQueueMode()) return
     const onBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!submittedRef.current) {
         event.preventDefault()
@@ -164,6 +178,7 @@ function ReviewSession() {
     if (isReviewDemo()) {
       submittedRef.current = decision
       setSubmitted(decision)
+      questionAnswers?.lock()
       return
     }
     const feedback: Feedback = {
@@ -179,16 +194,20 @@ function ReviewSession() {
       // programmatic close (it still prompts on a manual browser close while undecided).
       submittedRef.current = decision
       setSubmitted(decision)
-      // Best-effort: close the tab now the review is done. Browsers block this for a user-opened
-      // tab, in which case the SubmittedNotice fallback tells them they can close it.
-      window.close()
+      questionAnswers?.lock()
+      // In queue mode the shell owns the tab and advances to the next plan once the daemon marks this
+      // one done; the plan iframe must not close the tab (that would tear the whole queue down). The
+      // submitted notice is shown instead. In standalone mode, best-effort close the now-done tab
+      // (browsers block this for a user-opened tab, where the notice tells them they can close it).
+      if (!isQueueMode()) window.close()
     } else {
       setBusy(false)
       window.alert('Could not reach the review server. Is the CLI still running?')
     }
   }
 
-  if (submitted) return <SubmittedNotice decision={submitted} demo={isReviewDemo()} />
+  if (submitted)
+    return <SubmittedNotice decision={submitted} demo={isReviewDemo()} queue={isQueueMode()} />
 
   const viewingComments = viewing
     ? comments
@@ -296,18 +315,40 @@ function ReviewSession() {
   )
 }
 
-/** Replaces the decision bar once a verdict is sent, so the reviewer knows it is safe to close. In a
- * demo there is no agent waiting, so it explains what the decision would have done and points at Reset. */
-function SubmittedNotice({ decision, demo }: { decision: ReviewDecision; demo?: boolean }) {
+/** The verb each verdict locks in, shown on the bottom bar once decided. */
+const DECISION_LABEL: Record<ReviewDecision, string> = {
+  approve: 'Approved',
+  deny: 'Denied',
+  iterate: 'Iterate requested',
+}
+
+/**
+ * Replaces the decision bar once a verdict is sent (or when re-opening an already-decided plan),
+ * locking the verdict on the bottom bar with its matching icon. In the queue the tab stays open to
+ * review other plans, so it does not say to close it; a standalone one-shot review does (the CLI
+ * tries to close the tab and this is the fallback). A demo explains the no-op and points at Reset.
+ */
+function SubmittedNotice({
+  decision,
+  demo,
+  queue,
+}: {
+  decision: ReviewDecision
+  demo?: boolean
+  queue?: boolean
+}) {
+  const Icon = decision === 'deny' ? IconX : decision === 'iterate' ? IconRefresh : IconCheck
   return (
     <div className='vp-review-done' data-decision={decision}>
-      <IconCheck size={18} />
+      <Icon size={18} />
       <span>
         {demo ? (
           <>
             Demo: this would return <strong>{decision}</strong> to your agent. Press Reset to try
             again.
           </>
+        ) : queue ? (
+          <strong>{DECISION_LABEL[decision]}</strong>
         ) : (
           <>
             Feedback submitted (<strong>{decision}</strong>). You can close this tab.
