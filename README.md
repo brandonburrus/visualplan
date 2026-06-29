@@ -39,9 +39,9 @@ npx vplan plan.mdx
 ## Usage
 
 ```bash
-vplan plan.mdx              # render to plan.plan.html and open it
+vplan plan.mdx              # open an interactive review session (the default), blocks for sign-off
+vplan plan.mdx --static     # render to plan.plan.html and open it, no review
 vplan plan.mdx --watch      # live-reloading dev server while you edit
-vplan plan.mdx --review     # interactive review session, blocks for sign-off
 vplan review a.mdx b.mdx    # queue several plans, review them in one tab, stream verdicts
 vplan check plan.mdx        # validate a plan (syntax + quality lint) without rendering
 vplan export pdf plan.mdx   # render to a static PDF or JPG via headless Chromium
@@ -91,10 +91,10 @@ flowchart LR
 
 ## Review mode
 
-To get a decision on a plan, not just show it, render with `--review`:
+Rendering a plan opens an interactive review by default, so you get a decision, not just a view:
 
 ```bash
-vplan render --review plan.mdx
+vplan plan.mdx          # interactive review (default); --static renders without it
 ```
 
 This opens the plan as an interactive session: the reviewer comments on any section, answers the

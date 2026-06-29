@@ -6,11 +6,15 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
 
 ## What it does
 
-- `vplan <file.mdx>` (alias `render`) compiles a plan to a single self-contained
-  `<file>.plan.html` and opens it. Input is a file, `-`, or piped stdin; `--stdout` writes the HTML
-  to stdout instead (so it composes in a pipeline). `--watch` starts a hot-reloading dev server
-  instead (on `--port`, default 9140, auto-incrementing if taken; needs a real file, not stdin);
-  `--out <path>` sets the output; `--no-open` suppresses the browser.
+- `vplan <file.mdx>` (alias `render`) opens the plan in an **interactive review by default** (see
+  the review bullet below). A static output flag opts out into a one-shot artifact: `--static`
+  compiles a single self-contained `<file>.plan.html` and opens it (the pre-review default);
+  `--stdout` writes the HTML to stdout (so it composes in a pipeline); `--out <path>` sets a file
+  path; `--watch` starts a hot-reloading dev server (on `--port`, default 9140, auto-incrementing if
+  taken; needs a real file, not stdin). `--no-open` suppresses the browser. The mode is decided by
+  `rendersReview()`: review unless one of `--static`/`--watch`/`--stdout`/`--out` is set. `--review`
+  is kept as an explicit, now-redundant selector and conflicts with the static flags. Input is a
+  file, `-`, or piped stdin.
 - `vplan check <file.mdx>` validates a plan without rendering (the self-correction
   loop): MDX compile errors plus static component checks, printed as `file:line:col`.
 - `vplan share <file.mdx|->` prints a stateless `visualplan.dev/view?data=...` link encoding the
