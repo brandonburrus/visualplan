@@ -1,5 +1,5 @@
 import type { Feedback, ReviewAnswer, ReviewComment, ReviewDecision } from '@visualplan/core'
-import { IconCheck, IconMessagePlus } from '@tabler/icons-react'
+import { IconCheck, IconMessagePlus, IconRefresh, IconX } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
 import { CommentModal } from './CommentModal.js'
 import { CommentsPopover } from './CommentsPopover.js'
@@ -11,6 +11,7 @@ import {
   openKeepalive,
   postDraft,
   postFeedback,
+  reviewDecided,
 } from './feedback.js'
 import { useQuestionAnswers } from './ReviewAnswers.js'
 import {
@@ -62,7 +63,9 @@ function ReviewSession() {
   const [composing, setComposing] = useState<CommentTarget | null>(null)
   const [viewing, setViewing] = useState<Section | null>(null)
   const [note, setNote] = useState('')
-  const [submitted, setSubmitted] = useState<ReviewDecision | null>(null)
+  // A plan the daemon re-serves after it was decided carries its verdict, so it opens locked into the
+  // submitted state instead of showing live controls.
+  const [submitted, setSubmitted] = useState<ReviewDecision | null>(reviewDecided())
   const [busy, setBusy] = useState(false)
   const [hoveredMark, setHoveredMark] = useState<{
     body: string
@@ -201,7 +204,8 @@ function ReviewSession() {
     }
   }
 
-  if (submitted) return <SubmittedNotice decision={submitted} demo={isReviewDemo()} />
+  if (submitted)
+    return <SubmittedNotice decision={submitted} demo={isReviewDemo()} queue={isQueueMode()} />
 
   const viewingComments = viewing
     ? comments
@@ -309,18 +313,40 @@ function ReviewSession() {
   )
 }
 
-/** Replaces the decision bar once a verdict is sent, so the reviewer knows it is safe to close. In a
- * demo there is no agent waiting, so it explains what the decision would have done and points at Reset. */
-function SubmittedNotice({ decision, demo }: { decision: ReviewDecision; demo?: boolean }) {
+/** The verb each verdict locks in, shown on the bottom bar once decided. */
+const DECISION_LABEL: Record<ReviewDecision, string> = {
+  approve: 'Approved',
+  deny: 'Denied',
+  iterate: 'Iterate requested',
+}
+
+/**
+ * Replaces the decision bar once a verdict is sent (or when re-opening an already-decided plan),
+ * locking the verdict on the bottom bar with its matching icon. In the queue the tab stays open to
+ * review other plans, so it does not say to close it; a standalone one-shot review does (the CLI
+ * tries to close the tab and this is the fallback). A demo explains the no-op and points at Reset.
+ */
+function SubmittedNotice({
+  decision,
+  demo,
+  queue,
+}: {
+  decision: ReviewDecision
+  demo?: boolean
+  queue?: boolean
+}) {
+  const Icon = decision === 'deny' ? IconX : decision === 'iterate' ? IconRefresh : IconCheck
   return (
     <div className='vp-review-done' data-decision={decision}>
-      <IconCheck size={18} />
+      <Icon size={18} />
       <span>
         {demo ? (
           <>
             Demo: this would return <strong>{decision}</strong> to your agent. Press Reset to try
             again.
           </>
+        ) : queue ? (
+          <strong>{DECISION_LABEL[decision]}</strong>
         ) : (
           <>
             Feedback submitted (<strong>{decision}</strong>). You can close this tab.

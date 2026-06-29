@@ -65,6 +65,16 @@ function titleFromSource(source: string): string {
   return source.replace(/^﻿/, '').match(/^# (.+?)\s*$/m)?.[1] ?? ''
 }
 
+/**
+ * Inject the decided verdict into a re-served plan page (`__VP_REVIEW_DECIDED__`), so re-opening a
+ * plan the reviewer already decided locks into the submitted state instead of showing live controls.
+ * A plain head script runs before the deferred runtime module that reads the global.
+ */
+function withDecided(html: string, feedback: Feedback): string {
+  const tag = `<script>globalThis.__VP_REVIEW_DECIDED__=${JSON.stringify(feedback.decision)}</script>`
+  return html.includes('</head>') ? html.replace('</head>', `${tag}</head>`) : `${tag}${html}`
+}
+
 /** One queued plan's full server-side state. */
 interface QueuedPlan {
   entry: QueueEntry
@@ -194,7 +204,12 @@ export async function startDaemon(opts: StartDaemonOptions): Promise<DaemonInsta
         return
       }
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
-      res.end(plan.html)
+      // A decided plan re-served carries its verdict so the page opens locked into the submitted bar.
+      res.end(
+        plan.settled && plan.settledFeedback
+          ? withDecided(plan.html, plan.settledFeedback)
+          : plan.html,
+      )
       return
     }
 

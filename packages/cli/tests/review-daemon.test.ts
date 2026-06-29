@@ -421,3 +421,26 @@ describe('daemon queue entries: version, decision, requeue dedupe', () => {
     expect((await verdict).decision).toBe('deny')
   }, 60_000)
 })
+
+describe('daemon /plan decided-verdict injection', () => {
+  let d: DaemonInstance
+  afterEach(async () => {
+    await d?.close()
+  })
+
+  it('injects the verdict into a re-served decided plan, not a pending one (golden)', async () => {
+    d = await fakeDaemon()
+    const { id } = await enqueue(d)
+    // The bundled runtime *reads* the global, so the bare name appears either way; the injected
+    // *assignment* is what marks a decided plan apart from a pending one.
+    const assign = 'globalThis.__VP_REVIEW_DECIDED__="deny"'
+    const pending = await (await fetch(url(d, `/plan/${id}`))).text()
+    expect(pending).not.toContain(assign)
+    await fetch(url(d, '/__vp_feedback'), {
+      method: 'POST',
+      body: JSON.stringify({ decision: 'deny', planId: id }),
+    })
+    const decided = await (await fetch(url(d, `/plan/${id}`))).text()
+    expect(decided).toContain(assign)
+  }, 60_000)
+})

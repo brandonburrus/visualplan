@@ -10,8 +10,8 @@ const GLYPH =
   '<path d="M15 21h-9a3 3 0 0 1 -3 -3v-1h10v2a2 2 0 0 0 4 0v-14a2 2 0 1 1 2 2h-2m2 -4h-11a3 3 0 0 0 -3 3v11"/>' +
   '<path d="M9 7l4 0"/><path d="M9 11l4 0"/>'
 
-// A filled yellow dot in the top-right corner; its own fill wins over the path stroke style above.
-const DOT = '<circle cx="17" cy="6" r="6" fill="#eab308"/>'
+// A filled blue dot in the bottom-right corner; its own fill wins over the path stroke style above.
+const DOT = '<circle cx="17" cy="17" r="6" fill="#2f6fed"/>'
 
 /** The favicon as an SVG data URI, with the activity dot when `withDot`. */
 export function faviconHref(withDot: boolean): string {

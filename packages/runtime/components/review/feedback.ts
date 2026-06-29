@@ -1,4 +1,4 @@
-import type { Feedback } from '@visualplan/core'
+import type { Feedback, ReviewDecision } from '@visualplan/core'
 
 /** The review server (`compile.ts` `reviewPlugin`) endpoints. */
 const FEEDBACK_ENDPOINT = '/__vp_feedback'
@@ -24,6 +24,16 @@ export function isReviewDemo(): boolean {
 export function reviewIteration(): number | null {
   const value = (globalThis as { __VP_REVIEW_ITERATION__?: number }).__VP_REVIEW_ITERATION__
   return typeof value === 'number' ? value : null
+}
+
+/**
+ * The verdict this plan was already decided with, or null if it is still open. The Review Queue
+ * daemon injects `__VP_REVIEW_DECIDED__` when it re-serves a plan the reviewer already decided, so
+ * re-opening it shows the locked-in decision instead of live controls.
+ */
+export function reviewDecided(): ReviewDecision | null {
+  const value = (globalThis as { __VP_REVIEW_DECIDED__?: ReviewDecision }).__VP_REVIEW_DECIDED__
+  return value === 'approve' || value === 'deny' || value === 'iterate' ? value : null
 }
 
 /**

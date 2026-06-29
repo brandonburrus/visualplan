@@ -2,13 +2,7 @@ import type { QueueEntry } from '@visualplan/core'
 import { IconChecklist } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
 import { setActivityDot } from './favicon.js'
-import {
-  firstPendingId,
-  hasNewActivity,
-  moveSelection,
-  nextActiveId,
-  reviewedCount,
-} from './logic.js'
+import { hasNewActivity, moveSelection, nextActiveId, reviewedCount } from './logic.js'
 import { QueueSidebar } from './QueueSidebar.js'
 import './queue.css'
 
@@ -99,14 +93,17 @@ export function QueueShell() {
     containerRef.current?.querySelector<HTMLElement>('.vp-queue__row[tabindex="0"]')?.focus()
   }, [activeId])
 
-  const hasPending = firstPendingId(entries) !== null
   // The sidebar is for navigating BETWEEN plans, so a lone plan shows none: it reads as an ordinary
   // single review. It appears the moment a second plan joins the queue (the SSE drives this live).
   const showSidebar = entries.length > 1
 
+  // The plan to host in the iframe: whichever row is selected, pending or already decided (a decided
+  // plan re-opens locked into its verdict). The empty state shows only when nothing is selected.
+  const activeEntry = entries.find(entry => entry.id === activeId) ?? null
+
   // Announced to assistive tech as the queue changes (a plan reviewed, the active plan advancing, a
   // new plan arriving), which are otherwise silent visual updates.
-  const activeTitle = entries.find(entry => entry.id === activeId)?.title ?? null
+  const activeTitle = activeEntry?.title ?? null
 
   // The tab title tracks the plan being reviewed, so a backgrounded tab is identifiable; it falls
   // back to the queue name when nothing is active (empty or all reviewed).
@@ -127,13 +124,13 @@ export function QueueShell() {
       </div>
       {showSidebar && <QueueSidebar entries={entries} activeId={activeId} onSelect={setActiveId} />}
       <main className='vp-queue__main'>
-        {activeId && hasPending ? (
+        {activeEntry ? (
           <iframe
-            // Re-key on the active id so swapping plans remounts the iframe (a fresh review session)
-            // rather than navigating the same frame.
-            key={activeId}
+            // Re-key on the active id so swapping plans remounts the iframe (a fresh review session,
+            // or a decided plan locked into its verdict) rather than navigating the same frame.
+            key={activeEntry.id}
             className='vp-queue__frame'
-            src={`/plan/${activeId}`}
+            src={`/plan/${activeEntry.id}`}
             title='Active plan under review'
           />
         ) : (

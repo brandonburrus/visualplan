@@ -119,6 +119,21 @@ describe('QueueShell', () => {
     expect((container.textContent ?? '').toLowerCase()).toContain('reviewed')
   })
 
+  it('reloads a decided plan in the iframe when its row is reselected (golden)', () => {
+    render()
+    act(() =>
+      source().emitQueue([
+        entry('a', 'done', { decision: 'approve' }),
+        entry('b', 'done', { decision: 'deny' }),
+      ]),
+    )
+    // All done: nothing is auto-selected, so the empty state shows.
+    expect(container.querySelector('iframe')).toBeNull()
+    // Clicking a decided row loads it (the daemon serves it locked into its verdict).
+    act(() => container.querySelector<HTMLButtonElement>('.vp-queue__row')?.click())
+    expect(iframeSrc()).toBe('/plan/a')
+  })
+
   it('shows a progress count of reviewed plans (edge)', () => {
     render()
     act(() => source().emitQueue([entry('a', 'done'), entry('b'), entry('c')]))

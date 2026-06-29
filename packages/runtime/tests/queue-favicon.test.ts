@@ -9,10 +9,12 @@ describe('faviconHref', () => {
     expect(decodeURIComponent(href)).not.toContain('<circle')
   })
 
-  it('adds the yellow activity dot when asked (golden)', () => {
+  it('adds the blue activity dot in the bottom-right corner when asked (golden)', () => {
     const decoded = decodeURIComponent(faviconHref(true))
     expect(decoded).toContain('<circle')
-    expect(decoded).toContain('#eab308')
+    expect(decoded).toContain('#2f6fed')
+    // Bottom-right of the 24x24 viewBox.
+    expect(decoded).toContain('cx="17" cy="17"')
   })
 })
 

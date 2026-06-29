@@ -3,10 +3,11 @@ import {
   isQueueMode,
   postDraft,
   postFeedback,
+  reviewDecided,
   reviewPlanId,
 } from '../components/review/feedback.js'
 
-type QueueGlobal = { __VP_REVIEW_PLAN_ID__?: string }
+type QueueGlobal = { __VP_REVIEW_PLAN_ID__?: string; __VP_REVIEW_DECIDED__?: string }
 
 function setPlanId(id: string | undefined): void {
   ;(globalThis as QueueGlobal).__VP_REVIEW_PLAN_ID__ = id
@@ -14,7 +15,25 @@ function setPlanId(id: string | undefined): void {
 
 afterEach(() => {
   setPlanId(undefined)
+  ;(globalThis as QueueGlobal).__VP_REVIEW_DECIDED__ = undefined
   vi.restoreAllMocks()
+})
+
+describe('reviewDecided', () => {
+  it('returns the injected verdict of an already-decided plan (golden)', () => {
+    ;(globalThis as QueueGlobal).__VP_REVIEW_DECIDED__ = 'iterate'
+    expect(reviewDecided()).toBe('iterate')
+  })
+
+  it('returns null when absent (edge)', () => {
+    ;(globalThis as QueueGlobal).__VP_REVIEW_DECIDED__ = undefined
+    expect(reviewDecided()).toBeNull()
+  })
+
+  it('returns null for an unrecognized value (error)', () => {
+    ;(globalThis as QueueGlobal).__VP_REVIEW_DECIDED__ = 'maybe'
+    expect(reviewDecided()).toBeNull()
+  })
 })
 
 describe('reviewPlanId', () => {
