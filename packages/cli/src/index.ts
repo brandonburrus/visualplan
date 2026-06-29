@@ -14,6 +14,7 @@ import {
   runRender,
   type RenderOptions,
 } from './commands/render.js'
+import { type OpenOptions, runOpen } from './commands/open.js'
 import { type ReviewQueueOptions, runReview } from './commands/review.js'
 import { runReviewDaemon } from './commands/review-daemon.js'
 import { runShare } from './commands/share.js'
@@ -62,6 +63,12 @@ program
   .option('--json', 'print one JSON object keyed by file path instead of streaming text')
   .option('--no-open', 'do not open the queue in a browser')
   .action((files: string[], options: ReviewQueueOptions) => runReview(files, options))
+
+program
+  .command('open')
+  .description('Open the Review Queue tab, starting the background daemon if needed')
+  .option('--no-open', 'just start the daemon and print the URL, without opening a browser')
+  .action((options: OpenOptions) => runOpen(options))
 
 interface ReviewDaemonCliOptions {
   port: number

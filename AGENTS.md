@@ -38,6 +38,10 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
   disconnects, denies every queued plan and exits when the tab closes, and lingers `daemonTimeout`
   (config, default 15m) after the queue empties so a re-plan reuses the warm tab. See
   `packages/cli/AGENTS.md` (daemon) and `packages/runtime/AGENTS.md` (shell).
+- `vplan open` opens the queue tab on its own (`ensureDaemon` + open the shell URL), starting the
+  daemon if needed and enqueuing nothing; it does not block. Use it to open or re-open the queue
+  without a plan, so later reviews join the tab. `--no-open` just starts the daemon and prints the
+  URL (e.g. to warm the daemon headlessly).
 - Iteration diffing: a render of a plan *file* snapshots its source (`~/.vplan/snapshots`, keyed by
   the absolute path), and the next render of that path diffs the new source against the snapshot,
   injecting `__VP_DIFF__` so the runtime marks added/edited sections git-gutter style. `--diff <path>`
