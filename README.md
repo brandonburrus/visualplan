@@ -36,23 +36,6 @@ npm i -g vplan
 npx vplan plan.mdx
 ```
 
-## Usage
-
-```bash
-vplan plan.mdx              # open an interactive review session (the default), blocks for sign-off
-vplan plan.mdx --static     # render to plan.plan.html and open it, no review
-vplan plan.mdx --watch      # live-reloading dev server while you edit
-vplan review a.mdx b.mdx    # queue several plans, review them in one tab, stream verdicts
-vplan check plan.mdx        # validate a plan (syntax + quality lint) without rendering
-vplan export pdf plan.mdx   # render to a static PDF or JPG via headless Chromium
-vplan share plan.mdx        # print a shareable visualplan.dev link
-vplan components            # print the component vocabulary
-vplan config                # view or change persistent settings (default theme)
-```
-
-A plan is an MDX file that starts with a `# Title` (no frontmatter) and uses a fixed set of
-components, always in scope (no imports):
-
 ### Example Plan
 
 ````mdx
