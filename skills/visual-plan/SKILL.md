@@ -28,11 +28,6 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
 
 ## Workflow
 
-- [ ] 1. Write the plan to a `.mdx` file (`# Title` first; components are always in scope).
-- [ ] 2. `vplan check <file>.mdx` and fix every reported issue, quality-lint warnings included.
-- [ ] 3. Present with `vplan <file>.mdx` (an interactive review is the default), then act on the feedback.
-- [ ] 4. For a static page, a live preview, or a PDF/JPG instead, load `references/static-exports.md`.
-
 1. Write the plan to a `.mdx` file, starting with a single `# Title` heading (it becomes the plan
    title; no frontmatter). Then use the components below; you never write `import` statements, they
    are always in scope.
