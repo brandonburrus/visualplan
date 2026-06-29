@@ -3,11 +3,16 @@ import {
   isQueueMode,
   postDraft,
   postFeedback,
+  reviewAnswers,
   reviewDecided,
   reviewPlanId,
 } from '../components/review/feedback.js'
 
-type QueueGlobal = { __VP_REVIEW_PLAN_ID__?: string; __VP_REVIEW_DECIDED__?: string }
+type QueueGlobal = {
+  __VP_REVIEW_PLAN_ID__?: string
+  __VP_REVIEW_DECIDED__?: string
+  __VP_REVIEW_ANSWERS__?: unknown
+}
 
 function setPlanId(id: string | undefined): void {
   ;(globalThis as QueueGlobal).__VP_REVIEW_PLAN_ID__ = id
@@ -16,7 +21,20 @@ function setPlanId(id: string | undefined): void {
 afterEach(() => {
   setPlanId(undefined)
   ;(globalThis as QueueGlobal).__VP_REVIEW_DECIDED__ = undefined
+  ;(globalThis as QueueGlobal).__VP_REVIEW_ANSWERS__ = undefined
   vi.restoreAllMocks()
+})
+
+describe('reviewAnswers', () => {
+  it('returns the injected answers of a decided plan (golden)', () => {
+    ;(globalThis as QueueGlobal).__VP_REVIEW_ANSWERS__ = [{ question: 'TTL ok?', answer: 'Yes' }]
+    expect(reviewAnswers()).toEqual([{ question: 'TTL ok?', answer: 'Yes' }])
+  })
+
+  it('returns an empty array when none were injected (edge)', () => {
+    ;(globalThis as QueueGlobal).__VP_REVIEW_ANSWERS__ = undefined
+    expect(reviewAnswers()).toEqual([])
+  })
 })
 
 describe('reviewDecided', () => {

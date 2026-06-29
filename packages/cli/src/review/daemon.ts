@@ -66,12 +66,15 @@ function titleFromSource(source: string): string {
 }
 
 /**
- * Inject the decided verdict into a re-served plan page (`__VP_REVIEW_DECIDED__`), so re-opening a
- * plan the reviewer already decided locks into the submitted state instead of showing live controls.
- * A plain head script runs before the deferred runtime module that reads the global.
+ * Inject the decided verdict and the reviewer's answers into a re-served plan page
+ * (`__VP_REVIEW_DECIDED__`, `__VP_REVIEW_ANSWERS__`), so re-opening a plan the reviewer already
+ * decided locks into the submitted state (no live controls) and still shows the answers they gave.
+ * A plain head script runs before the deferred runtime module that reads the globals.
  */
 function withDecided(html: string, feedback: Feedback): string {
-  const tag = `<script>globalThis.__VP_REVIEW_DECIDED__=${JSON.stringify(feedback.decision)}</script>`
+  const tag =
+    `<script>globalThis.__VP_REVIEW_DECIDED__=${JSON.stringify(feedback.decision)};` +
+    `globalThis.__VP_REVIEW_ANSWERS__=${JSON.stringify(feedback.answers ?? [])}</script>`
   return html.includes('</head>') ? html.replace('</head>', `${tag}</head>`) : `${tag}${html}`
 }
 

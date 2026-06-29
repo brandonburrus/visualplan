@@ -178,6 +178,7 @@ function ReviewSession() {
     if (isReviewDemo()) {
       submittedRef.current = decision
       setSubmitted(decision)
+      questionAnswers?.lock()
       return
     }
     const feedback: Feedback = {
@@ -193,6 +194,7 @@ function ReviewSession() {
       // programmatic close (it still prompts on a manual browser close while undecided).
       submittedRef.current = decision
       setSubmitted(decision)
+      questionAnswers?.lock()
       // In queue mode the shell owns the tab and advances to the next plan once the daemon marks this
       // one done; the plan iframe must not close the tab (that would tear the whole queue down). The
       // submitted notice is shown instead. In standalone mode, best-effort close the now-done tab

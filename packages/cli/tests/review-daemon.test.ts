@@ -438,9 +438,16 @@ describe('daemon /plan decided-verdict injection', () => {
     expect(pending).not.toContain(assign)
     await fetch(url(d, '/__vp_feedback'), {
       method: 'POST',
-      body: JSON.stringify({ decision: 'deny', planId: id }),
+      body: JSON.stringify({
+        decision: 'deny',
+        planId: id,
+        answers: [{ question: 'TTL ok?', answer: 'Yes' }],
+      }),
     })
     const decided = await (await fetch(url(d, `/plan/${id}`))).text()
     expect(decided).toContain(assign)
+    // The reviewer's answers ride along so a re-opened plan still shows them.
+    expect(decided).toContain('__VP_REVIEW_ANSWERS__')
+    expect(decided).toContain('TTL ok?')
   }, 60_000)
 })

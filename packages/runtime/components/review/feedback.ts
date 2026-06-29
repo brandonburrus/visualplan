@@ -1,4 +1,4 @@
-import type { Feedback, ReviewDecision } from '@visualplan/core'
+import type { Feedback, ReviewAnswer, ReviewDecision } from '@visualplan/core'
 
 /** The review server (`compile.ts` `reviewPlugin`) endpoints. */
 const FEEDBACK_ENDPOINT = '/__vp_feedback'
@@ -34,6 +34,15 @@ export function reviewIteration(): number | null {
 export function reviewDecided(): ReviewDecision | null {
   const value = (globalThis as { __VP_REVIEW_DECIDED__?: ReviewDecision }).__VP_REVIEW_DECIDED__
   return value === 'approve' || value === 'deny' || value === 'iterate' ? value : null
+}
+
+/**
+ * The answers the reviewer gave to the plan's `Questions`, injected alongside the verdict when the
+ * daemon re-serves a decided plan, so the locked page can still show them. Empty when not decided.
+ */
+export function reviewAnswers(): ReviewAnswer[] {
+  const value = (globalThis as { __VP_REVIEW_ANSWERS__?: ReviewAnswer[] }).__VP_REVIEW_ANSWERS__
+  return Array.isArray(value) ? value : []
 }
 
 /**

@@ -705,6 +705,13 @@ body {
   color: var(--vp-faint);
 }
 
+/* A decided plan locks the answer fields: the answer stays readable but reads as settled, not editable. */
+.vp-questions__answer[readonly] {
+  cursor: default;
+  background: var(--vp-surface);
+  color: var(--vp-muted);
+}
+
 .vp-questions__answer:focus-visible {
   outline: none;
   border-color: var(--vp-question);

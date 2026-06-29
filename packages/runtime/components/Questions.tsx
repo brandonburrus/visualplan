@@ -35,30 +35,38 @@ export function Questions(props: QuestionsProps) {
   })
   const answers = useQuestionAnswers()
   const interactive = isReviewMode() && answers !== null
+  // Once the plan is decided the answer fields lock: an answered question stays visible (read-only),
+  // an unanswered one reverts to a plain question.
+  const locked = answers?.locked ?? false
   return (
     <section className='vp-questions'>
       <div className='vp-questions__title'>{title}</div>
       <ol className='vp-questions__list'>
-        {items.map((item, index) => (
-          <li key={item} className='vp-questions__item'>
-            <span className='vp-questions__num' aria-hidden='true'>
-              {index + 1}
-            </span>
-            <div className='vp-questions__body'>
-              <span className='vp-questions__text'>{item}</span>
-              {interactive && (
-                <AutoGrowTextarea
-                  className='vp-questions__answer'
-                  rows={1}
-                  placeholder='Answer this question…'
-                  aria-label={`Answer: ${item}`}
-                  value={answers.answers.get(item) ?? ''}
-                  onChange={event => answers.setAnswer(item, event.target.value)}
-                />
-              )}
-            </div>
-          </li>
-        ))}
+        {items.map((item, index) => {
+          const answer = answers?.answers.get(item) ?? ''
+          const showInput = interactive && (!locked || answer.trim() !== '')
+          return (
+            <li key={item} className='vp-questions__item'>
+              <span className='vp-questions__num' aria-hidden='true'>
+                {index + 1}
+              </span>
+              <div className='vp-questions__body'>
+                <span className='vp-questions__text'>{item}</span>
+                {showInput && answers && (
+                  <AutoGrowTextarea
+                    className='vp-questions__answer'
+                    rows={1}
+                    placeholder='Answer this question…'
+                    aria-label={`Answer: ${item}`}
+                    value={answer}
+                    readOnly={locked}
+                    onChange={event => answers.setAnswer(item, event.target.value)}
+                  />
+                )}
+              </div>
+            </li>
+          )
+        })}
       </ol>
     </section>
   )
