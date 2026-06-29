@@ -15,34 +15,40 @@ description: Every vplan command and flag.
 vplan <file.mdx>
 ```
 
-Compiles a plan to a single self-contained `<file>.plan.html` next to the source and opens it.
-`render` is the default command, so `vplan plan.mdx` and `vplan render plan.mdx` are the same. The
-file argument may be `-` (or omitted) to read the plan from stdin.
+Opens the plan in an interactive review session by default (see [Review mode](#review-mode)). Pass
+`--static` to instead compile a single self-contained `<file>.plan.html` next to the source and open
+it. `render` is the default command, so `vplan plan.mdx` and `vplan render plan.mdx` are the same.
+The file argument may be `-` (or omitted) to read the plan from stdin.
 
 | Flag | Effect |
 |------|--------|
+| `--static` | Render a static HTML page and open it instead of the review session (the pre-review default). |
 | `--watch` | Start a hot-reloading dev server instead of writing a file. Long-running; stops on Ctrl+C. |
 | `--port <number>` | Port for the `--watch` dev server (default `9140`, auto-incrementing if taken). |
-| `--out <path>` | Write the HTML to `<path>` instead of `<file>.plan.html`. |
-| `--stdout` | Write the rendered HTML to stdout instead of a file (composes in a pipeline; never auto-diffs). |
-| `--review` | Open an interactive review session and block until the reviewer decides (see below). |
+| `--out <path>` | Write the HTML to `<path>` instead of `<file>.plan.html` (implies `--static`). |
+| `--stdout` | Write the rendered HTML to stdout instead of a file (implies `--static`; composes in a pipeline; never auto-diffs). |
+| `--review` | Open the interactive review session (now the default; kept for compatibility). |
+| `--no-daemon` | Review without the shared queue daemon, using a one-shot in-process server. |
 | `-i, --iteration <n>` | Plan revision number shown in the review bar; increment it each re-review. |
 | `--timeout <duration>` | Max wait for review feedback, e.g. `15m`, `30s`, `1h` (default `15m`). |
 | `--diff <path>` | Diff this render against an explicit baseline plan, overriding the snapshot cache. |
 | `--no-diff` | Skip iteration diffing (do not read or write the snapshot cache). |
 | `--no-open` | Do not open the result in the browser. |
 
-`--watch` serves a local URL and writes no file, so for a one-shot HTML output use the plain
-render, not `--watch`.
+For a one-shot HTML file use `--static` (or `--stdout` for a pipeline), not `--watch` (which serves a
+local URL and writes no file).
 
 ### Review mode
 
-`vplan render --review <file.mdx>` opens the plan as an interactive review session: the reviewer
-comments on sections or selected text, answers any `<Questions>` inline, then clicks Approve, Deny,
-or Iterate. The command **blocks** until they submit, prints the decision, comments, and answers to
-stdout, then exits with a decision-specific code (see [Exit codes](#exit-codes)). It is a
-long-running foreground server; a closed tab counts as Deny, and `--timeout` bounds the wait. See
-[Review mode](/docs/review/) for an interactive demo and the full session walkthrough.
+`vplan <file.mdx>` opens the plan as an interactive review session: the reviewer comments on sections
+or selected text, answers any `<Questions>` inline, then clicks Approve, Deny, or Iterate. The
+command **blocks** until they submit, prints the decision, comments, and answers to stdout, then
+exits with a decision-specific code (see [Exit codes](#exit-codes)). It is a long-running foreground
+server; a closed tab counts as Deny, and `--timeout` bounds the wait.
+
+Reviews join a shared **queue** so several plans share one tab: `vplan review <files...>` enqueues
+several at once, and `vplan open` opens (or pre-warms) the queue tab on its own. See
+[Review mode](/docs/review/) for the demo, the queue, and the full session walkthrough.
 
 ### Iteration diffing
 
@@ -124,10 +130,13 @@ vplan config set <key> <value>
 vplan config path       # print the config file path
 ```
 
-Views and edits persistent settings stored in `~/.vplan/config.json`. The only setting is `theme`
-(`light`, `dark`, or `system`), the default color scheme baked into every rendered plan. The in-page
-settings cog overrides this per view in the browser (via `localStorage`) and never writes the file,
-so the on-disk default and the in-page override are separate layers.
+Views and edits persistent settings stored in `~/.vplan/config.json`:
+
+- `theme` (`light`, `dark`, or `system`): the default color scheme baked into every rendered plan.
+  The in-page settings cog overrides this per view in the browser (via `localStorage`) and never
+  writes the file, so the on-disk default and the in-page override are separate layers.
+- `daemonTimeout` (a duration like `15m`, default `15m`): how long the review queue daemon lingers
+  after its queue empties before exiting, so a quick re-plan reuses the warm tab.
 
 ## Exit codes
 
