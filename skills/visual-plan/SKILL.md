@@ -38,15 +38,20 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
 3. **Present the plan with `vplan <file>.mdx`. An interactive review is the default way to deliver a
    plan, not a special mode reserved for sign-off.** It opens the plan with a feedback layer where the
    user comments on whole sections or on selected text, **answers any `<Questions>` directly** (each
-   question becomes an inline answer field, printed back as `Answer to "<question>":`), then clicks
+   question becomes an inline answer field; a question with nested option bullets becomes clickable
+   choices, and the picked option's text (or the typed "Other" text) is the answer, printed back as
+   `Answer to "<question>":`), then clicks
    Approve / Deny / Iterate. It **blocks** until they submit, prints the decision, comments, and
    answers to stdout, and exits: approve 0, deny 1, iterate 2, timeout 3 (`--timeout`, default 15m;
    closing the tab counts as deny). It is a long-running foreground server, so run it in the
    background. (The explicit `--review` flag still works but is redundant now that review is the
-   default.) Then act on the printed feedback:
+   default.) A comment may carry a severity tag: treat a `[must-fix]` comment as blocking (it must
+   be addressed before the plan can be approved) and a `[suggestion]` or untagged comment as
+   non-blocking input. Then act on the printed feedback:
    - **Approve** -> proceed with the plan as written.
-   - **Iterate** -> revise the plan addressing each comment, then review again with `-i N`
-     (`--iteration N`) incremented so the bar shows the round; repeat until Approve or Deny. **Edit
+   - **Iterate** -> revise the plan addressing each comment, then simply re-run `vplan <file>.mdx`;
+     the review tab updates the same plan in place and the round number increments automatically
+     (pass `-i N` only to override it). Repeat until Approve or Deny. **Edit
      the same `.mdx` file in place** and re-render: `vplan` snapshots each plan it presents (keyed by
      the file path), so the next render automatically marks what changed since the last view with a
      subtle git-gutter accent and a "N changed" summary, letting the user re-review only the delta.
@@ -155,10 +160,16 @@ brace errors that break a render.
   Use this instead of burying uncertainties in prose. The title defaults to "Open questions";
   override with `title="..."`. In a `--review` session each question is directly answerable, so
   prefer a `<Questions>` block over prose when you want the reviewer to answer specific questions.
+  Nest bullets under a question to offer **multiple-choice options**: in a review they become
+  clickable choices (plus an "Other" free-text field), and the chosen option's text comes back as
+  the answer. Offer options whenever you can enumerate the likely answers; they get you a crisp,
+  actionable answer instead of prose. A question with no nested bullets stays free-text.
 
   ```mdx
   <Questions>
   - Should the limiter fail open or fail closed if Redis is unreachable?
+    - Fail open, availability first
+    - Fail closed, safety first
   - Is a 15-minute access-token TTL acceptable?
   </Questions>
   ```

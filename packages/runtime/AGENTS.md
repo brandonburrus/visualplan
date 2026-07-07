@@ -27,7 +27,14 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   `.vp-chart`, `.vp-filetree`, `.vp-matrix-wrap`, `.vp-compare`, `.vp-checklist`, `.vp-stat`,
   `.vp-questions`) that is a **direct** child of `.vp-main`, so loose top-level intro content does not
   collapse into one oversized section while blocks nested inside a `<Phase>` stay part of it.
-  `CommentModal` is the bottom composer; `DecisionBar` submits Approve/Deny/Iterate. In review mode
+  `CommentModal` is the bottom composer (with an optional must-fix/suggestion severity toggle,
+  default untagged; the tag rides `comments[].severity` and is dropped from JSON when unset, so old
+  daemons never see it); `DecisionBar` submits Approve/Deny/Iterate. After any decision the session
+  goes read-only rather than unmounting: quote marks and section badges stay visible (delete hidden),
+  composer and bar are suppressed, and a queue-mode iterate shows a spinner notice ("Waiting for the
+  revised plan") until the shell swaps in the next revision. Known limit: navigating away and back
+  while iterating remounts the iframe and loses the in-page marks (the daemon reinjects only
+  decision + answers). In review mode
   `Questions` is **directly answerable**: each row renders an answer field whose value flows up via
   the `ReviewAnswers` context (provided in `Layout`, shared by `Questions` and `ReviewSession`) into
   the feedback's distinct `answers` channel. `feedback.ts` POSTs an explicit decision
@@ -47,11 +54,24 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   content: just `QueueShell` (chrome) hosting each active plan in a same-origin `<iframe src="/plan/<id>">`.
   `QueueShell` opens `new EventSource('/__vp_events')` and holds it open for the page lifetime (it is
   the daemon's liveness signal: closing the tab tears the daemon down, so the stream is closed only on
-  unmount). The daemon emits `event: queue` with a JSON `QueueEntry[]`; the shell defaults the active
-  iframe to the first pending plan and auto-advances when the active one is marked `done`. j/k or
+  unmount). It also sends a `navigator.sendBeacon('/__vp_shell_closed')` on `pagehide` (evidence that
+  lets the daemon pick the short close grace over the long suspension grace; the socket close remains
+  the actual signal) and arms a `beforeunload` confirm only while a `pending`/`active` entry exists
+  (an `iterating` entry is already resolved to its caller, so closing loses nothing undecided).
+  The daemon emits `event: queue` with a JSON `QueueEntry[]`; the shell defaults the active
+  iframe to the first pending plan. Selection is prev-aware (`nextActiveId(prev, next, activeId)`):
+  the active plan is kept unless it transitioned to `done` THIS frame, so an iterate keeps the plan
+  on screen in its waiting state, the `iterating -> pending` rev bump swaps the revision in place,
+  and a user parked on a decided plan is never yanked away by an unrelated frame. The iframe is keyed
+  `id:rev` with a `?rev=` cache-buster (ids are stable across revisions now; the daemon also serves
+  `/plan/<id>` as `no-store`). The **sidebar always renders**, even for a single plan (deliberate:
+  the queue is the product surface, and history stays visible); rows keep stable insertion order
+  (never reorder under the cursor), show a spinning refresh icon + "awaiting revision" for
+  `iterating`, a relative `updatedAt` timestamp, an unseen-revision dot for background rev bumps
+  (per-plan, distinct from the whole-tab favicon dot), and the `vN` iteration chip. j/k or
   arrow keys navigate. `components/queue/logic.ts` holds the **pure**, unit-tested navigation helpers
-  (`firstPendingId`, `nextActiveId`, `moveSelection`, `reviewedCount`); `QueueSidebar.tsx` is the rail
-  (title + muted originating `dir` + Tabler status icon + "N of M reviewed"); `queue.css` is the
+  (`firstPendingId`, `nextActiveId`, `moveSelection`, `reviewedCount`, `relativeTime`, `unseenRevs`,
+  `revisingCount`); `QueueSidebar.tsx` is the rail; `queue.css` is the
   colocated chrome (the entry imports `theme.css` for the shared `--vp-*` tokens). Built by the CLI's
   `buildQueueShell()` (`packages/cli/src/build/queue-shell.ts`), a Vite single-file build of `queue.html`
   with NO plan plugins (no `virtual:plan`/share/diff/review), so the shell ships self-contained.

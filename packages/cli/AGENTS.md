@@ -53,20 +53,40 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
   (NOT Vite) holding an in-memory queue: each enqueued plan is built once via `compile.ts buildHtml`
   with `review: { planId, iteration }` and served from `/plan/<id>`; a browser "shell" lists the queue.
   The HTTP/SSE contract is FROZEN (the runtime shell depends on exact endpoint/field/frame shapes):
-  `GET /__vp_ping` (liveness), `GET /` (shell, cached), `GET /plan/<id>`, `POST /__vp_enqueue`
-  (-> `{ id, shellConnected }`; cancel idle timer BEFORE the slow build or a short idleMs shuts the
-  daemon mid-enqueue), `GET /__vp_verdict?id` (long-held; caller disconnect drops the plan),
-  `POST /__vp_feedback` + `POST /__vp_draft` (both validated by `feedbackSchema`, routed by `planId`;
-  feedback is idempotent once settled), `GET /__vp_events` (SSE `event: queue` = `QueueEntry[]`; the
-  shell's liveness signal). Lifecycle: idle TTL fires when no `pending` plans remain (a new enqueue
-  cancels it); the LAST events client closing starts a 1500ms grace (survives a reload), after which
-  all still-pending plans are denied (with their draft) and the daemon shuts down. One idempotent
-  `shutdown()` ends every held connection so `close()` cannot hang on an SSE (the same regression the
-  one-shot server guards). `lockfile.ts` is discovery + the mutex: `~/.vplan/review-daemon.json`
+  `GET /__vp_ping` (liveness), `GET /` (shell, cached), `GET /plan/<id>` (served `no-store`: ids are
+  reused across revisions), `POST /__vp_enqueue` (-> `{ id, shellConnected }`; cancel idle timer
+  BEFORE the slow build or a short idleMs shuts the daemon mid-enqueue), `GET /__vp_verdict?id`
+  (long-held; caller disconnect drops the plan), `POST /__vp_feedback` + `POST /__vp_draft` (both
+  validated by `feedbackSchema`, routed by `planId`; feedback is idempotent once settled),
+  `GET /__vp_events` (SSE `event: queue` = `QueueEntry[]`; the shell's liveness signal, kept warm by
+  `: hb` comment frames every `HEARTBEAT_MS` so a half-dead socket surfaces its close), and
+  `POST /__vp_shell_closed` (204; the shell's pagehide beacon, evidence-only, see grace below).
+  **Same-key enqueue is an update-in-place**: the entry keeps its id, `rev` increments, status resets
+  to `pending`, decision clears, settle state and draft reset (so a new caller's `/__vp_verdict`
+  rebinds instead of replaying the stale verdict), and `iteration` auto-increments when the caller
+  passed none (explicit `-i` wins). The new HTML is built BEFORE any state mutation (with the stable
+  id as the injected planId, or feedback routing breaks) so a failed build leaves the old revision
+  servable. An iterate decision settles the entry to `status: 'iterating'` (not `done`), which counts
+  as pending for the idle TTL: the daemon must hold between the iterate verdict and the re-enqueue.
+  Lifecycle: idle TTL fires when no `pending`/`iterating` plans remain (a new enqueue cancels it).
+  Tab-close detection is two-tier: the LAST events client closing arms `RELOAD_GRACE_MS` (5s) when a
+  close beacon arrived within `BEACON_ASSOC_MS` (unload evidence: reload, navigation, or real close),
+  else the silent tier (`idleMs`, default 15m) because a beaconless drop is likely tab suspension or
+  laptop sleep, and EventSource auto-reconnects on resume; a late beacon reschedules silent -> reload.
+  Grace expiry denies all still-pending plans (with their drafts) and shuts down. The beacon is
+  EVIDENCE for tier selection only, never the close signal itself (a beacon is dropped on some real
+  closes, per the one-shot server's finding above); the socket close remains the detector. One
+  idempotent `shutdown()` ends every held connection so `close()` cannot hang on an SSE (the same
+  regression the one-shot server guards) and awaits `onIdle` so the lock is removed before exit.
+  `lockfile.ts` is discovery + the mutex: `~/.vplan/review-daemon.json`
   (`{ port, pid }`), claimed via `writeFile`'s `wx` flag (atomic create-or-fail collapses racing
-  daemons), `isDaemonAlive` pings. `ensure-daemon.ts` reuses a live daemon or spawns the detached
+  daemons), `isDaemonAlive` pings (and requires the body `ok`, so an unrelated server squatting a
+  recycled port is not mistaken for the daemon). `removeLockIfOwned` guards shutdown cleanup: only
+  the owning pid's lock is deleted, so a signalled old daemon cannot remove a successor's lock.
+  `ensure-daemon.ts` reuses a live daemon or spawns the detached
   `__review-daemon` process (`cli-entry.ts` derives the entry from `process.argv[1]`) and polls.
-  `commands/review-daemon.ts` owns the mutex (start -> `wx` claim; lost race or stale lock handled);
+  `commands/review-daemon.ts` owns the mutex (start -> `wx` claim; lost race or stale lock handled)
+  and registers SIGTERM/SIGINT handlers after the lock is won (close -> lock removal -> exit 0);
   `commands/review.ts` is the `review <files...>` orchestration (stream each verdict as it resolves,
   exit 0 iff all approved, `--json` for one keyed object). `client.ts` is `enqueuePlan`/`awaitVerdict`.
   All of these take injectable seams so the routing/lifecycle is unit-tested in-process with a fake
