@@ -32,6 +32,36 @@ describe('feedbackSchema answers', () => {
   })
 })
 
+describe('reviewCommentSchema severity', () => {
+  it('carries an optional must-fix or suggestion tag (golden)', () => {
+    const parsed = feedbackSchema.parse({
+      decision: 'iterate',
+      comments: [
+        { section: 'Phase 1', body: 'wrong table', severity: 'must-fix' },
+        { section: 'Phase 2', body: 'maybe rename', severity: 'suggestion' },
+      ],
+    })
+    expect(parsed.comments.map(c => c.severity)).toEqual(['must-fix', 'suggestion'])
+  })
+
+  it('leaves severity undefined when untagged (edge)', () => {
+    const parsed = feedbackSchema.parse({
+      decision: 'iterate',
+      comments: [{ section: 'Phase 1', body: 'tweak' }],
+    })
+    expect(parsed.comments[0]?.severity).toBeUndefined()
+  })
+
+  it('rejects an unknown severity (error)', () => {
+    expect(() =>
+      feedbackSchema.parse({
+        decision: 'iterate',
+        comments: [{ section: 'Phase 1', body: 'x', severity: 'blocking' }],
+      }),
+    ).toThrow()
+  })
+})
+
 describe('feedbackSchema planId', () => {
   it('carries a planId when the Review Queue tags the feedback (golden)', () => {
     const parsed = feedbackSchema.parse({ decision: 'approve', planId: 'p-1' })

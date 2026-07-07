@@ -5,11 +5,14 @@ import {
   hasNewActivity,
   moveSelection,
   nextActiveId,
+  relativeTime,
   reviewedCount,
+  revisingCount,
+  unseenRevs,
 } from '../components/queue/logic.js'
 
-function entry(id: string, status: QueueEntry['status'] = 'pending'): QueueEntry {
-  return { id, title: `Plan ${id}`, dir: 'proj', status }
+function entry(id: string, status: QueueEntry['status'] = 'pending', rev = 1): QueueEntry {
+  return { id, title: `Plan ${id}`, dir: 'proj', status, rev }
 }
 
 describe('firstPendingId', () => {
@@ -17,8 +20,16 @@ describe('firstPendingId', () => {
     expect(firstPendingId([entry('a', 'done'), entry('b'), entry('c')])).toBe('b')
   })
 
+  it('skips an iterating entry, which has nothing new to review yet (golden)', () => {
+    expect(firstPendingId([entry('a', 'iterating'), entry('b'), entry('c')])).toBe('b')
+  })
+
   it('returns null when every entry is done (edge)', () => {
     expect(firstPendingId([entry('a', 'done'), entry('b', 'done')])).toBeNull()
+  })
+
+  it('returns null when the only entries are iterating or done (edge)', () => {
+    expect(firstPendingId([entry('a', 'iterating'), entry('b', 'done')])).toBeNull()
   })
 
   it('returns null for an empty queue (error)', () => {
@@ -26,25 +37,51 @@ describe('firstPendingId', () => {
   })
 })
 
-describe('nextActiveId: auto-advance when the active plan finishes', () => {
+describe('nextActiveId: prev-aware auto-advance', () => {
   it('keeps the active id while it is still pending (golden)', () => {
-    const entries = [entry('a'), entry('b')]
-    expect(nextActiveId(entries, 'a')).toBe('a')
+    const prev = [entry('a'), entry('b')]
+    const next = [entry('a'), entry('b')]
+    expect(nextActiveId(prev, next, 'a')).toBe('a')
   })
 
-  it('advances to the next pending plan once the active one is done (golden)', () => {
-    const entries = [entry('a', 'done'), entry('b'), entry('c')]
-    expect(nextActiveId(entries, 'a')).toBe('b')
+  it('advances to the next pending plan on the frame the active one turns done (golden)', () => {
+    const prev = [entry('a'), entry('b'), entry('c')]
+    const next = [entry('a', 'done'), entry('b'), entry('c')]
+    expect(nextActiveId(prev, next, 'a')).toBe('b')
+  })
+
+  it('stays on the active plan when it flips to iterating (golden)', () => {
+    const prev = [entry('a'), entry('b')]
+    const next = [entry('a', 'iterating'), entry('b')]
+    expect(nextActiveId(prev, next, 'a')).toBe('a')
+  })
+
+  it('stays across an iterating-to-pending rev bump (golden)', () => {
+    const prev = [entry('a', 'iterating', 1), entry('b')]
+    const next = [entry('a', 'pending', 2), entry('b')]
+    expect(nextActiveId(prev, next, 'a')).toBe('a')
+  })
+
+  it('does not yank the user off a manually selected done plan on an unrelated frame (edge)', () => {
+    const prev = [entry('a', 'done'), entry('b')]
+    const next = [entry('a', 'done'), entry('b'), entry('c')]
+    expect(nextActiveId(prev, next, 'a')).toBe('a')
   })
 
   it('returns null when the active plan was the last pending one (edge)', () => {
-    const entries = [entry('a', 'done'), entry('b', 'done')]
-    expect(nextActiveId(entries, 'b')).toBeNull()
+    const prev = [entry('a', 'done'), entry('b')]
+    const next = [entry('a', 'done'), entry('b', 'done')]
+    expect(nextActiveId(prev, next, 'b')).toBeNull()
   })
 
-  it('falls back to the first pending when the active id is unknown (error)', () => {
-    const entries = [entry('a', 'done'), entry('b')]
-    expect(nextActiveId(entries, 'gone')).toBe('b')
+  it('falls back to the first pending when the active id vanished (error)', () => {
+    const prev = [entry('gone'), entry('a', 'done'), entry('b')]
+    const next = [entry('a', 'done'), entry('b')]
+    expect(nextActiveId(prev, next, 'gone')).toBe('b')
+  })
+
+  it('falls back to the first pending when nothing is active (error)', () => {
+    expect(nextActiveId([], [entry('a')], null)).toBe('a')
   })
 })
 
@@ -90,6 +127,75 @@ describe('reviewedCount', () => {
   })
 })
 
+describe('relativeTime', () => {
+  const MIN = 60_000
+  const HOUR = 60 * MIN
+  const DAY = 24 * HOUR
+
+  it('reports under a minute as just now (golden)', () => {
+    expect(relativeTime(100_000, 100_000 - 30_000)).toBe('just now')
+  })
+
+  it('reports whole minutes, hours, and days (golden)', () => {
+    expect(relativeTime(DAY * 10, DAY * 10 - 5 * MIN)).toBe('5m ago')
+    expect(relativeTime(DAY * 10, DAY * 10 - 3 * HOUR)).toBe('3h ago')
+    expect(relativeTime(DAY * 10, DAY * 10 - 2 * DAY)).toBe('2d ago')
+  })
+
+  it('rolls over exactly at each bucket boundary (edge)', () => {
+    expect(relativeTime(DAY * 10, DAY * 10 - MIN)).toBe('1m ago')
+    expect(relativeTime(DAY * 10, DAY * 10 - HOUR)).toBe('1h ago')
+    expect(relativeTime(DAY * 10, DAY * 10 - DAY)).toBe('1d ago')
+  })
+
+  it('treats a future timestamp (clock skew) as just now (error)', () => {
+    expect(relativeTime(100_000, 200_000)).toBe('just now')
+  })
+})
+
+describe('unseenRevs', () => {
+  it('flags an entry whose rev moved past the last-seen rev (golden)', () => {
+    const seen = new Map([['a', 1]])
+    expect(unseenRevs([entry('a', 'pending', 2)], seen, null)).toEqual(new Set(['a']))
+  })
+
+  it('never flags the active entry: the user is looking at it (golden)', () => {
+    const seen = new Map([['a', 1]])
+    expect(unseenRevs([entry('a', 'pending', 2)], seen, 'a')).toEqual(new Set())
+  })
+
+  it('does not flag a never-seen entry at rev 1: it is a brand-new row, not an update (edge)', () => {
+    expect(unseenRevs([entry('a')], new Map(), null)).toEqual(new Set())
+  })
+
+  it('flags a never-seen entry already past rev 1 (edge)', () => {
+    expect(unseenRevs([entry('a', 'pending', 2)], new Map(), null)).toEqual(new Set(['a']))
+  })
+
+  it('does not flag an entry at its last-seen rev (edge)', () => {
+    const seen = new Map([['a', 2]])
+    expect(unseenRevs([entry('a', 'pending', 2)], seen, null)).toEqual(new Set())
+  })
+
+  it('returns an empty set for an empty queue (error)', () => {
+    expect(unseenRevs([], new Map(), null)).toEqual(new Set())
+  })
+})
+
+describe('revisingCount', () => {
+  it('counts iterating entries (golden)', () => {
+    expect(revisingCount([entry('a', 'iterating'), entry('b'), entry('c', 'iterating')])).toBe(2)
+  })
+
+  it('is zero when nothing is iterating (edge)', () => {
+    expect(revisingCount([entry('a'), entry('b', 'done')])).toBe(0)
+  })
+
+  it('is zero for an empty queue (error)', () => {
+    expect(revisingCount([])).toBe(0)
+  })
+})
+
 describe('hasNewActivity', () => {
   const at = (
     id: string,
@@ -113,6 +219,12 @@ describe('hasNewActivity', () => {
 
   it('flags a version bump on a requeued plan (golden)', () => {
     expect(hasNewActivity([at('a', 'pending', 2)], [at('a', 'pending', 3)])).toBe(true)
+  })
+
+  it('flags a rev bump on an in-place revision (golden)', () => {
+    const before = { ...at('a', 'pending'), rev: 1 }
+    const after = { ...at('a', 'pending'), rev: 2 }
+    expect(hasNewActivity([before], [after])).toBe(true)
   })
 
   it('does not flag an unchanged queue (edge)', () => {

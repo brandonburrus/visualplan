@@ -101,15 +101,15 @@ describe('QueueShell', () => {
   it('defaults the active iframe to the first pending plan (golden)', () => {
     render()
     act(() => source().emitQueue([entry('a', 'done'), entry('b'), entry('c')]))
-    expect(iframeSrc()).toBe('/plan/b')
+    expect(iframeSrc()).toBe('/plan/b?rev=1')
   })
 
   it('auto-advances the iframe when the active plan is marked done (golden)', () => {
     render()
     act(() => source().emitQueue([entry('a'), entry('b')]))
-    expect(iframeSrc()).toBe('/plan/a')
+    expect(iframeSrc()).toBe('/plan/a?rev=1')
     act(() => source().emitQueue([entry('a', 'done'), entry('b')]))
-    expect(iframeSrc()).toBe('/plan/b')
+    expect(iframeSrc()).toBe('/plan/b?rev=1')
   })
 
   it('shows an all-reviewed empty state when every plan is done (edge)', () => {
@@ -131,7 +131,7 @@ describe('QueueShell', () => {
     expect(container.querySelector('iframe')).toBeNull()
     // Clicking a decided row loads it (the daemon serves it locked into its verdict).
     act(() => container.querySelector<HTMLButtonElement>('.vp-queue__row')?.click())
-    expect(iframeSrc()).toBe('/plan/a')
+    expect(iframeSrc()).toBe('/plan/a?rev=1')
   })
 
   it('shows a progress count of reviewed plans (edge)', () => {
@@ -143,11 +143,11 @@ describe('QueueShell', () => {
   it('moves the active plan with the j key (golden)', () => {
     render()
     act(() => source().emitQueue([entry('a'), entry('b'), entry('c')]))
-    expect(iframeSrc()).toBe('/plan/a')
+    expect(iframeSrc()).toBe('/plan/a?rev=1')
     act(() => {
       window.dispatchEvent(new KeyboardEvent('keydown', { key: 'j' }))
     })
-    expect(iframeSrc()).toBe('/plan/b')
+    expect(iframeSrc()).toBe('/plan/b?rev=1')
   })
 
   it('closes the events stream on unmount (error)', () => {
@@ -158,32 +158,231 @@ describe('QueueShell', () => {
   })
 })
 
-// The queue chrome is for navigating BETWEEN plans, so a lone plan should look like an ordinary
-// single review (no sidebar); the sidebar appears only once a second plan is in the queue.
-describe('QueueShell single-plan vs queue', () => {
-  it('hides the sidebar and shows the plan full-width when only one plan is queued (golden)', () => {
+// In-place revisions reuse the plan id; the iframe is keyed and cache-busted by `rev` so a revised
+// plan remounts with fresh content while an unchanged rev keeps the same mounted frame.
+describe('QueueShell iframe revision keying', () => {
+  it('remounts the iframe with the new rev in its src when a revision arrives (golden)', () => {
     render()
-    act(() => source().emitQueue([entry('a')]))
-    expect(sidebar()).toBeNull()
-    // The single plan still renders; it just has no queue rail beside it.
-    expect(iframeSrc()).toBe('/plan/a')
+    act(() => source().emitQueue([entry('a', 'pending', { rev: 1 })]))
+    expect(iframeSrc()).toBe('/plan/a?rev=1')
+    act(() => source().emitQueue([entry('a', 'pending', { rev: 2 })]))
+    expect(iframeSrc()).toBe('/plan/a?rev=2')
   })
 
-  it('reveals the sidebar when a second plan joins the queue mid-review (golden)', () => {
+  it('keeps the same mounted iframe across frames while the rev is unchanged (edge)', () => {
     render()
-    act(() => source().emitQueue([entry('a')]))
-    expect(sidebar()).toBeNull()
-    act(() => source().emitQueue([entry('a'), entry('b')]))
-    expect(sidebar()).not.toBeNull()
+    act(() => source().emitQueue([entry('a', 'pending', { rev: 1 })]))
+    const frame = container.querySelector('iframe')
+    act(() => source().emitQueue([entry('a', 'pending', { rev: 1 }), entry('b')]))
+    expect(container.querySelector('iframe')).toBe(frame)
   })
 
-  it('hides the sidebar again if the queue drops back to a single plan (edge)', () => {
+  it('stays on an active plan that flips to iterating, iframe still mounted (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'pending', { rev: 1 })]))
+    const frame = container.querySelector('iframe')
+    act(() => source().emitQueue([entry('a', 'iterating', { rev: 1 })]))
+    // No auto-advance and no "All plans reviewed" empty state: the reviewer waits in place.
+    expect(container.querySelector('iframe')).toBe(frame)
+    expect(container.textContent ?? '').not.toContain('All plans reviewed')
+  })
+})
+
+// A background entry's in-place revision raises a small accent dot on its row (never a focus
+// steal); viewing the row marks the revision seen and clears the dot.
+describe('QueueShell unseen revision dots', () => {
+  function rowFor(title: string): HTMLButtonElement | null {
+    return (
+      Array.from(container.querySelectorAll<HTMLButtonElement>('.vp-queue__row')).find(r =>
+        (r.getAttribute('aria-label') ?? '').startsWith(title),
+      ) ?? null
+    )
+  }
+
+  it('dots a background entry when its revision arrives (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    act(() => source().emitQueue([entry('a'), entry('b', 'pending', { rev: 2 })]))
+    const row = rowFor('Plan b')
+    expect(row?.querySelector('.vp-queue__dot')).not.toBeNull()
+    expect(row?.getAttribute('aria-label')).toContain('updated')
+  })
+
+  it('clears the dot once the updated entry is selected (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    act(() => source().emitQueue([entry('a'), entry('b', 'pending', { rev: 2 })]))
+    act(() => rowFor('Plan b')?.click())
+    expect(rowFor('Plan b')?.querySelector('.vp-queue__dot')).toBeNull()
+  })
+
+  it('never dots the active entry on its own revision (edge)', () => {
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    act(() => source().emitQueue([entry('a', 'pending', { rev: 2 }), entry('b')]))
+    expect(rowFor('Plan a')?.querySelector('.vp-queue__dot')).toBeNull()
+  })
+
+  it('does not dot brand-new rows arriving at rev 1 (edge)', () => {
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b')]))
+    expect(container.querySelector('.vp-queue__dot')).toBeNull()
+  })
+})
+
+// The daemon distinguishes a real unload (short deny grace) from a silent socket drop (long grace)
+// by this beacon; it fires unconditionally because a reload's SSE reconnect cancels the short grace.
+describe('QueueShell close beacon', () => {
+  afterEach(() => {
+    Reflect.deleteProperty(window.navigator, 'sendBeacon')
+  })
+
+  it('notifies the daemon via sendBeacon on pagehide (golden)', () => {
+    const beacon = vi.fn(() => true)
+    Object.defineProperty(window.navigator, 'sendBeacon', { value: beacon, configurable: true })
+    render()
+    act(() => {
+      window.dispatchEvent(new Event('pagehide'))
+    })
+    expect(beacon).toHaveBeenCalledWith('/__vp_shell_closed')
+  })
+
+  it('survives pagehide when sendBeacon is unavailable (error)', () => {
+    render()
+    expect(() =>
+      act(() => {
+        window.dispatchEvent(new Event('pagehide'))
+      }),
+    ).not.toThrow()
+  })
+
+  it('stops firing after unmount (edge)', () => {
+    const beacon = vi.fn(() => true)
+    Object.defineProperty(window.navigator, 'sendBeacon', { value: beacon, configurable: true })
+    render()
+    act(() => root.unmount())
+    window.dispatchEvent(new Event('pagehide'))
+    expect(beacon).not.toHaveBeenCalled()
+  })
+})
+
+// Closing the tab with undecided plans denies them, so the user gets a native confirm; decided and
+// iterating plans are already resolved to their callers and must not block a close.
+describe('QueueShell beforeunload guard', () => {
+  function fireBeforeUnload(): Event {
+    const event = new Event('beforeunload', { cancelable: true })
+    act(() => {
+      window.dispatchEvent(event)
+    })
+    return event
+  }
+
+  it('prevents the unload while an undecided plan is pending (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a'), entry('b', 'done')]))
+    expect(fireBeforeUnload().defaultPrevented).toBe(true)
+  })
+
+  it('lets the unload proceed when every plan is done or iterating (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'done'), entry('b', 'iterating')]))
+    expect(fireBeforeUnload().defaultPrevented).toBe(false)
+  })
+
+  it('lets the unload proceed for an empty queue (edge)', () => {
+    render()
+    expect(fireBeforeUnload().defaultPrevented).toBe(false)
+  })
+})
+
+describe('QueueShell revising count', () => {
+  it('appends the revising count to the sidebar header when plans are iterating (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'done'), entry('b', 'iterating'), entry('c')]))
+    expect(container.querySelector('.vp-queue__count')?.textContent).toBe(
+      '1 of 3 reviewed - 1 revising',
+    )
+  })
+
+  it('omits the revising suffix when nothing is iterating (edge)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'done'), entry('b')]))
+    expect(container.querySelector('.vp-queue__count')?.textContent).toBe('1 of 2 reviewed')
+  })
+
+  it('announces the revising count in the live region (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'done'), entry('b', 'iterating'), entry('c')]))
+    const live = container.querySelector('[aria-live="polite"]')
+    expect(live?.textContent).toBe(
+      '1 of 3 plans reviewed, 1 awaiting revision. Now reviewing Plan c',
+    )
+  })
+})
+
+describe('QueueShell iterating rows', () => {
+  it("labels an iterating row 'awaiting revision' (golden)", () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'iterating'), entry('b')]))
+    const row = container.querySelector('.vp-queue__row')
+    expect(row?.getAttribute('aria-label')).toBe('Plan a, dir-a, awaiting revision')
+  })
+
+  it('marks the iterating row with its status for the spinner styling (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a', 'iterating'), entry('b')]))
+    expect(container.querySelector('.vp-queue__row')?.getAttribute('data-status')).toBe('iterating')
+  })
+})
+
+describe('QueueShell relative timestamps', () => {
+  it('shows a muted relative time on a row carrying updatedAt, also in its name (golden)', () => {
+    // Computed before render: the shell's clock starts at mount, so a timestamp taken after it
+    // would land fractionally under the 5m bucket and flake to '4m ago'.
+    const updatedAt = Date.now() - 5 * 60_000
+    render()
+    act(() => source().emitQueue([entry('a', 'pending', { updatedAt })]))
+    const row = container.querySelector('.vp-queue__row')
+    expect(row?.querySelector('.vp-queue__time')?.textContent).toBe('5m ago')
+    expect(row?.getAttribute('aria-label')).toContain('5m ago')
+  })
+
+  it('omits the timestamp when an older daemon sends no updatedAt (edge)', () => {
+    render()
+    act(() => source().emitQueue([entry('a')]))
+    expect(container.querySelector('.vp-queue__time')).toBeNull()
+  })
+
+  it('advances timestamps as time passes without new frames (golden)', () => {
+    vi.useFakeTimers()
+    try {
+      render()
+      act(() => source().emitQueue([entry('a', 'pending', { updatedAt: Date.now() })]))
+      expect(container.querySelector('.vp-queue__time')?.textContent).toBe('just now')
+      act(() => vi.advanceTimersByTime(90_000))
+      expect(container.querySelector('.vp-queue__time')?.textContent).toBe('1m ago')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+})
+
+// The sidebar is the session's history rail, so it renders even for a lone plan: a solo review
+// still shows its row, status, and progress instead of masquerading as a plain single render.
+describe('QueueShell always-on sidebar', () => {
+  it('renders the sidebar for a single-entry queue (golden)', () => {
+    render()
+    act(() => source().emitQueue([entry('a')]))
+    expect(sidebar()).not.toBeNull()
+    expect(iframeSrc()).toContain('/plan/a')
+  })
+
+  it('keeps the sidebar when the queue drops back to a single plan (edge)', () => {
     render()
     act(() => source().emitQueue([entry('a'), entry('b')]))
     expect(sidebar()).not.toBeNull()
-    // A caller abandoning its plan removes it; back to one plan means back to no chrome.
     act(() => source().emitQueue([entry('a')]))
-    expect(sidebar()).toBeNull()
+    expect(sidebar()).not.toBeNull()
   })
 })
 

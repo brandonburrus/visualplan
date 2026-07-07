@@ -45,12 +45,28 @@ function fetchedUrls(): string[] {
 
 /** Drive an Approve click through the rendered decision bar. */
 async function clickApprove(): Promise<void> {
-  const approve = Array.from(container.querySelectorAll('button')).find(
-    b => b.textContent?.trim() === 'Approve',
+  await clickDecision('Approve')
+}
+
+/** Drive a decision-bar button click by its label. */
+async function clickDecision(label: string): Promise<void> {
+  const button = Array.from(container.querySelectorAll('button')).find(
+    b => b.textContent?.trim() === label,
   )
-  if (!approve) throw new Error('Approve button not found')
+  if (!button) throw new Error(`${label} button not found`)
   await act(async () => {
-    approve.click()
+    button.click()
+  })
+}
+
+/** Type into the decision bar's note field (Iterate is disabled until some feedback exists). */
+function typeNote(text: string): void {
+  const input = container.querySelector<HTMLInputElement>('.vp-review-bar__note')
+  if (!input) throw new Error('note input not found')
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+  act(() => {
+    setter?.call(input, text)
+    input.dispatchEvent(new Event('input', { bubbles: true }))
   })
 }
 
@@ -95,6 +111,46 @@ describe('ReviewLayer queue mode', () => {
     expect(buttonLabels).not.toContain('Approve')
     expect(container.textContent).toContain('Denied')
     expect(container.textContent).not.toContain('close this tab')
+  })
+
+  it('shows the waiting-for-revision notice after a live Iterate in queue mode (golden)', async () => {
+    setReview('plan-7')
+    root = createRoot(container)
+    act(() => root.render(<ReviewLayer />))
+    typeNote('tighten the rollout phase')
+    await clickDecision('Iterate')
+    expect(container.textContent).toContain('Waiting for the revised plan')
+    expect(container.querySelector('.vp-review-done__spin')).not.toBeNull()
+  })
+
+  it('shows the same waiting notice when re-opening a plan decided iterate (golden)', () => {
+    setReview('plan-7')
+    ;(globalThis as ReviewGlobal).__VP_REVIEW_DECIDED__ = 'iterate'
+    root = createRoot(container)
+    act(() => root.render(<ReviewLayer />))
+    expect(container.textContent).toContain('Waiting for the revised plan')
+    expect(container.querySelector('.vp-review-done__spin')).not.toBeNull()
+  })
+
+  it('keeps the plain decided notice for Approve in queue mode (edge)', async () => {
+    setReview('plan-7')
+    root = createRoot(container)
+    act(() => root.render(<ReviewLayer />))
+    await clickApprove()
+    expect(container.textContent).toContain('Approved')
+    expect(container.textContent).not.toContain('Waiting for the revised plan')
+    expect(container.querySelector('.vp-review-done__spin')).toBeNull()
+  })
+
+  it('keeps the standalone notice for Iterate outside queue mode (edge)', async () => {
+    setReview(undefined)
+    root = createRoot(container)
+    act(() => root.render(<ReviewLayer />))
+    typeNote('tighten the rollout phase')
+    await clickDecision('Iterate')
+    expect(container.textContent).toContain('close this tab')
+    expect(container.textContent).not.toContain('Waiting for the revised plan')
+    expect(container.querySelector('.vp-review-done__spin')).toBeNull()
   })
 
   it('still says to close the tab after submit in standalone mode (error)', async () => {

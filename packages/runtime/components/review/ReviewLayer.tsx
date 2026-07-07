@@ -1,8 +1,14 @@
-import type { Feedback, ReviewAnswer, ReviewComment, ReviewDecision } from '@visualplan/core'
+import type {
+  Feedback,
+  ReviewAnswer,
+  ReviewComment,
+  ReviewDecision,
+  ReviewSeverity,
+} from '@visualplan/core'
 import { IconCheck, IconMessagePlus, IconRefresh, IconX } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
 import { CommentModal } from './CommentModal.js'
-import { CommentsPopover } from './CommentsPopover.js'
+import { CommentsPopover, SEVERITY_LABEL } from './CommentsPopover.js'
 import { DecisionBar } from './DecisionBar.js'
 import {
   isQueueMode,
@@ -29,6 +35,7 @@ interface DraftComment {
   sectionIndex: number
   label: string
   body: string
+  severity?: ReviewSeverity
   quote?: string
   range?: Range
 }
@@ -69,6 +76,7 @@ function ReviewSession() {
   const [busy, setBusy] = useState(false)
   const [hoveredMark, setHoveredMark] = useState<{
     body: string
+    severity?: ReviewSeverity
     top: number
     left: number
   } | null>(null)
@@ -78,10 +86,12 @@ function ReviewSession() {
   const questionAnswers = useQuestionAnswers()
 
   // A selection comment is sent under its quote so the agent can locate the exact text; a section
-  // comment is sent under the section label.
+  // comment is sent under the section label. An untagged severity stays `undefined`, which
+  // JSON.stringify drops, so old daemons never see the key.
   const payloadComments: ReviewComment[] = comments.map(c => ({
     section: c.quote ?? c.label,
     body: c.body,
+    severity: c.severity,
   }))
   // Answered questions (those with non-blank text) ride the distinct `answers` channel, keyed by the
   // question so the agent maps each back to the plan's `Questions`.
@@ -107,7 +117,11 @@ function ReviewSession() {
   const answersMap = questionAnswers?.answers
   useEffect(() => {
     if (!submitted && !isReviewDemo()) {
-      const draft = comments.map(c => ({ section: c.quote ?? c.label, body: c.body }))
+      const draft = comments.map(c => ({
+        section: c.quote ?? c.label,
+        body: c.body,
+        severity: c.severity,
+      }))
       postDraft({
         decision: 'deny',
         comments: draft,
@@ -136,12 +150,19 @@ function ReviewSession() {
     return () => window.removeEventListener('beforeunload', onBeforeUnload)
   }, [])
 
-  const addComment = (body: string) => {
+  const addComment = (body: string, severity?: ReviewSeverity) => {
     if (composing) {
       const t = composing
       setComments(prev => [
         ...prev,
-        { sectionIndex: t.sectionIndex, label: t.label, body, quote: t.quote, range: t.range },
+        {
+          sectionIndex: t.sectionIndex,
+          label: t.label,
+          body,
+          severity,
+          quote: t.quote,
+          range: t.range,
+        },
       ])
     }
     setComposing(null)
@@ -206,13 +227,17 @@ function ReviewSession() {
     }
   }
 
-  if (submitted)
-    return <SubmittedNotice decision={submitted} demo={isReviewDemo()} queue={isQueueMode()} />
+  // After a decision the session turns read-only: the marks and badges stay visible (the reviewer
+  // can still see what they flagged, and in the queue's iterate wait the plan stays on screen), but
+  // the composer, selection button, delete affordances, and DecisionBar are suppressed.
+  // Known limitation (deliberately descoped): navigating away and back while iterating remounts the
+  // iframe and loses these in-page comment marks; the daemon reinjects only the decision + answers.
+  const readOnly = submitted !== null
 
   const viewingComments = viewing
     ? comments
         .filter(comment => comment.sectionIndex === viewing.index)
-        .map(c => ({ body: c.body, quote: c.quote }))
+        .map(c => ({ body: c.body, quote: c.quote, severity: c.severity }))
     : []
   const viewingRect = viewing?.element.getBoundingClientRect()
   const selectionRect = selection?.range.getBoundingClientRect()
@@ -231,10 +256,22 @@ function ReviewSession() {
                 className='vp-review-quote-mark'
                 style={{ top: r.top, left: r.left, width: r.width, height: r.height }}
                 onMouseEnter={() =>
-                  setHoveredMark({ body: comment.body, top: r.top, left: r.left })
+                  setHoveredMark({
+                    body: comment.body,
+                    severity: comment.severity,
+                    top: r.top,
+                    left: r.left,
+                  })
                 }
                 onMouseLeave={() => setHoveredMark(null)}
-                onFocus={() => setHoveredMark({ body: comment.body, top: r.top, left: r.left })}
+                onFocus={() =>
+                  setHoveredMark({
+                    body: comment.body,
+                    severity: comment.severity,
+                    top: r.top,
+                    left: r.left,
+                  })
+                }
                 onBlur={() => setHoveredMark(null)}
                 onClick={() => {
                   const section = sections[comment.sectionIndex]
@@ -256,6 +293,11 @@ function ReviewSession() {
             left: Math.min(hoveredMark.left, window.innerWidth - 360),
           }}
         >
+          {hoveredMark.severity && (
+            <span className='vp-review-tag' data-severity={hoveredMark.severity}>
+              {SEVERITY_LABEL[hoveredMark.severity]}
+            </span>
+          )}
           {hoveredMark.body}
         </div>
       )}
@@ -287,7 +329,7 @@ function ReviewSession() {
           <IconMessagePlus size={14} /> Comment
         </button>
       )}
-      {composing && (
+      {!readOnly && composing && (
         <CommentModal
           section={composing.quote ?? composing.label}
           onSave={addComment}
@@ -299,18 +341,23 @@ function ReviewSession() {
           label={viewing.label}
           comments={viewingComments}
           anchor={{ top: viewingRect.top, left: Math.max(viewingRect.left - 34, 8) }}
+          readOnly={readOnly}
           onDelete={index => deleteComment(viewing.index, index)}
           onClose={() => setViewing(null)}
         />
       )}
-      <DecisionBar
-        commentCount={comments.length}
-        answerCount={payloadAnswers.length}
-        note={note}
-        onNote={setNote}
-        onDecide={decide}
-        busy={busy}
-      />
+      {readOnly && submitted ? (
+        <SubmittedNotice decision={submitted} demo={isReviewDemo()} queue={isQueueMode()} />
+      ) : (
+        <DecisionBar
+          commentCount={comments.length}
+          answerCount={payloadAnswers.length}
+          note={note}
+          onNote={setNote}
+          onDecide={decide}
+          busy={busy}
+        />
+      )}
     </>
   )
 }
@@ -338,14 +385,23 @@ function SubmittedNotice({
   queue?: boolean
 }) {
   const Icon = decision === 'deny' ? IconX : decision === 'iterate' ? IconRefresh : IconCheck
+  // A queue-mode iterate means the daemon holds this slot (status 'iterating') until the agent
+  // re-enqueues the revised plan into the same iframe, so the notice reads as an in-progress wait.
+  // This covers both paths here: a live Iterate click and a re-opened plan whose injected
+  // `__VP_REVIEW_DECIDED__` seeded `submitted`.
+  const waiting = queue === true && decision === 'iterate' && !demo
   return (
     <div className='vp-review-done' data-decision={decision}>
-      <Icon size={18} />
+      <Icon size={18} className={waiting ? 'vp-review-done__spin' : undefined} />
       <span>
         {demo ? (
           <>
             Demo: this would return <strong>{decision}</strong> to your agent. Press Reset to try
             again.
+          </>
+        ) : waiting ? (
+          <>
+            <strong>{DECISION_LABEL[decision]}</strong>. Waiting for the revised plan...
           </>
         ) : queue ? (
           <strong>{DECISION_LABEL[decision]}</strong>

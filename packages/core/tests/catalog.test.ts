@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { CATALOG, chartSchema, matrixSchema, statSchema } from '../src/index.js'
+import {
+  CATALOG,
+  chartSchema,
+  matrixSchema,
+  questionItemSchema,
+  questionsSchema,
+  statSchema,
+} from '../src/index.js'
 
 describe('chartSchema', () => {
   it('accepts a valid bar spec (golden)', () => {
@@ -78,6 +85,56 @@ describe('matrixSchema', () => {
   it('rejects a grid with no rows (edge)', () => {
     const result = matrixSchema.safeParse({ columns: [{ name: 'A' }, { name: 'B' }], rows: [] })
     expect(result.success).toBe(false)
+  })
+})
+
+describe('questionItemSchema', () => {
+  it('accepts a question with multiple-choice options (golden)', () => {
+    const result = questionItemSchema.safeParse({
+      text: 'Rotate refresh tokens?',
+      options: ['Yes, every use', 'Only after 24h'],
+    })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.options).toEqual(['Yes, every use', 'Only after 24h'])
+  })
+
+  it('rejects an empty option string (error)', () => {
+    const result = questionItemSchema.safeParse({ text: 'Rotate?', options: [''] })
+    expect(result.success).toBe(false)
+  })
+
+  it('defaults options to an empty array (edge)', () => {
+    const result = questionItemSchema.safeParse({ text: 'Rotate?' })
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.options).toEqual([])
+  })
+
+  it('rejects empty question text (error)', () => {
+    const result = questionItemSchema.safeParse({ text: '', options: [] })
+    expect(result.success).toBe(false)
+  })
+})
+
+describe('questionsSchema', () => {
+  it('accepts object items alongside plain strings, normalizing both (golden)', () => {
+    const result = questionsSchema.safeParse({
+      items: ['Free text only?', { text: 'Rotate?', options: ['Yes', 'No'] }],
+    })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.items).toEqual([
+        { text: 'Free text only?', options: [] },
+        { text: 'Rotate?', options: ['Yes', 'No'] },
+      ])
+    }
+  })
+
+  it('rejects an empty string question (error)', () => {
+    expect(questionsSchema.safeParse({ items: [''] }).success).toBe(false)
+  })
+
+  it('rejects an empty item list (edge)', () => {
+    expect(questionsSchema.safeParse({ items: [] }).success).toBe(false)
   })
 })
 

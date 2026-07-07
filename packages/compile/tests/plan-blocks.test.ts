@@ -239,6 +239,57 @@ describe('Questions block', () => {
     expect(issues).toEqual([])
     expect(value).toEqual(['First?', 'Second?'])
   })
+
+  it('parses nested bullets under a question into its options (golden)', () => {
+    const { value, issues } = parseBlock(
+      'Questions',
+      '<Questions>\n- Rotate refresh tokens?\n  - Yes, every use\n  - Only after 24h\n</Questions>\n',
+    )
+    expect(issues).toEqual([])
+    expect(value).toEqual([
+      { text: 'Rotate refresh tokens?', options: ['Yes, every use', 'Only after 24h'] },
+    ])
+  })
+
+  it('mixes option questions with plain free-text questions (golden)', () => {
+    const { value, issues } = parseBlock(
+      'Questions',
+      '<Questions>\n- Rotate refresh tokens?\n  - Yes\n  - No\n- Is a 15-minute TTL acceptable?\n</Questions>\n',
+    )
+    expect(issues).toEqual([])
+    expect(value).toEqual([
+      { text: 'Rotate refresh tokens?', options: ['Yes', 'No'] },
+      'Is a 15-minute TTL acceptable?',
+    ])
+  })
+
+  it('flags an empty option with its line (error)', () => {
+    const { issues } = parseBlock(
+      'Questions',
+      '<Questions>\n- Rotate refresh tokens?\n  - Yes\n  -\n</Questions>\n',
+    )
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.message).toMatch(/option .* must not be empty/)
+    expect(issues[0]?.line).toBe(4)
+  })
+
+  it('flags a list nested inside an option with its line (error)', () => {
+    const { value, issues } = parseBlock(
+      'Questions',
+      '<Questions>\n- Rotate refresh tokens?\n  - Yes\n    - way too deep\n</Questions>\n',
+    )
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.message).toMatch(/one level deep/)
+    expect(issues[0]?.line).toBe(3)
+    // The option keeps its own text; the too-deep list is not folded into it.
+    expect(value).toEqual([{ text: 'Rotate refresh tokens?', options: ['Yes'] }])
+  })
+
+  it('flags a block with no list (edge)', () => {
+    const { issues } = parseBlock('Questions', '<Questions>\nno list here\n</Questions>\n')
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.message).toMatch(/needs a markdown list/)
+  })
 })
 
 describe('Stat block', () => {

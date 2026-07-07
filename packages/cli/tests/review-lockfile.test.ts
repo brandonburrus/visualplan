@@ -4,7 +4,13 @@ import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { isDaemonAlive, readLock, removeLock, writeLockExclusive } from '../src/review/lockfile.js'
+import {
+  isDaemonAlive,
+  readLock,
+  removeLock,
+  removeLockIfOwned,
+  writeLockExclusive,
+} from '../src/review/lockfile.js'
 
 let dir: string
 
@@ -66,6 +72,26 @@ describe('removeLock', () => {
   })
 })
 
+describe('removeLockIfOwned', () => {
+  it('removes the lock when it belongs to the given pid (golden)', async () => {
+    await writeLockExclusive({ port: 9151, pid: 42 }, dir)
+    await removeLockIfOwned(dir, 42)
+    expect(await readLock(dir)).toBeNull()
+  })
+
+  it('leaves a lock owned by a different pid untouched (error: successor guard)', async () => {
+    // A SIGTERM'd old daemon must not delete the lock a successor daemon already claimed.
+    await writeLockExclusive({ port: 9152, pid: 99 }, dir)
+    await removeLockIfOwned(dir, 42)
+    expect(await readLock(dir)).toEqual({ port: 9152, pid: 99 })
+  })
+
+  it('is a no-op when there is no lock (edge)', async () => {
+    await expect(removeLockIfOwned(dir, 42)).resolves.toBeUndefined()
+    expect(await readLock(dir)).toBeNull()
+  })
+})
+
 describe('isDaemonAlive', () => {
   it('returns true when /__vp_ping answers 200 (golden)', async () => {
     const server = createServer((req, res) => {
@@ -93,6 +119,21 @@ describe('isDaemonAlive', () => {
     const port = (probe.address() as { port: number }).port
     await new Promise<void>(resolve => probe.close(() => resolve()))
     expect(await isDaemonAlive(port)).toBe(false)
+  })
+
+  it('returns false when a 200 response body is not exactly "ok" (error: port squatter)', async () => {
+    // An unrelated server squatting the port may answer 200 to anything; only the daemon says 'ok'.
+    const server = createServer((_req, res) => {
+      res.writeHead(200)
+      res.end('<html>welcome</html>')
+    })
+    await new Promise<void>(resolve => server.listen(0, resolve))
+    const port = (server.address() as { port: number }).port
+    try {
+      expect(await isDaemonAlive(port)).toBe(false)
+    } finally {
+      await new Promise<void>(resolve => server.close(() => resolve()))
+    }
   })
 
   it('returns false when the endpoint answers non-200 (edge)', async () => {

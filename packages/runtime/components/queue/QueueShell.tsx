@@ -2,12 +2,24 @@ import type { QueueEntry } from '@visualplan/core'
 import { IconChecklist } from '@tabler/icons-react'
 import { useEffect, useRef, useState } from 'react'
 import { setActivityDot } from './favicon.js'
-import { hasNewActivity, moveSelection, nextActiveId, reviewedCount } from './logic.js'
+import {
+  hasNewActivity,
+  moveSelection,
+  nextActiveId,
+  reviewedCount,
+  revisingCount,
+  unseenRevs,
+} from './logic.js'
 import { QueueSidebar } from './QueueSidebar.js'
 import './queue.css'
 
 /** The daemon's SSE endpoint, which doubles as the tab's liveness signal. */
 const EVENTS_ENDPOINT = '/__vp_events'
+
+/** POSTed via sendBeacon on pagehide as positive evidence of a real unload, letting the daemon arm
+ * its short deny grace instead of the long silent one (a suspended tab drops the SSE without this
+ * beacon). Fired on every pagehide: a reload's SSE reconnect cancels the short grace. */
+const SHELL_CLOSED_ENDPOINT = '/__vp_shell_closed'
 
 /**
  * The Review Queue shell the daemon serves at `/`: a left sidebar of queued plans and the active plan
@@ -25,26 +37,35 @@ export function QueueShell() {
   const activeRef = useRef<string | null>(activeId)
   activeRef.current = activeId
 
+  // Whether any plan is still undecided, read by the stable beforeunload handler below (same
+  // pattern as activeRef: the handler must be attached once, not re-bound per frame).
+  const pendingRef = useRef(false)
+  pendingRef.current = entries.some(e => e.status === 'pending' || e.status === 'active')
+
   const containerRef = useRef<HTMLDivElement>(null)
   // Set when an active change came from keyboard nav (not an SSE-driven auto-advance), so focus
   // follows the selection then but never gets yanked out from under the user on a background update.
   const keyboardNavRef = useRef(false)
 
-  // A favicon dot raised when the queue gains activity (a plan added or updated) while the tab is
-  // backgrounded, cleared when the user focuses the tab again; prevEntriesRef diffs against the
-  // last queue to tell new activity from a no-op redraw.
-  const [unseen, setUnseen] = useState(false)
+  // A whole-tab favicon dot raised when the queue gains activity (a plan added or updated) while
+  // the tab is backgrounded, cleared when the user focuses the tab again; prevEntriesRef diffs
+  // against the last queue to tell new activity from a no-op redraw. Distinct from the per-plan
+  // unseen-revision dots derived further down.
+  const [faviconUnseen, setFaviconUnseen] = useState(false)
   const prevEntriesRef = useRef<QueueEntry[]>([])
 
   useEffect(() => {
     const source = new EventSource(EVENTS_ENDPOINT)
     const onQueue = (event: MessageEvent) => {
       const next = JSON.parse(event.data) as QueueEntry[]
-      if (document.hidden && hasNewActivity(prevEntriesRef.current, next)) setUnseen(true)
+      // Read the previous frame BEFORE overwriting the ref: nextActiveId compares the two frames to
+      // advance only when the active plan turned done in this frame.
+      const prev = prevEntriesRef.current
+      if (document.hidden && hasNewActivity(prev, next)) setFaviconUnseen(true)
       prevEntriesRef.current = next
       setEntries(next)
       // Default to the first pending plan, and auto-advance once the active plan is marked done.
-      setActiveId(nextActiveId(next, activeRef.current))
+      setActiveId(nextActiveId(prev, next, activeRef.current))
     }
     source.addEventListener('queue', onQueue)
     return () => {
@@ -56,15 +77,38 @@ export function QueueShell() {
   // Clear the activity dot once the tab is in the foreground again; reflect the flag on the favicon.
   useEffect(() => {
     const onVisible = () => {
-      if (!document.hidden) setUnseen(false)
+      if (!document.hidden) setFaviconUnseen(false)
     }
     document.addEventListener('visibilitychange', onVisible)
     return () => document.removeEventListener('visibilitychange', onVisible)
   }, [])
 
   useEffect(() => {
-    setActivityDot(unseen)
-  }, [unseen])
+    setActivityDot(faviconUnseen)
+  }, [faviconUnseen])
+
+  // Tell the daemon this was a real unload (close/reload/navigation), not a silent socket drop.
+  useEffect(() => {
+    const onPageHide = () => {
+      if (typeof navigator.sendBeacon === 'function') navigator.sendBeacon(SHELL_CLOSED_ENDPOINT)
+    }
+    window.addEventListener('pagehide', onPageHide)
+    return () => window.removeEventListener('pagehide', onPageHide)
+  }, [])
+
+  // Closing the tab with undecided plans denies them (the daemon's deny-on-close), so raise the
+  // native leave-page confirm then. An 'iterating' plan is already resolved to its caller, so it
+  // does not block a close; nor do decided plans or an empty queue.
+  useEffect(() => {
+    const onBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (!pendingRef.current) return
+      event.preventDefault()
+      // Legacy channel some browsers still require to show the confirm.
+      event.returnValue = ''
+    }
+    window.addEventListener('beforeunload', onBeforeUnload)
+    return () => window.removeEventListener('beforeunload', onBeforeUnload)
+  }, [])
 
   // j/k or arrow keys move the active selection; the in-iframe review UI handles every other key.
   useEffect(() => {
@@ -93,13 +137,27 @@ export function QueueShell() {
     containerRef.current?.querySelector<HTMLElement>('.vp-queue__row[tabindex="0"]')?.focus()
   }, [activeId])
 
-  // The sidebar is for navigating BETWEEN plans, so a lone plan shows none: it reads as an ordinary
-  // single review. It appears the moment a second plan joins the queue (the SSE drives this live).
-  const showSidebar = entries.length > 1
-
   // The plan to host in the iframe: whichever row is selected, pending or already decided (a decided
   // plan re-opens locked into its verdict). The empty state shows only when nothing is selected.
   const activeEntry = entries.find(entry => entry.id === activeId) ?? null
+  const activeRev = activeEntry?.rev ?? 1
+
+  // Per-plan unseen-revision dots (distinct from the whole-tab `faviconUnseen` flag above): the
+  // active plan's rev is recorded as seen whenever it is shown, and any OTHER entry whose rev moved
+  // past its seen rev gets an accent dot on its sidebar row instead of stealing focus.
+  const seenRevsRef = useRef(new Map<string, number>())
+  useEffect(() => {
+    if (activeId) seenRevsRef.current.set(activeId, activeRev)
+  }, [activeId, activeRev])
+  const unseenIds = unseenRevs(entries, seenRevsRef.current, activeId)
+
+  // A coarse clock for the sidebar's relative timestamps: a 30s tick keeps "Nm ago" fresh between
+  // queue frames without re-rendering more often than the coarsest bucket needs.
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 30_000)
+    return () => clearInterval(timer)
+  }, [])
 
   // Announced to assistive tech as the queue changes (a plan reviewed, the active plan advancing, a
   // new plan arriving), which are otherwise silent visual updates.
@@ -110,27 +168,37 @@ export function QueueShell() {
   useEffect(() => {
     document.title = activeTitle || 'Visual Plan Review Queue'
   }, [activeTitle])
+  const revising = revisingCount(entries)
   const announcement =
     entries.length === 0
       ? ''
       : `${reviewedCount(entries)} of ${entries.length} plans reviewed${
-          activeTitle ? `. Now reviewing ${activeTitle}` : '.'
-        }`
+          revising > 0 ? `, ${revising} awaiting revision` : ''
+        }${activeTitle ? `. Now reviewing ${activeTitle}` : '.'}`
 
   return (
-    <div ref={containerRef} className={showSidebar ? 'vp-queue' : 'vp-queue vp-queue--solo'}>
+    <div ref={containerRef} className='vp-queue'>
       <div className='vp-sr-only' role='status' aria-live='polite'>
         {announcement}
       </div>
-      {showSidebar && <QueueSidebar entries={entries} activeId={activeId} onSelect={setActiveId} />}
+      {/* Always rendered, even for a lone plan: the rail carries the session's history and status. */}
+      <QueueSidebar
+        entries={entries}
+        activeId={activeId}
+        unseen={unseenIds}
+        now={now}
+        onSelect={setActiveId}
+      />
       <main className='vp-queue__main'>
         {activeEntry ? (
           <iframe
-            // Re-key on the active id so swapping plans remounts the iframe (a fresh review session,
-            // or a decided plan locked into its verdict) rather than navigating the same frame.
-            key={activeEntry.id}
+            // Re-key on id AND rev: ids are now stable across in-place revisions, so a rev bump must
+            // remount the iframe with the revised plan while swapping rows still gets a fresh frame.
+            // The daemon's router matches the pathname prefix and ignores the query; `?rev=` is a
+            // cache-buster since the same /plan/<id> URL now serves successive revisions.
+            key={`${activeEntry.id}:${activeEntry.rev ?? 1}`}
             className='vp-queue__frame'
-            src={`/plan/${activeEntry.id}`}
+            src={`/plan/${activeEntry.id}?rev=${activeEntry.rev ?? 1}`}
             title='Active plan under review'
           />
         ) : (

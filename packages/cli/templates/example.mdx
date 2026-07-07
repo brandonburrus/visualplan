@@ -52,6 +52,8 @@ flowchart LR
 <Questions>
 - What is the limit per token: a fixed number, or per-plan tier?
 - Should the limiter fail open or fail closed if Redis is unreachable?
+  - Fail open, availability first
+  - Fail closed, safety first
 - Do internal service-to-service calls get exempted from limiting?
 </Questions>
 

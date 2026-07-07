@@ -718,6 +718,46 @@ body {
   box-shadow: 0 0 0 2px var(--vp-question-glow);
 }
 
+/* Multiple-choice options under a question. Outside a live review they read as a plain sub-list;
+   in one, each option is a radio row above the "Other" free-text field. */
+.vp-questions__options {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+/* The static form (a <ul>) keeps a native marker so the choices still read as a sub-list. */
+ul.vp-questions__options {
+  list-style: circle;
+  padding-left: 1.15rem;
+}
+
+.vp-questions__option {
+  font-size: 0.9rem;
+  color: var(--vp-text);
+}
+
+/* The selectable form: one radio row per option, keyed to the question blue like the answer field. */
+label.vp-questions__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.vp-questions__option input[type="radio"] {
+  margin: 0;
+  accent-color: var(--vp-question);
+  cursor: inherit;
+}
+
+.vp-questions__option input[type="radio"]:focus-visible {
+  outline: 2px solid var(--vp-question);
+  outline-offset: 2px;
+}
+
 /* Compare */
 .vp-compare {
   display: grid;

@@ -1,5 +1,7 @@
+import { act } from 'react'
+import { createRoot, type Root } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Callout } from '../components/Callout.js'
 import { Chart } from '../components/Chart.js'
 import { Checklist } from '../components/Checklist.js'
@@ -10,6 +12,7 @@ import { Matrix } from '../components/Matrix.js'
 import { Phase } from '../components/Phase.js'
 import { Questions } from '../components/Questions.js'
 import { ReviewAnswersProvider } from '../components/review/ReviewAnswers.js'
+import { ReviewLayer } from '../components/review/ReviewLayer.js'
 import { copyText, ShareButton } from '../components/ShareButton.js'
 import { Stat } from '../components/Stat.js'
 import { ThemeToggle } from '../components/ThemeToggle.js'
@@ -275,6 +278,153 @@ describe('Questions in review mode', () => {
       </ReviewAnswersProvider>,
     )
     expect(html).not.toContain('vp-questions__answer')
+  })
+})
+
+describe('Questions with multiple-choice options', () => {
+  function setReviewMode(on: boolean): void {
+    ;(globalThis as { __VP_REVIEW__?: boolean }).__VP_REVIEW__ = on || undefined
+  }
+  afterEach(() => setReviewMode(false))
+
+  const optioned = [
+    { text: 'Rotate refresh tokens?', options: ['Yes, every use', 'Only after 24h'] },
+    { text: 'TTL ok?', options: [] },
+  ]
+
+  it('renders options as a radio group plus an Other field in review mode (golden)', () => {
+    setReviewMode(true)
+    const html = renderToStaticMarkup(
+      <ReviewAnswersProvider>
+        <Questions items={optioned} />
+      </ReviewAnswersProvider>,
+    )
+    expect(html).toContain('role="radiogroup"')
+    expect((html.match(/type="radio"/g) || []).length).toBe(2)
+    expect(html).toContain('Yes, every use')
+    expect(html).toContain('Only after 24h')
+    // Both the option question (its Other field) and the free-text question stay answerable.
+    expect((html.match(/vp-questions__answer/g) || []).length).toBe(2)
+  })
+
+  it('renders options as a plain list, not radios, outside review mode (edge)', () => {
+    setReviewMode(false)
+    const html = renderToStaticMarkup(<Questions items={optioned} />)
+    expect(html).toContain('Yes, every use')
+    expect(html).toContain('Only after 24h')
+    expect(html).not.toContain('type="radio"')
+    expect(html).not.toContain('vp-questions__answer')
+  })
+})
+
+describe('Questions option selection feeding the feedback payload', () => {
+  type G = { __VP_REVIEW__?: boolean; __VP_REVIEW_PLAN_ID__?: string }
+  let container: HTMLDivElement
+  let root: Root
+  let fetchMock: ReturnType<typeof vi.fn>
+
+  beforeEach(() => {
+    ;(globalThis as G).__VP_REVIEW__ = true
+    // Queue mode keeps ReviewLayer off the standalone keepalive/close paths in this jsdom test.
+    ;(globalThis as G).__VP_REVIEW_PLAN_ID__ = 'plan-1'
+    container = document.createElement('div')
+    container.className = 'vp-main'
+    document.body.appendChild(container)
+    fetchMock = vi.fn().mockResolvedValue({ ok: true })
+    vi.stubGlobal('fetch', fetchMock)
+  })
+
+  afterEach(() => {
+    act(() => root?.unmount())
+    container.remove()
+    ;(globalThis as G).__VP_REVIEW__ = undefined
+    ;(globalThis as G).__VP_REVIEW_PLAN_ID__ = undefined
+    vi.restoreAllMocks()
+  })
+
+  function mountPlan(): void {
+    root = createRoot(container)
+    act(() =>
+      root.render(
+        <ReviewAnswersProvider>
+          <Questions
+            items={[
+              { text: 'Rotate refresh tokens?', options: ['Yes, every use', 'Only after 24h'] },
+              'Is a 15-minute TTL acceptable?',
+            ]}
+          />
+          <ReviewLayer />
+        </ReviewAnswersProvider>,
+      ),
+    )
+  }
+
+  function radioFor(option: string): HTMLInputElement {
+    const input = Array.from(
+      container.querySelectorAll<HTMLInputElement>('input[type="radio"]'),
+    ).find(radio => radio.value === option)
+    if (!input) throw new Error(`radio for "${option}" not found`)
+    return input
+  }
+
+  function otherField(): HTMLTextAreaElement {
+    const field = container.querySelector<HTMLTextAreaElement>('.vp-questions__answer')
+    if (!field) throw new Error('Other field not found')
+    return field
+  }
+
+  function typeOther(text: string): void {
+    const field = otherField()
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
+    act(() => {
+      setter?.call(field, text)
+      field.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+  }
+
+  async function approve(): Promise<unknown> {
+    const button = Array.from(container.querySelectorAll('button')).find(
+      b => b.textContent?.trim() === 'Approve',
+    )
+    if (!button) throw new Error('Approve button not found')
+    await act(async () => {
+      button.click()
+    })
+    const call = fetchMock.mock.calls.find(c => String(c[0]) === '/__vp_feedback')
+    if (!call) throw new Error('no feedback POST')
+    return JSON.parse((call[1] as RequestInit).body as string)
+  }
+
+  it('sends a clicked option as the answer string in the feedback payload (golden)', async () => {
+    mountPlan()
+    act(() => {
+      radioFor('Yes, every use').click()
+    })
+    const body = (await approve()) as { answers: unknown }
+    expect(body.answers).toEqual([{ question: 'Rotate refresh tokens?', answer: 'Yes, every use' }])
+  })
+
+  it('lets a typed Other answer override the selected option (golden)', async () => {
+    mountPlan()
+    act(() => {
+      radioFor('Only after 24h').click()
+    })
+    typeOther('Rotate only on suspicious activity')
+    expect(radioFor('Only after 24h').checked).toBe(false)
+    const body = (await approve()) as { answers: unknown }
+    expect(body.answers).toEqual([
+      { question: 'Rotate refresh tokens?', answer: 'Rotate only on suspicious activity' },
+    ])
+  })
+
+  it('clears the Other text when an option is picked after typing (edge)', () => {
+    mountPlan()
+    typeOther('half-baked custom answer')
+    act(() => {
+      radioFor('Yes, every use').click()
+    })
+    expect(otherField().value).toBe('')
+    expect(radioFor('Yes, every use').checked).toBe(true)
   })
 })
 
