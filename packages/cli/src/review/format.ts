@@ -25,7 +25,10 @@ export function formatFeedback(feedback: Feedback): string {
   const lines: string[] = [`DECISION: ${feedback.decision}`]
 
   for (const comment of feedback.comments) {
-    lines.push('', `Comment on "${comment.section}":`, indent(comment.body))
+    // The severity tag rides in the header so the agent can tell blocking must-fixes from
+    // take-or-leave suggestions; an untagged comment prints exactly as before (old clients).
+    const tag = comment.severity ? ` [${comment.severity}]` : ''
+    lines.push('', `Comment on "${comment.section}"${tag}:`, indent(comment.body))
   }
 
   for (const answer of feedback.answers) {

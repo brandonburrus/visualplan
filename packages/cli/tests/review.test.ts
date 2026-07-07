@@ -43,6 +43,30 @@ describe('formatFeedback', () => {
       'DECISION: approve',
     )
   })
+
+  it('tags a comment with its severity after the section name (golden)', () => {
+    const text = formatFeedback({
+      decision: 'iterate',
+      comments: [
+        { section: 'Phase 2', body: 'fix this', severity: 'must-fix' },
+        { section: 'Phase 3', body: 'nicer name', severity: 'suggestion' },
+      ],
+      answers: [],
+    })
+    expect(text).toContain('Comment on "Phase 2" [must-fix]:')
+    expect(text).toContain('Comment on "Phase 3" [suggestion]:')
+  })
+
+  it('prints an untagged comment exactly as before (edge: back-compat)', () => {
+    const text = formatFeedback({
+      decision: 'deny',
+      comments: [{ section: 'Phase 2', body: 'fix this' }],
+      answers: [],
+    })
+    expect(text).toContain('Comment on "Phase 2":')
+    expect(text).not.toContain('[must-fix]')
+    expect(text).not.toContain('[suggestion]')
+  })
 })
 
 describe('exitCodeFor', () => {

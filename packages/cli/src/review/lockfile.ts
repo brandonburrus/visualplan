@@ -62,16 +62,29 @@ export async function removeLock(dir: string = configDir): Promise<void> {
 }
 
 /**
+ * Remove the lock only when it is missing or owned by `pid`. A shutting-down daemon uses this
+ * instead of plain `removeLock` so a SIGTERM'd old daemon cannot delete the lock a successor
+ * daemon has already claimed (which would orphan the successor from discovery).
+ */
+export async function removeLockIfOwned(dir: string, pid: number): Promise<void> {
+  const existing = await readLock(dir)
+  if (existing && existing.pid !== pid) return
+  await removeLock(dir)
+}
+
+/**
  * Probe whether a daemon is actually listening on `port` by hitting its liveness endpoint, true iff
- * it answers 200. A short timeout via AbortController keeps discovery snappy and treats a dead or
- * stale port (connection refused, no response) as not-alive rather than hanging.
+ * it answers 200 with the exact body 'ok' (an unrelated server squatting the port may 200 anything;
+ * only the daemon speaks the ping contract). A short timeout via AbortController keeps discovery
+ * snappy and treats a dead or stale port (connection refused, no response) as not-alive rather than
+ * hanging.
  */
 export async function isDaemonAlive(port: number, timeoutMs = 500): Promise<boolean> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
     const res = await fetch(`http://localhost:${port}/__vp_ping`, { signal: controller.signal })
-    return res.status === 200
+    return res.status === 200 && (await res.text()) === 'ok'
   } catch {
     return false
   } finally {
