@@ -280,13 +280,53 @@ function parseChecklist(node: MdNode): BlockResult {
 
 function parseQuestions(node: MdNode): BlockResult {
   const issues: BlockIssue[] = []
-  const items: string[] = []
+  const items: Array<string | { text: string; options: string[] }> = []
   const list = firstList(node)
   if (!list) {
     issues.push({ ...pos(node), message: '<Questions> needs a markdown list of questions.' })
     return { value: items, issues }
   }
-  for (const item of list.children ?? []) items.push(toText(item).trim())
+  for (const item of list.children ?? []) {
+    const children = item.children ?? []
+    // Nested bullets under a question are its multiple-choice options, so the question's own text
+    // is only the non-list children. A question with no nested list stays a plain string (the
+    // pre-options shape, keeping flat plans byte-stable; the schema normalizes both forms).
+    const text = children
+      .filter(child => child.type !== 'list')
+      .map(toText)
+      .join('')
+      .trim()
+    const nested = children.filter(child => child.type === 'list')
+    if (nested.length === 0) {
+      items.push(text)
+      continue
+    }
+    const options: string[] = []
+    for (const option of nested.flatMap(sub => sub.children ?? [])) {
+      const optionChildren = option.children ?? []
+      // Options are one level deep by design: a list nested inside an option has no meaning
+      // (options are flat choices), so flag it instead of silently folding its text in.
+      if (optionChildren.some(child => child.type === 'list')) {
+        issues.push({
+          ...pos(option),
+          message: `<Questions> options under "${text}" must stay one level deep (no nested lists).`,
+        })
+      }
+      const optionText = optionChildren
+        .filter(child => child.type !== 'list')
+        .map(toText)
+        .join('')
+        .trim()
+      if (!optionText) {
+        issues.push({
+          ...pos(option),
+          message: `<Questions> option under "${text}" must not be empty.`,
+        })
+      }
+      options.push(optionText)
+    }
+    items.push({ text, options })
+  }
   return { value: items, issues }
 }
 

@@ -72,6 +72,36 @@ describe('checkPlan', () => {
     expect(issues[0]?.message).toMatch(/is not a number/)
   })
 
+  it('accepts a Questions block with nested multiple-choice options (golden)', async () => {
+    const path = await writePlan(
+      'option-questions.mdx',
+      '# T\n\n<Questions>\n- Rotate refresh tokens?\n  - Yes, every use\n  - Only after 24h\n- Is a 15-minute TTL acceptable?\n</Questions>\n',
+    )
+    expect(await checkPlan(path)).toEqual([])
+  })
+
+  it('flags an empty Questions option with its line (error)', async () => {
+    const path = await writePlan(
+      'empty-option.mdx',
+      '# T\n\n<Questions>\n- Rotate refresh tokens?\n  - Yes\n  -\n</Questions>\n',
+    )
+    const issues = await checkPlan(path)
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.message).toMatch(/option .* must not be empty/)
+    expect(issues[0]?.line).toBe(6)
+  })
+
+  it('flags a Questions option nesting a deeper list (error)', async () => {
+    const path = await writePlan(
+      'deep-option.mdx',
+      '# T\n\n<Questions>\n- Rotate refresh tokens?\n  - Yes\n    - too deep\n</Questions>\n',
+    )
+    const issues = await checkPlan(path)
+    expect(issues).toHaveLength(1)
+    expect(issues[0]?.message).toMatch(/one level deep/)
+    expect(issues[0]?.line).toBe(5)
+  })
+
   it('accepts valid markdown-children blocks (golden)', async () => {
     const path = await writePlan(
       'good-blocks.mdx',
