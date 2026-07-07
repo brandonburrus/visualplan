@@ -17,10 +17,16 @@ export const SHARE_VIEW_URL = 'https://visualplan.dev/view'
 /** The reviewer's verdict in interactive review mode (`vplan render --review`). */
 export const REVIEW_DECISION_VALUES = ['approve', 'deny', 'iterate'] as const
 
+/** How strongly a review comment binds: a `must-fix` blocks approval, a `suggestion` does not. */
+export const REVIEW_SEVERITY_VALUES = ['must-fix', 'suggestion'] as const
+
 /** A single targeted comment from a review session: which section it is about, and the note. */
 export const reviewCommentSchema = z.object({
   section: z.string().min(1),
   body: z.string().min(1),
+  // Optional weight the reviewer assigns; absent means untagged (an old client or an unweighted
+  // note), which readers should treat like a suggestion.
+  severity: z.enum(REVIEW_SEVERITY_VALUES).optional(),
 })
 
 /** A direct answer to one of a plan's `Questions`, keyed by the question text the reviewer answered. */
@@ -47,12 +53,15 @@ export const feedbackSchema = z.object({
 })
 
 export type ReviewDecision = (typeof REVIEW_DECISION_VALUES)[number]
+export type ReviewSeverity = (typeof REVIEW_SEVERITY_VALUES)[number]
 export type ReviewComment = z.infer<typeof reviewCommentSchema>
 export type ReviewAnswer = z.infer<typeof reviewAnswerSchema>
 export type Feedback = z.infer<typeof feedbackSchema>
 
-/** The sidebar status of a queued plan in Review Queue mode: waiting, currently shown, or decided. */
-export const QUEUE_STATUS_VALUES = ['pending', 'active', 'done'] as const
+/** The sidebar status of a queued plan in Review Queue mode: waiting, currently shown, decided, or
+ * `iterating` (the reviewer requested iteration and the daemon holds the entry awaiting the revised
+ * plan re-enqueued under the same key). */
+export const QUEUE_STATUS_VALUES = ['pending', 'active', 'done', 'iterating'] as const
 
 /**
  * One plan in the Review Queue, as the daemon streams it to the sidebar shell. `dir` is the
@@ -71,6 +80,14 @@ export const queueEntrySchema = z.object({
   // The locked-in verdict once the plan is `done`, so the sidebar shows the matching icon (check /
   // cross / iterate) rather than a generic one. Absent while pending.
   decision: z.enum(REVIEW_DECISION_VALUES).optional(),
+  // The daemon's serving-generation counter, bumped on every in-place same-key re-enqueue. Distinct
+  // from `iteration` (the author-facing round): `rev` drives the shell's iframe re-keying and
+  // unseen-update dots, and moves even when the author does not bump the iteration.
+  rev: z.number().int().positive().default(1),
+  // Epoch-ms stamps set by the daemon (enqueue / last status or revision change), shown as relative
+  // times in the sidebar. Optional so frames from an older daemon still parse.
+  createdAt: z.number().optional(),
+  updatedAt: z.number().optional(),
 })
 
 export type QueueStatus = (typeof QUEUE_STATUS_VALUES)[number]
@@ -164,9 +181,27 @@ export const calloutSchema = z.object({
   type: z.enum(CALLOUT_TYPE_VALUES).default('note'),
 })
 
+/** One open question, optionally offering multiple-choice options the reviewer can pick from
+ * (authored as nested bullets under the question). No options means free-text-only. */
+export const questionItemSchema = z.object({
+  text: z.string().min(1, 'each question needs text'),
+  options: z.array(z.string().min(1, 'each option needs text')).default([]),
+})
+
+export type QuestionItem = z.infer<typeof questionItemSchema>
+
 export const questionsSchema = z.object({
   title: z.string().default('Open questions'),
-  items: z.array(z.string().min(1)).min(1, 'questions needs at least one item'),
+  items: z
+    .array(
+      // A plain string is normalized to a free-text question, so consumers always see one shape.
+      // The string form stays accepted because option-less questions parse to plain strings (the
+      // pre-options wire shape, keeping flat plans byte-stable) and direct-JSX callers pass them.
+      z
+        .union([z.string().min(1), questionItemSchema])
+        .transform(item => (typeof item === 'string' ? { text: item, options: [] } : item)),
+    )
+    .min(1, 'questions needs at least one item'),
 })
 
 export const checklistSchema = z.object({
@@ -261,10 +296,10 @@ export const callout: CatalogEntry = {
 export const questions: CatalogEntry = {
   name: 'Questions',
   summary:
-    'Open questions you want the reader to weigh in on before building, as a highlighted panel. Write a markdown list. Title defaults to "Open questions"; override with title.',
+    'Open questions you want the reader to weigh in on before building, as a highlighted panel. Write a markdown list, one question per bullet. Nested bullets under a question become clickable multiple-choice options in a review (the reviewer picks one or types an "Other" answer); a question with no nested bullets takes a free-text answer. Title defaults to "Open questions"; override with title.',
   staticEnums: {},
   example:
-    '<Questions>\n- Should refresh tokens rotate on every use?\n- Is a 15-minute access-token TTL acceptable?\n</Questions>',
+    '<Questions>\n- Should refresh tokens rotate on every use?\n  - Yes, rotate every use\n  - Only on refresh after 24h\n- Is a 15-minute access-token TTL acceptable?\n</Questions>',
 }
 
 export const checklist: CatalogEntry = {
