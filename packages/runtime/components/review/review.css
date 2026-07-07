@@ -381,8 +381,62 @@
 .vp-review-composer__actions {
   display: flex;
   gap: 0.5rem;
+  align-items: center;
   justify-content: flex-end;
   margin-top: 0.6rem;
+}
+
+/* The optional severity toggle: two pill options, untagged when neither is pressed. Monochrome
+   like the rest of the chrome; the pressed state reads by fill and border, not hue. A fieldset
+   for the a11y grouping, so its default chrome is reset. */
+.vp-review-severity {
+  display: inline-flex;
+  gap: 0.3rem;
+  margin: 0;
+  margin-right: auto;
+  padding: 0;
+  border: none;
+}
+
+.vp-review-severity__option {
+  padding: 0.25rem 0.6rem;
+  font: inherit;
+  font-size: 0.76rem;
+  font-weight: 550;
+  color: var(--vp-muted);
+  background: var(--vp-bg);
+  border: 1px solid var(--vp-border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.vp-review-severity__option:hover {
+  color: var(--vp-text);
+  border-color: var(--vp-border-strong);
+}
+
+.vp-review-severity__option[aria-pressed="true"] {
+  color: var(--vp-text);
+  background: var(--vp-surface-2);
+  border-color: var(--vp-border-strong);
+}
+
+/* The small severity tag shown beside a tagged comment in the popover listing and mark tooltip. */
+.vp-review-tag {
+  align-self: flex-start;
+  padding: 0.05rem 0.4rem;
+  font-size: 0.64rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--vp-muted);
+  border: 1px solid var(--vp-border);
+  border-radius: 999px;
+}
+
+.vp-review-tip .vp-review-tag {
+  display: inline-block;
+  margin-right: 0.35rem;
 }
 
 .vp-review-btn {
@@ -441,4 +495,23 @@
 
 .vp-review-done strong {
   text-transform: capitalize;
+}
+
+/* The queue-mode iterate notice spins its refresh icon to read as waiting for the revised plan.
+   Same timing as the queue sidebar's vp-queue-spin; duplicated because the plan iframe never loads
+   queue.css. */
+.vp-review-done__spin {
+  animation: vp-review-spin 1.5s linear infinite;
+}
+
+@keyframes vp-review-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vp-review-done__spin {
+    animation: none;
+  }
 }

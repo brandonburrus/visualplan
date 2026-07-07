@@ -12,18 +12,13 @@
   font-family: var(--vp-font);
 }
 
-/* A single queued plan drops the sidebar, so the plan fills the tab like an ordinary review. */
-.vp-queue--solo {
-  grid-template-columns: 1fr;
-}
-
 .vp-queue__sidebar {
   display: flex;
   flex-direction: column;
   min-height: 0;
   border-right: 1px solid var(--vp-border);
   background: var(--vp-surface);
-  /* The rail mounts when a second plan joins (solo -> queue); ease it in rather than popping. */
+  /* Ease the rail in on mount rather than popping. */
   animation: vp-queue-sidebar-in 0.18s var(--vp-ease) both;
 }
 
@@ -140,6 +135,17 @@
   animation: vp-queue-spin 1.5s linear infinite;
 }
 
+/* An `iterating` plan is waiting on the agent's revision: same gold spinning refresh as the iterate
+ * verdict. The data-decision selector above is kept for one release as a skew fallback (an older
+ * daemon marks iterate verdicts `done` + decision instead of `iterating`). */
+.vp-queue__row[data-status="iterating"] .vp-queue__status {
+  color: var(--vp-gold);
+}
+
+.vp-queue__row[data-status="iterating"] .vp-queue__status svg {
+  animation: vp-queue-spin 1.5s linear infinite;
+}
+
 @keyframes vp-queue-spin {
   to {
     transform: rotate(360deg);
@@ -173,6 +179,29 @@
   font-family: var(--vp-mono);
   font-size: 0.64rem;
   line-height: 1.4;
+}
+
+/* Relative "Nm ago" stamp under the dir; decorative (the row aria-label carries it in words). */
+.vp-queue__time {
+  font-size: 0.66rem;
+  color: var(--vp-muted);
+}
+
+/* Unseen-revision dot: a revision landed on a row the reviewer is not looking at. Link blue, the
+ * same hue as the favicon activity dot, so "new since you looked" reads as one signal. */
+.vp-queue__dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  margin-left: auto;
+  border-radius: 50%;
+  background: var(--vp-link);
+}
+
+/* When a version chip precedes the dot, the chip already claims the trailing edge; the grid gap
+ * spaces the dot beside it. */
+.vp-queue__chip + .vp-queue__dot {
+  margin-left: 0;
 }
 
 .vp-queue__rowdir {
@@ -221,7 +250,8 @@
   .vp-queue__row {
     transition: none;
   }
-  .vp-queue__row[data-decision="iterate"] .vp-queue__status svg {
+  .vp-queue__row[data-decision="iterate"] .vp-queue__status svg,
+  .vp-queue__row[data-status="iterating"] .vp-queue__status svg {
     animation: none;
   }
 }

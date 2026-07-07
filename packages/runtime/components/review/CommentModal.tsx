@@ -1,9 +1,18 @@
+import { REVIEW_SEVERITY_VALUES, type ReviewSeverity } from '@visualplan/core'
 import { IconX } from '@tabler/icons-react'
 import { useState } from 'react'
 
+/** The composer's toggle labels; the payload keeps the schema's enum values. */
+const SEVERITY_OPTION_LABEL: Record<ReviewSeverity, string> = {
+  'must-fix': 'Must fix',
+  suggestion: 'Suggestion',
+}
+
 /**
  * The bottom-of-screen composer for a single section comment. Saves on the button or Cmd/Ctrl+Enter,
- * cancels on Escape. Empty comments are not savable.
+ * cancels on Escape. Empty comments are not savable. The severity toggle defaults to untagged;
+ * clicking the selected option again deselects it (untagged is the resting state, so no third
+ * "none" control is needed).
  */
 export function CommentModal({
   section,
@@ -11,14 +20,15 @@ export function CommentModal({
   onCancel,
 }: {
   section: string
-  onSave: (body: string) => void
+  onSave: (body: string, severity?: ReviewSeverity) => void
   onCancel: () => void
 }) {
   const [body, setBody] = useState('')
+  const [severity, setSeverity] = useState<ReviewSeverity | undefined>(undefined)
   const trimmed = body.trim()
 
   const save = () => {
-    if (trimmed) onSave(trimmed)
+    if (trimmed) onSave(trimmed, severity)
   }
 
   return (
@@ -50,6 +60,19 @@ export function CommentModal({
         }}
       />
       <div className='vp-review-composer__actions'>
+        <fieldset className='vp-review-severity' aria-label='Comment severity'>
+          {REVIEW_SEVERITY_VALUES.map(value => (
+            <button
+              key={value}
+              type='button'
+              className='vp-review-severity__option'
+              aria-pressed={severity === value}
+              onClick={() => setSeverity(prev => (prev === value ? undefined : value))}
+            >
+              {SEVERITY_OPTION_LABEL[value]}
+            </button>
+          ))}
+        </fieldset>
         <button type='button' className='vp-review-btn' onClick={onCancel}>
           Cancel
         </button>
