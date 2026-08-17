@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
+import { inlineSvgIncludes } from './svg-include.js'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { createRequire } from 'node:module'
 import { tmpdir } from 'node:os'
@@ -51,6 +52,17 @@ function sourceReader(input: PlanInput): () => string {
   return () => readFileSync(path, 'utf8').replace(/^\ufeff/, '')
 }
 
+/** The source the plan MODULE compiles from: a string input arrives already inlined by the input
+ * layer; a watched file is re-read on every save and its `<Svg src>` files re-inlined with it, so
+ * a re-exported diagram shows up on reload like any other edit. Title/share/diff keep the raw
+ * reader above: the diff baseline is raw source, and a title never lives inside an SVG. */
+function inlinedSourceReader(input: PlanInput): () => Promise<string> {
+  const raw = sourceReader(input)
+  if (typeof input === 'string') return async () => raw()
+  const base = dirname(resolve(input.path))
+  return async () => (await inlineSvgIncludes(raw(), base)).source
+}
+
 interface RuntimePaths {
   /** Directory Vite roots at: holds index.html plus the runtime source. */
   runtimeDir: string
@@ -94,7 +106,7 @@ const RESOLVED_VIRTUAL_PLAN_ID = '\0virtual:plan'
  * triggers a recompile + full reload via handleHotUpdate.
  */
 function virtualPlanPlugin(input: PlanInput): Plugin {
-  const readSource = sourceReader(input)
+  const readSource = inlinedSourceReader(input)
   const watchPath = typeof input === 'string' ? null : resolve(input.path)
   return {
     name: 'visualplan:virtual-plan',
@@ -105,7 +117,7 @@ function virtualPlanPlugin(input: PlanInput): Plugin {
     async load(id) {
       if (id !== RESOLVED_VIRTUAL_PLAN_ID) return null
       if (watchPath) this.addWatchFile(watchPath)
-      const compiled = await compile(readSource(), mdxCompileOptions)
+      const compiled = await compile(await readSource(), mdxCompileOptions)
       return String(compiled)
     },
     // The plan is a virtual module backed by a file, not a module Vite tracks by path, so a save
@@ -406,7 +418,8 @@ export async function renderToFile(
   outPath: string,
   theme: Theme = 'system',
 ): Promise<void> {
-  const source = readFileSync(resolve(mdxPath), 'utf8').replace(/^\ufeff/, '')
+  const raw = readFileSync(resolve(mdxPath), 'utf8').replace(/^\ufeff/, '')
+  const { source } = await inlineSvgIncludes(raw, dirname(resolve(mdxPath)))
   await writeFile(resolve(outPath), await buildHtml(source, { theme }))
 }
 

@@ -7,12 +7,16 @@
 import { writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { type CheckIssue, checkSource } from './build/check.js'
+import { inlineSvgIncludes } from './build/svg-include.js'
 import { buildHtml } from './build/compile.js'
 import type { Theme } from './config.js'
 
 export interface RenderOptions {
   /** Also write the rendered HTML to this path. The HTML string is returned regardless. */
   out?: string
+  /** Directory `<Svg src>` paths resolve against (the plan file's directory when you have one).
+   * Defaults to the process cwd. */
+  baseDir?: string
   /**
    * Fix the page's color scheme (`light` | `dark` | `system`). When set, the in-page settings cog
    * is hidden and the theme cannot be changed by the viewer. When omitted, the page defaults to
@@ -46,6 +50,8 @@ export class InvalidPlanError extends Error {
  * same self-correction guarantee the CLI has. Pass `out` to also write the HTML to a file.
  */
 export async function renderPlan(source: string, options: RenderOptions = {}): Promise<string> {
+  const { source: inlined } = await inlineSvgIncludes(source, options.baseDir ?? process.cwd())
+  source = inlined
   const issues = await checkSource(source)
   if (issues.length > 0) throw new InvalidPlanError(issues)
   const html = await buildHtml(source, {
@@ -59,8 +65,12 @@ export async function renderPlan(source: string, options: RenderOptions = {}): P
 }
 
 /** Validate a plan's MDX source, returning the issues (an empty array when the plan is valid). */
-export async function checkPlan(source: string): Promise<CheckIssue[]> {
-  return checkSource(source)
+export async function checkPlan(
+  source: string,
+  options: { baseDir?: string } = {},
+): Promise<CheckIssue[]> {
+  const { source: inlined } = await inlineSvgIncludes(source, options.baseDir ?? process.cwd())
+  return checkSource(inlined)
 }
 
 export type { CheckIssue } from './build/check.js'
@@ -80,4 +90,5 @@ export {
   phase,
   questions,
   stat,
+  svg,
 } from '@visualplan/core'

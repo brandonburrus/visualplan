@@ -46,6 +46,7 @@ const STRUCTURE_COMPONENTS = new Set([
   'Checklist',
   'Stat',
   'Questions',
+  'Svg',
 ])
 
 interface MdNode {

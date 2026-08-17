@@ -1,4 +1,5 @@
 import { readFile } from 'node:fs/promises'
+import { inlineSvgIncludes, svgBaseDir } from '../build/svg-include.js'
 import { resolvePlanFile } from './check.js'
 
 /** A plan's MDX source plus a label for diagnostics (the file path, or `<stdin>`). */
@@ -26,13 +27,19 @@ async function readStdin(): Promise<string> {
  */
 export async function readPlanSource(file?: string): Promise<PlanSource> {
   const useStdin = file === '-' || (file === undefined && !process.stdin.isTTY)
+  // <Svg src> files are inlined here, at the input boundary, so every consumer downstream —
+  // check, render, share, export, the review daemon (handed source, not a path) — sees one
+  // already-self-contained plan. Failures are not thrown: the tag is rewritten to carry error="…"
+  // and checkSource (which every command runs next) reports it as file:line:col.
   if (useStdin) {
-    const source = (await readStdin()).replace(/^\ufeff/, '')
+    const raw = (await readStdin()).replace(/^\ufeff/, '')
+    const { source } = await inlineSvgIncludes(raw, svgBaseDir(undefined, true))
     return { source, label: STDIN_LABEL, fromStdin: true }
   }
   if (file === undefined) {
     throw new Error('No input: pass a plan file or pipe MDX to stdin.')
   }
-  const source = (await readFile(resolvePlanFile(file), 'utf8')).replace(/^\ufeff/, '')
+  const raw = (await readFile(resolvePlanFile(file), 'utf8')).replace(/^\ufeff/, '')
+  const { source } = await inlineSvgIncludes(raw, svgBaseDir(file, false))
   return { source, label: file, fromStdin: false }
 }

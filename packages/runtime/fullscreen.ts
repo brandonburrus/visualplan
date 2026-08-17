@@ -27,6 +27,7 @@ const ICON = {
 function contentOf(host: HTMLElement): HTMLElement | null {
   if (host.classList.contains('vp-mermaid')) return host.querySelector('.vp-mermaid__svg')
   if (host.classList.contains('vp-chart')) return host.querySelector('.vp-chart__canvas')
+  if (host.classList.contains('vp-svg')) return host.querySelector('.vp-svg__svg')
   return null
 }
 

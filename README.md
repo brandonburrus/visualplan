@@ -62,6 +62,7 @@ Plans are built from a small, fixed set of components:
 
  - ` ```mermaid ` (flowchart, sequence, state, class, ER, and XY diagrams)
  - ` ```math ` (LaTeX, typeset as MathML)
+ - `Svg` (a diagram from a local `.svg` file — e.g. an architecture or sequence diagram exported by another tool — inlined at build time so the page stays self-contained; static SVG only, refused with a `check` error on scripts, event handlers, or external references)
  - `Phase` (timeline/execution/planning steps)
  - `FileTree` (file-change maps)
  - `Chart` (bar, line, area, scatter, radar, gauge, funnel, treemap, and pie graphs, with optional stacking)
