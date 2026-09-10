@@ -30,7 +30,7 @@ The file argument may be `-` (or omitted) to read the plan from stdin.
 | `--review` | Open the interactive review session (now the default; kept for compatibility). |
 | `--no-daemon` | Review without the shared queue daemon, using a one-shot in-process server. |
 | `-i, --iteration <n>` | Plan revision number shown in the review bar; increment it each re-review. |
-| `--timeout <duration>` | Max wait for review feedback, e.g. `15m`, `30s`, `1h` (default `15m`). |
+| `--timeout <duration>` | Max wait for review feedback; the value always carries an `ms`-style unit (`30s`, `45m`, `4h`; a bare number is read as milliseconds). Default `4h`. |
 | `--diff <path>` | Diff this render against an explicit baseline plan, overriding the snapshot cache. |
 | `--no-diff` | Skip iteration diffing (do not read or write the snapshot cache). |
 | `--no-open` | Do not open the result in the browser. |

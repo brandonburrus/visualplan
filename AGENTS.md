@@ -23,7 +23,7 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
 - `vplan render --review <file.mdx|->` opens the plan as an interactive review session: the user
   comments on sections (or selected text) and clicks Approve / Deny / Iterate, and the CLI blocks
   until then, prints the feedback to stdout, and exits (approve 0, deny 1, iterate 2, timeout 3).
-  `--timeout` (default 15m) bounds the wait; a closed tab resolves as Deny. `-i/--iteration N` shows
+  `--timeout` (default 4h) bounds the wait; a closed tab resolves as Deny. `-i/--iteration N` shows
   the revision number in the review bar (the agent increments it each re-review). By default the
   review joins a shared **Review Queue daemon** (see below) so plans from many sessions land in one
   tab; `--no-daemon` forces the legacy one-shot server (one tab per review, no queue).

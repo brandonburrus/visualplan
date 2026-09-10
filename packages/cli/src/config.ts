@@ -24,7 +24,8 @@ export interface Config {
 /** The valid `theme` values, in menu order. */
 export const THEMES: readonly Theme[] = ['light', 'dark', 'system']
 
-/** Default Review Queue daemon idle TTL: 15 minutes (matches the default review `--timeout`). */
+/** Default Review Queue daemon idle TTL: 15 minutes. Unlike the review `--timeout` (default 4 hours),
+ * this stays short because a cold daemon restart, unlike a human review, is cheap. */
 export const DEFAULT_DAEMON_TIMEOUT_MS = 15 * 60 * 1000
 
 const DEFAULT_CONFIG: Config = { theme: 'system', daemonTimeout: DEFAULT_DAEMON_TIMEOUT_MS }

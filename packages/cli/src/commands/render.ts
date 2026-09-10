@@ -15,8 +15,8 @@ import { runReview } from '../review/session.js'
 import { printIssues, resolvePlanFile } from './check.js'
 import { readPlanSource } from './input.js'
 
-/** Default `--review` timeout: 15 minutes. A review waits on a human, so the window is generous. */
-export const DEFAULT_REVIEW_TIMEOUT_MS = 15 * 60 * 1000
+/** Default `--review` timeout: 4 hours. A review waits on a human, so the window is generous. */
+export const DEFAULT_REVIEW_TIMEOUT_MS = 4 * 60 * 60 * 1000
 
 export interface RenderOptions {
   watch?: boolean

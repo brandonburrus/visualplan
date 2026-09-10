@@ -42,8 +42,10 @@ and tables, with prose only connecting the visuals, not carrying the plan itself
    choices, and the picked option's text (or the typed "Other" text) is the answer, printed back as
    `Answer to "<question>":`), then clicks
    Approve / Deny / Iterate. It **blocks** until they submit, prints the decision, comments, and
-   answers to stdout, and exits: approve 0, deny 1, iterate 2, timeout 3 (`--timeout`, default 15m;
-   closing the tab counts as deny). It is a long-running foreground server, so run it in the
+   answers to stdout, and exits: approve 0, deny 1, iterate 2, timeout 3 (`--timeout`, default 4h;
+   closing the tab counts as deny). Always suffix `--timeout` with an `ms`-style unit (`30s`, `45m`,
+   `4h`): a bare number is read as milliseconds, so `--timeout 240` would wait a quarter second, not
+   240 minutes. It is a long-running foreground server, so run it in the
    background. (The explicit `--review` flag still works but is redundant now that review is the
    default.) A comment may carry a severity tag: treat a `[must-fix]` comment as blocking (it must
    be addressed before the plan can be approved) and a `[suggestion]` or untagged comment as
