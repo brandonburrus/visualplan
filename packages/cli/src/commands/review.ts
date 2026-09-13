@@ -14,7 +14,7 @@ import { readFile } from 'node:fs/promises'
 import type { Feedback } from '@visualplan/core'
 import type { CheckIssue } from '../build/check.js'
 import { checkSource } from '../build/check.js'
-import { readConfig } from '../config.js'
+import { readConfig, sharesPlan } from '../config.js'
 import { awaitVerdict, type EnqueueResponse, enqueuePlan } from '../review/client.js'
 import { ensureDaemon } from '../review/ensure-daemon.js'
 import { resolvePlanFile, printIssues } from './check.js'
@@ -26,6 +26,9 @@ export interface ReviewQueueOptions {
   json?: boolean
   /** Do not open a browser even when no shell is connected. */
   open?: boolean
+  /** Hide every queued plan's share button. Set by `--no-share`; overrides the persisted
+   * `enableSharing` setting for this invocation. */
+  share?: boolean
 }
 
 /** Injectable collaborators so the orchestration is testable in isolation. */
@@ -99,14 +102,16 @@ function planDir(file: string): string {
 
 /** Wire the real collaborators and run the queue review for the given files. */
 export async function runReview(files: string[], options: ReviewQueueOptions): Promise<void> {
-  const { theme, daemonTimeout } = await readConfig()
+  const config = await readConfig()
+  const { theme, daemonTimeout } = config
+  const enableSharing = sharesPlan(config, options.share)
   const deps: ReviewQueueDeps = {
     readSource: async (file: string) =>
       (await readFile(resolvePlanFile(file), 'utf8')).replace(/^﻿/, ''),
     check: checkSource,
     ensureDaemon: () => ensureDaemon({ idleMs: daemonTimeout }),
     enqueue: (port, source, file) =>
-      enqueuePlan(port, { source, theme, dir: planDir(file), key: resolve(file) }),
+      enqueuePlan(port, { source, theme, dir: planDir(file), key: resolve(file), enableSharing }),
     awaitVerdict: (port, id) => awaitVerdict(port, id),
     openBrowser: async (port: number) => {
       await open(`http://localhost:${port}/`)

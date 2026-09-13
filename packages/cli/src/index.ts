@@ -52,6 +52,7 @@ program
     'diff this render against a baseline plan .mdx (overrides the snapshot cache)',
   )
   .option('--no-diff', 'skip iteration diffing (do not read or write the snapshot cache)')
+  .option('--no-share', 'hide the share button (overrides the enableSharing config setting)')
   .option('--no-daemon', 'review without the shared Review Queue daemon (one-shot server)')
   .option('--no-open', 'do not open the result in a browser')
   .action((file: string | undefined, options: RenderOptions) => runRender(file, options))
@@ -61,6 +62,7 @@ program
   .description('Queue one or more plans for review in the shared Review Queue and print verdicts')
   .argument('<files...>', 'the plan .mdx files to review')
   .option('--json', 'print one JSON object keyed by file path instead of streaming text')
+  .option('--no-share', 'hide the share button (overrides the enableSharing config setting)')
   .option('--no-open', 'do not open the queue in a browser')
   .action((files: string[], options: ReviewQueueOptions) => runReview(files, options))
 
@@ -122,15 +124,18 @@ const config = program
 
 config
   .command('get')
-  .description('Print a setting (theme, daemonTimeout)')
+  .description('Print a setting (theme, daemonTimeout, enableSharing)')
   .argument('<key>', 'the setting to read')
   .action((key: string) => runConfigGet(key))
 
 config
   .command('set')
   .description('Change a setting and persist it')
-  .argument('<key>', 'the setting to change (theme, daemonTimeout)')
-  .argument('<value>', 'the new value (theme: light | dark | system; daemonTimeout: 15m, 30s, 1h)')
+  .argument('<key>', 'the setting to change (theme, daemonTimeout, enableSharing)')
+  .argument(
+    '<value>',
+    'the new value (theme: light | dark | system; daemonTimeout: 15m, 30s, 1h; enableSharing: true | false)',
+  )
   .action((key: string, value: string) => runConfigSet(key, value))
 
 config

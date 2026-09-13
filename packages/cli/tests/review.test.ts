@@ -184,6 +184,26 @@ describe('startReviewServer /__vp_feedback', () => {
   }, 60_000)
 })
 
+describe('startReviewServer sharing', () => {
+  let server: ReviewServer
+
+  afterEach(async () => {
+    await server?.close()
+  })
+
+  it('serves the plan with the share button by default and omits it when disabled (edge)', async () => {
+    server = await startReviewServer(PLAN)
+    expect(await (await fetch(server.url)).text()).toContain('globalThis.__VP_SHARE__=')
+    await server.close()
+
+    // `--no-share` on a review: the served plan keeps its review layer but drops the share button.
+    server = await startReviewServer(PLAN, 'system', undefined, undefined, false)
+    const html = await (await fetch(server.url)).text()
+    expect(html).not.toContain('globalThis.__VP_SHARE__=')
+    expect(html).toContain('__VP_REVIEW__')
+  }, 60_000)
+})
+
 describe('startReviewServer tab-close (keepalive drop)', () => {
   let server: ReviewServer
 

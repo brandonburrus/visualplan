@@ -28,7 +28,11 @@ const DAEMON_15M = 15 * 60 * 1000
 describe('config set', () => {
   it('persists a valid theme and confirms it (golden)', async () => {
     await runConfigSet('theme', 'dark', dir)
-    expect(await readConfig(dir)).toEqual({ theme: 'dark', daemonTimeout: DAEMON_15M })
+    expect(await readConfig(dir)).toEqual({
+      theme: 'dark',
+      daemonTimeout: DAEMON_15M,
+      enableSharing: true,
+    })
     expect(out.join('')).toContain('Set theme = dark')
   })
 
@@ -36,8 +40,28 @@ describe('config set', () => {
     await runConfigSet('theme', 'light', dir)
     out = []
     await runConfigSet('daemonTimeout', '30m', dir)
-    expect(await readConfig(dir)).toEqual({ theme: 'light', daemonTimeout: 30 * 60 * 1000 })
+    expect(await readConfig(dir)).toEqual({
+      theme: 'light',
+      daemonTimeout: 30 * 60 * 1000,
+      enableSharing: true,
+    })
     expect(out.join('')).toContain(`Set daemonTimeout = ${30 * 60 * 1000}`)
+  })
+
+  it('persists enableSharing and confirms it (golden)', async () => {
+    await runConfigSet('enableSharing', 'false', dir)
+    expect(await readConfig(dir)).toEqual({
+      theme: 'system',
+      daemonTimeout: DAEMON_15M,
+      enableSharing: false,
+    })
+    expect(out.join('')).toContain('Set enableSharing = false')
+
+    // And back on again, so the setting is not a one-way switch.
+    out = []
+    await runConfigSet('enableSharing', 'true', dir)
+    expect((await readConfig(dir)).enableSharing).toBe(true)
+    expect(out.join('')).toContain('Set enableSharing = true')
   })
 
   it('rejects an invalid value or unknown key without writing (error)', async () => {
@@ -46,8 +70,16 @@ describe('config set', () => {
     await expect(runConfigSet('daemonTimeout', 'soon', dir)).rejects.toThrow(
       /Invalid daemonTimeout "soon"/,
     )
+    // A near-miss boolean is rejected rather than coerced: only the literal words are accepted.
+    await expect(runConfigSet('enableSharing', 'yes', dir)).rejects.toThrow(
+      /Invalid enableSharing "yes"/,
+    )
     // Nothing was written, so a read still returns the defaults.
-    expect(await readConfig(dir)).toEqual({ theme: 'system', daemonTimeout: DAEMON_15M })
+    expect(await readConfig(dir)).toEqual({
+      theme: 'system',
+      daemonTimeout: DAEMON_15M,
+      enableSharing: true,
+    })
   })
 })
 
@@ -57,6 +89,13 @@ describe('config get', () => {
     out = []
     await runConfigGet('theme', dir)
     expect(out.join('')).toBe('light\n')
+  })
+
+  it('prints enableSharing as a boolean (golden)', async () => {
+    await runConfigSet('enableSharing', 'false', dir)
+    out = []
+    await runConfigGet('enableSharing', dir)
+    expect(out.join('')).toBe('false\n')
   })
 
   it('rejects an unknown key (error)', async () => {
@@ -70,6 +109,7 @@ describe('config show', () => {
     const text = out.join('')
     expect(text).toContain('theme = system')
     expect(text).toContain(`daemonTimeout = ${DAEMON_15M}`)
+    expect(text).toContain('enableSharing = true')
     expect(text).toContain(join(dir, 'config.json'))
   })
 })

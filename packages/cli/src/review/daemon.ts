@@ -131,6 +131,8 @@ interface EnqueueBody {
   baseline?: string
   /** The plan's stable identity (its file path); a new enqueue with the same key replaces the old. */
   key?: string
+  /** Show the plan's share button; omitted keeps the build default (on). */
+  enableSharing?: boolean
 }
 
 export async function startDaemon(opts: StartDaemonOptions): Promise<DaemonInstance> {
@@ -380,6 +382,7 @@ export async function startDaemon(opts: StartDaemonOptions): Promise<DaemonInsta
       theme: body.theme,
       baseline: body.baseline,
       review: { planId: id, iteration },
+      enableSharing: body.enableSharing,
     })
     const now = Date.now()
     if (existing) {
