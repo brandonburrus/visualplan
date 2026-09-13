@@ -76,4 +76,17 @@ describe('startDevServer (--watch)', () => {
       ws.close()
     }
   }, 60_000)
+
+  it('serves the share button by default and omits it with enableSharing false (edge)', async () => {
+    expect(await (await fetch(server.url)).text()).toContain('globalThis.__VP_SHARE__=')
+
+    const noShare = await startDevServer(planPath, 'system', undefined, undefined, false)
+    try {
+      const html = await (await fetch(noShare.url)).text()
+      expect(html).not.toContain('globalThis.__VP_SHARE__=')
+      expect(html).toContain('id="root"')
+    } finally {
+      await noShare.close()
+    }
+  }, 60_000)
 })

@@ -142,6 +142,15 @@ describe('runRender output routing', () => {
     expect(html).toContain('id="root"')
   }, 60_000)
 
+  it('hides the share button with --no-share, whatever the config says (golden)', async () => {
+    const path = await writePlan('render-no-share.mdx', VALID_PLAN)
+    const out = capture('stdout')
+    await runRender(path, { stdout: true, open: false, share: false })
+    const html = out()
+    expect(html).not.toContain('globalThis.__VP_SHARE__=')
+    expect(html).toContain('id="root"')
+  }, 60_000)
+
   it('rejects --stdout combined with --out (error)', async () => {
     const path = await writePlan('render-conflict.mdx', VALID_PLAN)
     await expect(runRender(path, { stdout: true, out: 'x.html' })).rejects.toThrow(

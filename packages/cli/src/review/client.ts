@@ -16,6 +16,9 @@ export interface EnqueueRequest {
   /** The plan's stable identity (its file path); a requeue with the same key replaces the prior
    * version in the queue, so a plan and its iterations appear once. Omitted for stdin. */
   key?: string
+  /** Show the plan's share button. Omitted keeps the daemon's default (on), so a client that does
+   * not send it (an older CLI) still shares. */
+  enableSharing?: boolean
 }
 
 /** The daemon's enqueue response: the assigned plan id and whether a shell tab is already connected

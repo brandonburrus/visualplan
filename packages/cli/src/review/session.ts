@@ -12,6 +12,7 @@ const SIGINT_EXIT = 130
  * decision (via the page) or `timeoutMs` elapses. The feedback is printed to **stdout** (the calling
  * agent reads it) while status and the URL go to **stderr**, so a captured stdout is exactly the
  * feedback. Sets `process.exitCode` from the outcome (approve 0, deny 1, iterate 2, timeout 3).
+ * `enableSharing` controls the served plan's share button (omitted = the CLI default, sharing on).
  */
 export async function runReview(
   source: string,
@@ -20,8 +21,9 @@ export async function runReview(
   openBrowser: boolean,
   iteration?: number,
   baseline?: string,
+  enableSharing?: boolean,
 ): Promise<void> {
-  const server = await startReviewServer(source, theme, iteration, baseline)
+  const server = await startReviewServer(source, theme, iteration, baseline, enableSharing)
   process.stderr.write(
     `Visual Plan review at\n  ${server.url}\n  (comment on sections, then Approve / Deny / Iterate; Ctrl+C to cancel)\n`,
   )

@@ -16,6 +16,9 @@ wants to see the plan.
 - `--stdout` writes the HTML to stdout instead of a file (implies a static render), so it composes in
   a pipeline; a `--stdout` render is deterministic and never auto-diffs.
 - `--no-open` suppresses opening the result (reserve for an explicit headless/CI request).
+- `--no-share` hides the share button on the page, for a plan whose contents should not sit one click
+  from a public URL. To hide it on every render instead, set `enableSharing` to `false` in the config
+  (`vplan config set enableSharing false`). The `vplan share` command still works either way.
 
 The iteration diff (git-gutter accents marking what changed since the last view) shows on a static
 render too, not just in review: `vplan` snapshots each plan it presents, keyed by the file path.
