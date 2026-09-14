@@ -119,3 +119,22 @@ describe('watchSystemScheme', () => {
     expect(() => cleanup()).not.toThrow()
   })
 })
+
+describe('jsdom storage environment', () => {
+  it('provides a working localStorage (guards the shared test-env shim)', () => {
+    expect(typeof localStorage).toBe('object')
+    expect(() => localStorage.clear()).not.toThrow()
+
+    localStorage.setItem('vp-probe', 'ok')
+    expect(localStorage.getItem('vp-probe')).toBe('ok')
+    expect(localStorage.length).toBe(1)
+
+    localStorage.removeItem('vp-probe')
+    expect(localStorage.getItem('vp-probe')).toBeNull()
+    expect(localStorage.length).toBe(0)
+  })
+
+  it('is shared with window, as in a browser', () => {
+    expect(window.localStorage).toBe(localStorage)
+  })
+})

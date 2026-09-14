@@ -62,7 +62,10 @@ describe.skipIf(!executablePath)('review tab-close -> Deny (e2e)', () => {
     page.on('dialog', dialog => void dialog.accept().catch(() => {}))
 
     await page.goto(server.url, { waitUntil: 'domcontentloaded' })
-    await page.waitForSelector('.vp-review-bar', { timeout: 20_000 })
+    // The first load of a fresh server transforms the whole runtime module graph, which is a cold,
+    // contended cost when the full suite runs in parallel. Give it the test's own 60s budget rather
+    // than a tighter inner cap that only holds on a warm cache.
+    await page.waitForSelector('.vp-review-bar', { timeout: 60_000 })
 
     // Add one comment so the test also proves the tab-close Deny carries comments, not just the
     // verdict. Wait for the draft sync to land so the server has the comment before the tab "closes".
