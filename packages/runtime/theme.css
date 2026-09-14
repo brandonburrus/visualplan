@@ -213,14 +213,6 @@ body {
   color: var(--vp-muted);
 }
 
-.vp-main blockquote :first-child {
-  margin-top: 0;
-}
-
-.vp-main blockquote :last-child {
-  margin-bottom: 0;
-}
-
 :focus-visible {
   outline: 2px solid var(--vp-accent);
   outline-offset: 2px;
@@ -456,6 +448,17 @@ body {
   margin-top: 0;
 }
 .vp-callout__body > :last-child {
+  margin-bottom: 0;
+}
+
+/* Edge-margin collapse inside prose. Kept after the component-body rules above so source
+   order matches specificity: a blockquote's descendant selector outranks them, and the
+   computed cascade is unchanged. */
+.vp-main blockquote :first-child {
+  margin-top: 0;
+}
+
+.vp-main blockquote :last-child {
   margin-bottom: 0;
 }
 
@@ -1251,7 +1254,7 @@ label.vp-questions__option {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .vp-expand-btn {
+  .vp-expandable > .vp-expand-btn {
     transition: none;
   }
 }
