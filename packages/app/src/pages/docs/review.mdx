@@ -46,7 +46,7 @@ then exits with a decision-specific code:
 | Approve | `0` | Proceed with the plan as written. |
 | Deny | `1` | Stop and reconsider; do not proceed. |
 | Iterate | `2` | Revise the plan against the comments, then review again. |
-| Timeout | `3` | No decision before `--timeout` elapsed (default 15 minutes). |
+| Timeout | `3` | No decision before `--timeout` elapsed (default 4 hours; the value carries a unit, e.g. `45m`). |
 
 Closing the tab without deciding counts as Deny, and still carries any comments and answers you
 staged, so the agent always gets something to act on.

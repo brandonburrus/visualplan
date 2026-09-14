@@ -138,6 +138,17 @@ describe('daemon enqueue', () => {
     expect((await res.text()).length).toBeGreaterThan(0)
   }, 60_000)
 
+  it('serves the share button by default and omits it when the enqueue disables sharing (edge)', async () => {
+    d = await fakeDaemon()
+    const { id } = await enqueue(d)
+    // A client that does not send enableSharing (an older CLI) keeps the share button.
+    expect(await (await fetch(url(d, `/plan/${id}`))).text()).toContain('globalThis.__VP_SHARE__=')
+
+    const noShare = await enqueue(d, { enableSharing: false })
+    const html = await (await fetch(url(d, `/plan/${noShare.id}`))).text()
+    expect(html).not.toContain('globalThis.__VP_SHARE__=')
+  }, 60_000)
+
   it('extracts the title from the first # heading into the queue entry (golden)', async () => {
     d = await fakeDaemon()
     const controller = new AbortController()

@@ -23,7 +23,7 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
 - `vplan render --review <file.mdx|->` opens the plan as an interactive review session: the user
   comments on sections (or selected text) and clicks Approve / Deny / Iterate, and the CLI blocks
   until then, prints the feedback to stdout, and exits (approve 0, deny 1, iterate 2, timeout 3).
-  `--timeout` (default 15m) bounds the wait; a closed tab resolves as Deny. `-i/--iteration N` shows
+  `--timeout` (default 4h) bounds the wait; a closed tab resolves as Deny. `-i/--iteration N` shows
   the revision number in the review bar (the agent increments it each re-review). By default the
   review joins a shared **Review Queue daemon** (see below) so plans from many sessions land in one
   tab; `--no-daemon` forces the legacy one-shot server (one tab per review, no queue).
@@ -58,8 +58,9 @@ polished, self-contained HTML page, so an AI agent can present plans as scannabl
   an in-memory MDX string, with a named export per catalog entry. See `packages/cli/src/api.ts`.
 - A persistent CLI config at `~/.vplan/config.json` (`packages/cli/src/config.ts`) sets the default
   `theme` (`light`|`dark`|`system`) baked into a rendered plan (the plan's in-page cog overrides it
-  per-view via `localStorage`) and `daemonTimeout` (the Review Queue daemon's idle TTL in ms, default
-  15m). `vplan config [get|set|path]` views and edits it.
+  per-view via `localStorage`), `daemonTimeout` (the Review Queue daemon's idle TTL in ms, default
+  15m), and `enableSharing` (whether a rendered plan shows the share button, default `true`; a
+  render's `--no-share` overrides it). `vplan config [get|set|path]` views and edits it.
 
 Plans use a fixed, tiny component vocabulary (`Phase`, `FileTree`, `Chart`, `Compare`, `Matrix`,
 `Callout`, `Questions`, `Checklist`, and ` ```mermaid ` / ` ```math ` fences) with no imports — the

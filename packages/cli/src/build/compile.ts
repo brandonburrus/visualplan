@@ -432,15 +432,17 @@ export interface DevServer {
  * many other tools that sit on Vite's own 5173 default. Vite still auto-increments if it is taken. */
 export const DEFAULT_DEV_PORT = 9140
 
-/** Start a hot-reloading dev server for an MDX plan file and return its local URL. */
+/** Start a hot-reloading dev server for an MDX plan file and return its local URL. `enableSharing`
+ * mirrors `BuildOptions.enableSharing` (omitted = the CLI default, sharing on). */
 export async function startDevServer(
   mdxPath: string,
   theme: Theme = 'system',
   port: number = DEFAULT_DEV_PORT,
   baseline?: string,
+  enableSharing?: boolean,
 ): Promise<DevServer> {
   const paths = findRuntimePaths()
-  const config = baseConfig(paths, { path: resolve(mdxPath) }, { theme, baseline })
+  const config = baseConfig(paths, { path: resolve(mdxPath) }, { theme, baseline, enableSharing })
   const server = await createServer({ ...config, server: { ...config.server, port } })
   await server.listen()
   const url =
@@ -607,12 +609,14 @@ export interface ReviewServer {
  * frozen snapshot (a string input, so no watch file and no hot-reload), which is what lets the page
  * collect comments without re-rendering underneath them. The returned `feedback` promise resolves
  * with the reviewer's decision (or Deny on tab close); the caller opens the URL, awaits it, closes.
+ * `enableSharing` mirrors `BuildOptions.enableSharing` (omitted = the CLI default, sharing on).
  */
 export async function startReviewServer(
   source: string,
   theme: Theme = 'system',
   iteration?: number,
   baseline?: string,
+  enableSharing?: boolean,
 ): Promise<ReviewServer> {
   const paths = findRuntimePaths()
   let settled = false
@@ -627,7 +631,7 @@ export async function startReviewServer(
     resolveFeedback(value)
   }
   const state: ReviewState = { draft: { decision: 'deny', comments: [], answers: [] } }
-  const config = baseConfig(paths, source, { theme, baseline })
+  const config = baseConfig(paths, source, { theme, baseline, enableSharing })
   // Use the same default port as the `--watch` dev server (Vite auto-increments if it is taken).
   const server = await createServer({
     ...config,

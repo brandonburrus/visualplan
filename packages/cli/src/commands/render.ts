@@ -7,7 +7,7 @@ import type { Feedback } from '@visualplan/core'
 import { checkPlan, checkSource } from '../build/check.js'
 import { buildHtml, startDevServer } from '../build/compile.js'
 import { readSnapshot, writeSnapshot } from '../build/snapshots.js'
-import { readConfig } from '../config.js'
+import { readConfig, sharesPlan } from '../config.js'
 import { awaitVerdict, type EnqueueResponse, enqueuePlan } from '../review/client.js'
 import { ensureDaemon } from '../review/ensure-daemon.js'
 import { exitCodeFor, formatFeedback } from '../review/format.js'
@@ -15,8 +15,8 @@ import { runReview } from '../review/session.js'
 import { printIssues, resolvePlanFile } from './check.js'
 import { readPlanSource } from './input.js'
 
-/** Default `--review` timeout: 15 minutes. A review waits on a human, so the window is generous. */
-export const DEFAULT_REVIEW_TIMEOUT_MS = 15 * 60 * 1000
+/** Default `--review` timeout: 4 hours. A review waits on a human, so the window is generous. */
+export const DEFAULT_REVIEW_TIMEOUT_MS = 4 * 60 * 60 * 1000
 
 export interface RenderOptions {
   watch?: boolean
@@ -43,6 +43,9 @@ export interface RenderOptions {
   /** Diff baseline. A string path is an explicit baseline (bypasses the cache); `false` is
    * `--no-diff` (disable diffing); `undefined` auto-diffs a file render against its snapshot. */
   diff?: string | false
+  /** Hide the share button. Set by `--no-share` (commander's negated flag leaves `share: true`
+   * otherwise); overrides the persisted `enableSharing` setting for this invocation. */
+  share?: boolean
 }
 
 /**
@@ -134,7 +137,9 @@ export async function runRender(file: string | undefined, options: RenderOptions
     throw new Error('--review cannot be combined with --static, --watch, --stdout, or --out.')
   }
 
-  const { theme } = await readConfig()
+  const config = await readConfig()
+  const { theme } = config
+  const enableSharing = sharesPlan(config, options.share)
 
   // Review (the default) is a server that blocks on human feedback; it accepts a file or piped stdin
   // because it serves a snapshot read once (no watching), unlike --watch.
@@ -157,10 +162,11 @@ export async function runRender(file: string | undefined, options: RenderOptions
         options.open !== false,
         options.iteration,
         baseline,
+        enableSharing,
       )
       return
     }
-    const { daemonTimeout } = await readConfig()
+    const { daemonTimeout } = config
     await runReviewViaDaemon(source, reviewDir(file, fromStdin), options, {
       ensureDaemon: () => ensureDaemon({ idleMs: daemonTimeout }),
       enqueue: (port, src) =>
@@ -170,6 +176,7 @@ export async function runRender(file: string | undefined, options: RenderOptions
           iteration: options.iteration,
           dir: reviewDir(file, fromStdin),
           baseline,
+          enableSharing,
           // Key by file path so a requeued iteration replaces the prior one in the sidebar; stdin
           // has no stable path, so it always enqueues a fresh entry.
           key: !fromStdin && file && file !== '-' ? resolve(file) : undefined,
@@ -196,7 +203,7 @@ export async function runRender(file: string | undefined, options: RenderOptions
       return
     }
     const baseline = await resolveBaseline(options, await readFile(absMdx, 'utf8'), absMdx)
-    const server = await startDevServer(absMdx, theme, options.port, baseline)
+    const server = await startDevServer(absMdx, theme, options.port, baseline, enableSharing)
     process.stdout.write(
       `Visual Plan watching ${file}\n  ${server.url}\n  (edit the file to hot-reload; Ctrl+C to stop)\n`,
     )
@@ -220,7 +227,7 @@ export async function runRender(file: string | undefined, options: RenderOptions
     source,
     goingToStdout ? undefined : snapshotKey(file, fromStdin),
   )
-  const html = await buildHtml(source, { theme, baseline })
+  const html = await buildHtml(source, { theme, baseline, enableSharing })
 
   // Piped stdin with no explicit destination defaults to stdout, so the tool composes in a pipeline.
   if (goingToStdout) {

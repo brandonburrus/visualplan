@@ -64,4 +64,26 @@ describe('awaitVerdict', () => {
     controller.abort()
     await expect(verdictP).rejects.toThrow()
   }, 60_000)
+
+  it('stays open while the daemon holds the connection (no short client timeout)', async () => {
+    d = await fakeDaemon()
+    const { id } = await enqueuePlan(d.port, { source: '# T\n\nx\n', dir: 'proj' })
+    const verdictP = awaitVerdict(d.port, id)
+    // The daemon holds the verdict open until the plan settles; the client must not reject on its
+    // own. A regression to a short client-side timeout (e.g. undici's 5-minute headersTimeout)
+    // would fail this assertion.
+    const state = await Promise.race([
+      verdictP.then(
+        () => 'settled',
+        () => 'rejected',
+      ),
+      new Promise<string>(resolve => setTimeout(() => resolve('pending'), 2_000)),
+    ])
+    expect(state).toBe('pending')
+    await fetch(`http://localhost:${d.port}/__vp_feedback`, {
+      method: 'POST',
+      body: JSON.stringify({ decision: 'approve', planId: id }),
+    })
+    await expect(verdictP).resolves.toMatchObject({ decision: 'approve' })
+  }, 60_000)
 })

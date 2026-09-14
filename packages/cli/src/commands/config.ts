@@ -10,7 +10,7 @@ import {
 } from '../config.js'
 
 /** The settable config keys. */
-const KEYS = ['theme', 'daemonTimeout'] as const
+const KEYS = ['theme', 'daemonTimeout', 'enableSharing'] as const
 type Key = (typeof KEYS)[number]
 
 function assertKey(key: string): asserts key is Key {
@@ -33,6 +33,14 @@ function parseDaemonTimeout(value: string): number {
   return millis
 }
 
+/** Parse an `enableSharing` value as a boolean. Strictly `true` or `false`: a near-miss like `yes`
+ * or `1` is rejected rather than guessed at, since a silently-wrong sharing default is invisible. */
+function parseEnableSharing(value: string): boolean {
+  if (value === 'true') return true
+  if (value === 'false') return false
+  throw new Error(`Invalid enableSharing "${value}". Use true or false.`)
+}
+
 /** `vplan config` — print the current settings and where they live. */
 export async function runConfigShow(dir: string = configDir): Promise<void> {
   const config = await readConfig(dir)
@@ -41,6 +49,7 @@ export async function runConfigShow(dir: string = configDir): Promise<void> {
     '',
     `  theme = ${config.theme}`,
     `  daemonTimeout = ${config.daemonTimeout}`,
+    `  enableSharing = ${config.enableSharing}`,
   ]
   process.stdout.write(`${lines.join('\n')}\n`)
 }
@@ -75,6 +84,12 @@ export async function runConfigSet(
       const millis = parseDaemonTimeout(value)
       next = { ...current, daemonTimeout: millis }
       stored = String(millis)
+      break
+    }
+    case 'enableSharing': {
+      const enabled = parseEnableSharing(value)
+      next = { ...current, enableSharing: enabled }
+      stored = String(enabled)
       break
     }
   }

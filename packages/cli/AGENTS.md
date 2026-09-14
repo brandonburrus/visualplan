@@ -51,7 +51,8 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
 - Review Queue daemon (`src/review/daemon.ts`, default path for `--review` and the `review` command;
   `--no-daemon` keeps the one-shot `session.ts` path). One machine-wide, long-lived `http.createServer`
   (NOT Vite) holding an in-memory queue: each enqueued plan is built once via `compile.ts buildHtml`
-  with `review: { planId, iteration }` and served from `/plan/<id>`; a browser "shell" lists the queue.
+  with `review: { planId, iteration }` and the caller's `enableSharing` (an absent field means share,
+  so an older client keeps today's default) and served from `/plan/<id>`; a browser "shell" lists the queue.
   The HTTP/SSE contract is FROZEN (the runtime shell depends on exact endpoint/field/frame shapes):
   `GET /__vp_ping` (liveness), `GET /` (shell, cached), `GET /plan/<id>` (served `no-store`: ids are
   reused across revisions), `POST /__vp_enqueue` (-> `{ id, shellConnected }`; cancel idle timer
@@ -102,11 +103,16 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
   (`__VP_DIFF__`, mirroring `planSharePlugin`) when `BuildOptions.baseline` is set, shared by the
   one-shot build, `--watch`, and `--review`.
 - `src/config.ts` — the persistent CLI config at `~/.vplan/config.json` (literal path via
-  `homedir()`, deliberately NOT `env-paths`). Only setting today is `theme` (`light`|`dark`|
-  `system`). `readConfig` is tolerant (missing/malformed/unknown-theme -> `{ theme: 'system' }`) so a
-  hand-broken config never breaks a render; `writeConfig` backs `config set`. The render command
-  reads it and passes the theme into the build; the rendered plan's in-page cog overrides per-view
-  via `localStorage` and never writes back here. `readConfig`/`writeConfig`/`configFilePath` and the
+  `homedir()`, deliberately NOT `env-paths`). Settings: `theme` (`light`|`dark`|`system`),
+  `daemonTimeout` (positive integer ms), and `enableSharing` (boolean, default `true`). `readConfig`
+  is tolerant (missing/malformed file or field -> that field's default) so a hand-broken config never
+  breaks a render; `writeConfig` backs `config set`. The render and review commands read it and pass
+  the theme into the build; the rendered plan's in-page cog overrides the theme per-view via
+  `localStorage` and never writes back here. `sharesPlan(config, share?)` is the one place the
+  `--no-share` flag (`share === false`) and the persisted `enableSharing` are combined: an explicit
+  flag wins, and only `false` is ever a veto, so the programmatic API (which has its own
+  `enableSharing`, default `false`) never routes through it.
+  `readConfig`/`writeConfig`/`configFilePath` and the
   `runConfig*` command fns all take an optional `dir` so tests point at a temp directory instead of
   the real home.
 - `src/api.ts` — the programmatic API (the library entry): `renderPlan(source, { out?, theme?,
@@ -154,7 +160,8 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
   CLI-only so the browser bundle never loads `material-icon-theme`. Color chips and file icons both inline their output at build time, so the single-file
   invariant holds. `buildHtml(source, BuildOptions)` is the shared core; `BuildOptions` is `{ theme,
   lockTheme, enableSharing }` (defaults `system` / false / true = the CLI's behavior).
-  `renderToFile`/`startDevServer` keep a `theme` param and pass `{ theme }`. `planConfigPlugin`
+  `renderToFile`/`startDevServer`/`startReviewServer` keep a positional `theme` param plus a trailing
+  optional `enableSharing`, and pass both through as `{ theme, enableSharing }` (absent = share). `planConfigPlugin`
   injects a tiny non-module `<head>` script (`themeBootstrap`) that seeds `globalThis.__VP_CONFIG__`
   (`{ theme, lockTheme }`) and sets `<html data-theme>` before first paint, so a configured dark plan
   has no light flash. When `lockTheme` the bootstrap uses the theme directly (ignores localStorage);

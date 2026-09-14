@@ -193,3 +193,18 @@ describe('theme config injection', () => {
     expect(dark).toContain('localStorage.getItem("vp-theme")')
   }, 60_000)
 })
+
+describe('share button injection', () => {
+  it('injects the share globals by default (golden)', async () => {
+    // The static file render above passes no enableSharing, so it shares like the CLI default.
+    expect(html).toContain('globalThis.__VP_SHARE__=')
+    expect(await buildHtml('# t\n\nbody\n')).toContain('globalThis.__VP_SHARE__=')
+  }, 60_000)
+
+  it('omits the share globals when sharing is disabled (edge)', async () => {
+    const page = await buildHtml('# t\n\nbody\n', { enableSharing: false })
+    // The runtime share button self-hides when the global is absent, so its markup is gone too.
+    expect(page).not.toContain('globalThis.__VP_SHARE__=')
+    expect(page).toContain('id="root"')
+  }, 60_000)
+})

@@ -30,9 +30,10 @@ The file argument may be `-` (or omitted) to read the plan from stdin.
 | `--review` | Open the interactive review session (now the default; kept for compatibility). |
 | `--no-daemon` | Review without the shared queue daemon, using a one-shot in-process server. |
 | `-i, --iteration <n>` | Plan revision number shown in the review bar; increment it each re-review. |
-| `--timeout <duration>` | Max wait for review feedback, e.g. `15m`, `30s`, `1h` (default `15m`). |
+| `--timeout <duration>` | Max wait for review feedback; the value always carries an `ms`-style unit (`30s`, `45m`, `4h`; a bare number is read as milliseconds). Default `4h`. |
 | `--diff <path>` | Diff this render against an explicit baseline plan, overriding the snapshot cache. |
 | `--no-diff` | Skip iteration diffing (do not read or write the snapshot cache). |
+| `--no-share` | Hide the share button on the page (overrides the `enableSharing` config setting). |
 | `--no-open` | Do not open the result in the browser. |
 
 For a one-shot HTML file use `--static` (or `--stdout` for a pipeline), not `--watch` (which serves a
@@ -112,6 +113,9 @@ deflate plus base64url) in the URL, so anyone can open the rendered plan with no
 account. It validates the plan first, so a broken plan is never shared, and reads a file or stdin
 (`-`). This is the CLI equivalent of the share button on a rendered page.
 
+Hiding the button (`--no-share`, or `enableSharing: false` in the config) only removes the button
+from the page; this command still works, since it encodes the plan on demand.
+
 ## components
 
 ```bash
@@ -137,6 +141,10 @@ Views and edits persistent settings stored in `~/.vplan/config.json`:
   writes the file, so the on-disk default and the in-page override are separate layers.
 - `daemonTimeout` (a duration like `15m`, default `15m`): how long the review queue daemon lingers
   after its queue empties before exiting, so a quick re-plan reuses the warm tab.
+- `enableSharing` (`true` or `false`, default `true`): whether a rendered plan shows the share button
+  (the top-right button that copies a `visualplan.dev/view?data=...` link). Set it to `false` for
+  plans whose contents should not be one click away from a public URL. `--no-share` overrides it for
+  a single render, including review sessions.
 
 ## Exit codes
 
