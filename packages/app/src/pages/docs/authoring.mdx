@@ -15,10 +15,30 @@ import { Stat } from '@visualplan/runtime/components/Stat'
 import { Questions } from '@visualplan/runtime/components/Questions'
 import { Checklist } from '@visualplan/runtime/components/Checklist'
 import { Mermaid } from '@visualplan/runtime/components/Mermaid'
+import { Svg } from '@visualplan/runtime/components/Svg'
 import { MathBlock } from '@visualplan/runtime/components/Math'
 import temml from 'temml'
 
 export const sumFormula = temml.renderToString('\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}')
+// Stands in for the local .svg file a plan points `<Svg src>` at: the CLI inlines the file's markup
+// at build time, so here it is handed straight to the component.
+export const svgDiagram = `<svg viewBox="0 0 420 108" xmlns="http://www.w3.org/2000/svg">
+  <g fill="none" stroke="currentColor" stroke-width="1.25">
+    <rect x="4" y="10" width="88" height="34" rx="7" />
+    <rect x="112" y="10" width="88" height="34" rx="7" />
+    <rect x="220" y="10" width="88" height="34" rx="7" />
+    <rect x="328" y="10" width="88" height="34" rx="7" />
+    <rect x="220" y="72" width="88" height="30" rx="7" />
+    <path d="M92 27h20M200 27h20M308 27h20M264 44v28" />
+  </g>
+  <g fill="currentColor" font-size="12" text-anchor="middle">
+    <text x="48" y="31">Client</text>
+    <text x="156" y="31">Gateway</text>
+    <text x="264" y="31">Limiter</text>
+    <text x="372" y="31">API</text>
+    <text x="264" y="92">Redis</text>
+  </g>
+</svg>`
 
 # Authoring plans
 
@@ -59,6 +79,20 @@ automatically.
 
 <Demo>
   <Mermaid chart={'flowchart LR\n  Client --> Gateway --> Limiter --> API\n  Limiter --> Redis[(Redis)]'} />
+</Demo>
+
+Most diagrams are written as text and drawn by the plan itself. When a diagram already exists as a
+local `.svg` file, an architecture or sequence diagram exported by another tool, `<Svg>` inlines
+that file at build time, so the page stays self-contained and the diagram picks up the page's theme
+like any other.
+
+<Demo>
+  <Svg
+    src="./diagrams/rate-limiter.svg"
+    title="Request path through the rate limiter"
+    caption="Exported from another tool, inlined at build time."
+    svg={svgDiagram}
+  />
 </Demo>
 
 ## Callouts: what to pay attention to

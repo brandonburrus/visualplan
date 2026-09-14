@@ -89,6 +89,17 @@ brace errors that break a render.
   this first for anything structural. (gantt and pie are not supported; use `<Chart>` for
   quantitative data. `check` now validates each diagram, so an unsupported type fails check with a
   `file:line:col` instead of rendering an error box.)
+- `<Svg src="./diagrams/power-path.svg" title="Power path" caption="Bench unit, splitter-fed" />`:
+  inline a diagram that already exists as a **local `.svg` file**, such as an architecture or
+  sequence diagram exported by another tool. `src` is relative to the plan file; the file is read,
+  sanitized, and inlined at build time, so the page stays self-contained and the diagram follows the
+  page's light/dark theme. `title` names it for screen readers and the expand view (an exported
+  SVG's own `<title>` is often a tool default), and `caption` adds an optional line beneath it. It
+  gets the same hover expand/fullscreen viewer as a mermaid diagram. Static SVG only: `<script>`,
+  `<foreignObject>`, event handlers (`on*`), and any external reference (a `href`, `src`, `url(...)`,
+  or `@import` that is not a same-document `#fragment`) are **refused** rather than stripped, and
+  `check` reports the reason at the tag's line. 2 MB max. Reach for this only when the diagram
+  already exists as a file; write a ` ```mermaid ` diagram when you can express it as text.
 - ` ```math ` fenced block, a display formula written in LaTeX, typeset as math (complexity
   bounds, probabilities, linear algebra). Example: ` ```math ` then `T(n) = O(n \log n)`.
 - `<Callout type="note|tip|risk|decision|warn">`: highlight a risk, decision, tip, or note; wraps
@@ -217,8 +228,9 @@ scanning. Default to a component over a sentence: if a fact has structure, show 
 it in paragraphs. Prose is the connective tissue between visuals, never the substance.
 
 - **Lead with the structure.** Open with at most a one-paragraph context, then a ` ```mermaid `
-  architecture diagram, then the `<Phase>` timeline. The reader should understand the shape of the
-  plan before reading a single full sentence.
+  architecture diagram (or a `<Svg>` when the diagram already exists as a file), then the `<Phase>`
+  timeline. The reader should understand the shape of the plan before reading a single full
+  sentence.
 - **Prefer a diagram or a `<FileTree>` to describing structure in words.** A flowchart of the data
   path beats a paragraph tracing it; a file-change map beats sentences listing the files.
 - **Move the meaning out of prose into the component that carries it.** Risks and decisions go in
@@ -237,7 +249,7 @@ it in paragraphs. Prose is the connective tissue between visuals, never the subs
 - `<Phase>` and `<Callout>` wrap arbitrary markdown and components: a `<FileTree>`, `<Chart>`,
   `<Matrix>`, a ` ```mermaid ` diagram, a code block, or a `- [ ]` task list all nest inside them.
   Nest freely to group related content under a step or a highlight.
-- Diagrams and charts each render a hover "expand" button that opens a zoomable, pannable
+- Diagrams, charts, and `<Svg>` each render a hover "expand" button that opens a zoomable, pannable
   fullscreen viewer, so a dense diagram stays legible even when shrunk inline (code blocks do not).
   You can lean on it for a necessarily-large diagram, but splitting into smaller diagrams still
   reads better when the inline view must stand on its own.
@@ -248,7 +260,8 @@ it in paragraphs. Prose is the connective tissue between visuals, never the subs
   session opens automatically. Reserve `--no-open` for an explicit headless/CI request.
 - **No images or external assets.** The page is a single self-contained file, so a markdown image
   (`![](url)`) or any external asset cannot be embedded, and `check` rejects markdown images. Use a
-  ` ```mermaid ` diagram for anything visual, or describe it in text.
+  ` ```mermaid ` diagram for anything visual, a `<Svg>` for a diagram that already exists as a local
+  `.svg` file (inlined at build time, so it is not an external asset), or describe it in text.
 
 ## Gotchas
 
