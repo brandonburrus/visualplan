@@ -181,6 +181,17 @@ export const calloutSchema = z.object({
   type: z.enum(CALLOUT_TYPE_VALUES).default('note'),
 })
 
+/** `<Svg>` props as they reach the runtime: `src` is what the author wrote; `svg` is the file's
+ * markup, inlined at build time by the CLI's svg-include step (absent when it could not be — the
+ * runtime then renders `error` in place, mirroring the Mermaid error box). */
+export const svgSchema = z.object({
+  src: z.string().min(1, 'src is required'),
+  title: z.string().optional(),
+  caption: z.string().optional(),
+  svg: z.string().optional(),
+  error: z.string().optional(),
+})
+
 /** One open question, optionally offering multiple-choice options the reviewer can pick from
  * (authored as nested bullets under the question). No options means free-text-only. */
 export const questionItemSchema = z.object({
@@ -336,6 +347,15 @@ export const math: CatalogEntry = {
   example: '```math\n\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}\n```',
 }
 
+export const svg: CatalogEntry = {
+  name: 'Svg',
+  summary:
+    'An SVG diagram from a local file (e.g. an architecture diagram exported by another tool), inlined into the page at build time so the output stays self-contained. src is a path relative to the plan file; title names it for screen readers and the expand view; caption is an optional line under it. The SVG must be static (no scripts, event handlers, foreignObject, or external references) and at most 2 MB; check reports a violation as an error rather than stripping it.',
+  staticEnums: {},
+  example:
+    '<Svg src="./diagrams/power-path.svg" title="Power path" caption="Bench unit, splitter-fed" />',
+}
+
 export const CATALOG: readonly CatalogEntry[] = [
   phase,
   fileTree,
@@ -346,6 +366,7 @@ export const CATALOG: readonly CatalogEntry[] = [
   questions,
   checklist,
   stat,
+  svg,
   mermaid,
   math,
 ]

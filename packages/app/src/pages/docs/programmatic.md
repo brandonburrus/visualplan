@@ -14,8 +14,8 @@ dependency:
 npm install vplan
 ```
 
-Everything works on an in-memory MDX **string**, nothing touches the filesystem unless you ask it
-to:
+Everything works on an in-memory MDX **string**. Nothing touches the filesystem unless the plan
+inlines a local `<Svg>` file (see below) or you pass `renderPlan`'s `out` option:
 
 ```ts
 import { renderPlan, checkPlan } from 'vplan'
@@ -35,6 +35,7 @@ const html = await renderPlan(source) // a self-contained HTML string
 ```ts
 renderPlan(source: string, options?: {
   out?: string
+  baseDir?: string
   theme?: 'light' | 'dark' | 'system'
   enableSharing?: boolean
 }): Promise<string>
@@ -86,10 +87,25 @@ try {
 }
 ```
 
+### Local SVG files
+
+A plan can inline a diagram from a local `.svg` file with `<Svg src="./diagrams/power-path.svg" />`.
+That `src` is resolved against `baseDir`, which defaults to the process cwd. Pass the plan file's
+directory when you have one, so a plan's relative paths resolve the way they do in the CLI:
+
+```ts
+// Resolve <Svg src> against the plan file's directory:
+await renderPlan(source, { baseDir: '/path/to/plan' })
+```
+
+The file is read, sanitized, and inlined **before** validation, so a missing file, a non-`.svg`
+extension, or a refused construct surfaces as an ordinary issue at the tag's line rather than a
+thrown read error. `checkPlan` takes the same `baseDir` option.
+
 ## checkPlan
 
 ```ts
-checkPlan(source: string): Promise<CheckIssue[]>
+checkPlan(source: string, options?: { baseDir?: string }): Promise<CheckIssue[]>
 ```
 
 Validates a plan's MDX source without rendering it, returning the issues (an empty array when the
@@ -119,6 +135,6 @@ phase.staticEnums.status // ['planned', 'active', 'done']
 ```
 
 The named exports are `phase`, `fileTree`, `chart`, `compare`, `matrix`, `callout`, `questions`,
-`checklist`, `stat`, `mermaid`, and `math`. Each is a `CatalogEntry` with a `name`, a `summary`, its
-statically-checkable `staticEnums`, and an authoring `example`. See [Authoring
+`checklist`, `stat`, `svg`, `mermaid`, and `math`. Each is a `CatalogEntry` with a `name`, a
+`summary`, its statically-checkable `staticEnums`, and an authoring `example`. See [Authoring
 plans](/docs/authoring/) for the full vocabulary.

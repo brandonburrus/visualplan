@@ -178,6 +178,22 @@ programmatic Node API at `dist/api.js` (the package's `import` entry, `exports["
   and `parseBlockChildren` from `@visualplan/compile` so its static checks agree with what render
   parses. `CheckIssue` carries an optional `severity` (absent = `error`); the syntax checks here omit
   it, the quality lint emits `warn`. Both fail `check`; severity only changes the printed label.
+- `src/build/svg-include.ts` — the `<Svg src>` inliner, the ONE place a plan may pull in a file.
+  It works on the plan SOURCE at the input boundary (`commands/input.ts readPlanSource`,
+  `check.ts checkPlan(path)`, `compile.ts inlinedSourceReader` for `--watch`, the `review` command's
+  `readSource`, and the API with an optional `baseDir`): every `<Svg src="…">` is resolved
+  relative to the plan file (cwd for stdin/API), read, sanitized, and rewritten to carry the markup
+  as an entity-escaped STRING attribute `svg="…"` (a string, not `{ }`, so `/view`'s safety gate
+  and the daemon — which is handed source, not a path — need no changes). Sanitization is an
+  allow-list that REFUSES rather than strips (script/foreignObject/image/iframe, `on*`, any
+  `href`/`xlink:href` or `url()`/`@import` that is not a same-document `#fragment`; `<style>` is
+  allowed because tool-exported diagrams carry their palette as scoped CSS variables); the cap is
+  2 MB. A failure never throws: the tag is rewritten with `error="…"` and `checkSource`'s Svg rule
+  reports it at the tag's line:col (it also reports a tag with neither `svg` nor `error`, i.e. a
+  raw source that skipped inlining, so a blank figure can never render silently). Re-running over
+  an inlined source is a no-op. The runtime `Svg` component just frames the markup (same
+  `vp-expandable` wrapper and fullscreen path as Mermaid, `role=img` + `aria-label` from `title`,
+  optional caption) or renders the `error` in place. The lint counts `<Svg>` as structural.
 - `src/build/lint.ts` — the author-time quality lint, run by the `check` COMMAND (not `checkSource`,
   so `render`/`share`/the API never block a stylistically-weak-but-valid plan from rendering). The
   `check` command runs the syntax check first and only lints when it passes clean, so lint warnings

@@ -12,6 +12,7 @@ import { Mermaid } from './components/Mermaid.js'
 import { Phase } from './components/Phase.js'
 import { Questions } from './components/Questions.js'
 import { Stat } from './components/Stat.js'
+import { Svg } from './components/Svg.js'
 import { Layout } from './Layout.js'
 import { applyThemePreference, getThemePreference } from './theme.js'
 import './theme.css'
@@ -31,6 +32,7 @@ export const components = {
   Questions,
   Checklist,
   Stat,
+  Svg,
   Mermaid,
   Math: MathBlock,
 }

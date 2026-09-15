@@ -136,7 +136,8 @@ the root AGENTS.md for why Vite is configured without `@vitejs/plugin-react`.
   `.vp-phase__node::before`), so phases self-number in document order with no index prop. The
   connector line is a `.vp-phase__rail::after` pseudo-element omitted on the last step.
 - `components/` holds the components (Phase, FileTree, Chart, Stat, Compare, Matrix, Callout,
-  Questions, Checklist, Mermaid, Math). `Math` (exported as `MathBlock` to avoid shadowing the global `Math`,
+  Questions, Checklist, Svg, Mermaid, Math). `Svg` frames a file-inlined diagram (the CLI's
+  `svg-include.ts` puts the sanitized markup on its `svg` prop; it renders `error` in place otherwise). `Math` (exported as `MathBlock` to avoid shadowing the global `Math`,
   registered under the `Math` scope key) just injects MathML the CLI's `remark-math` produced from
   a ` ```math ` fence at build time; no math library runs in the browser. `FileTree` builds a nested directory tree from flat `{path}` entries
   (collapsing single-child dir chains); `Checklist` renders done/todo acceptance criteria. Each

@@ -11,6 +11,8 @@ import { unified } from 'unified'
 import { visit } from 'unist-util-visit'
 import { CHILD_BLOCK_COMPONENTS, parseBlockChildren } from '@visualplan/compile'
 import { CATALOG } from '@visualplan/core'
+import { inlineSvgIncludes } from './svg-include.js'
+import { dirname, resolve } from 'node:path'
 
 export interface CheckIssue {
   line: number
@@ -44,7 +46,11 @@ const BLOCK_COMPONENTS: readonly string[] = CHILD_BLOCK_COMPONENTS
 
 /** Validate a plan's MDX file: real compile errors plus static enum / unknown-component checks. */
 export async function checkPlan(mdxPath: string): Promise<CheckIssue[]> {
-  return checkSource(await readFile(mdxPath, 'utf8'))
+  const raw = (await readFile(mdxPath, 'utf8')).replace(/^\ufeff/, '')
+  // <Svg src> resolves against the plan's own directory; the inliner rewrites unresolvable tags to
+  // carry error="…", which the Svg rule below reports at the tag's line:col.
+  const { source } = await inlineSvgIncludes(raw, dirname(resolve(mdxPath)))
+  return checkSource(source)
 }
 
 /** Validate a plan's MDX source string (the in-memory form `checkPlan` and the API both use). */
@@ -164,6 +170,31 @@ export async function checkSource(source: string): Promise<CheckIssue[]> {
         message: `Unknown component <${name}>. Valid components: ${COMPONENT_NAMES.join(', ')}.`,
       })
       return
+    }
+
+    // <Svg> is the one component that pulls in a file. By the time source reaches checkSource the
+    // input layer has run inlineSvgIncludes: a resolvable tag carries svg="…", an unresolvable one
+    // carries error="…" (the reason). A tag with neither was never inlined (a raw source handed
+    // straight to the API without a base dir) — report that too, so a plan can never render a blank
+    // figure silently.
+    if (name === 'Svg') {
+      const attrs = element.attributes ?? []
+      const has = (n: string) => attrs.some(a => a.type === 'mdxJsxAttribute' && a.name === n)
+      const errorAttr = attrs.find(a => a.type === 'mdxJsxAttribute' && a.name === 'error')
+      if (errorAttr && typeof errorAttr.value === 'string') {
+        issues.push({ line: at.line, column: at.column, message: errorAttr.value })
+        return
+      }
+      if (!has('svg')) {
+        issues.push({
+          line: at.line,
+          column: at.column,
+          message: has('src')
+            ? '<Svg src="…"> was not inlined (no base directory to resolve it against — render/check the plan as a file, or pass baseDir to the API)'
+            : '<Svg> needs a src="…" string attribute (a path relative to the plan file)',
+        })
+        return
+      }
     }
 
     const enums = ENUMS_BY_COMPONENT.get(name) ?? {}

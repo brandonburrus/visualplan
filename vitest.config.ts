@@ -1,4 +1,8 @@
+import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
+
+/** The shared setup for the browser-like projects (see the file's header for why it exists). */
+const jsdomSetup = fileURLToPath(new URL('./vitest.setup.ts', import.meta.url))
 
 /**
  * One workspace config with a project per package. `pnpm test` at the root runs
@@ -31,6 +35,7 @@ export default defineConfig({
           name: 'runtime',
           root: './packages/runtime',
           environment: 'jsdom',
+          setupFiles: [jsdomSetup],
           include: ['tests/**/*.test.{ts,tsx}'],
         },
       },
@@ -39,6 +44,7 @@ export default defineConfig({
           name: 'cli',
           root: './packages/cli',
           environment: 'jsdom',
+          setupFiles: [jsdomSetup],
           include: ['tests/**/*.test.{ts,tsx}'],
         },
       },
@@ -47,6 +53,7 @@ export default defineConfig({
           name: 'app',
           root: './packages/app',
           environment: 'jsdom',
+          setupFiles: [jsdomSetup],
           include: ['tests/**/*.test.{ts,tsx}'],
         },
       },

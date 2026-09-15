@@ -14,6 +14,7 @@ import { readFile } from 'node:fs/promises'
 import type { Feedback } from '@visualplan/core'
 import type { CheckIssue } from '../build/check.js'
 import { checkSource } from '../build/check.js'
+import { inlineSvgIncludes, svgBaseDir } from '../build/svg-include.js'
 import { readConfig, sharesPlan } from '../config.js'
 import { awaitVerdict, type EnqueueResponse, enqueuePlan } from '../review/client.js'
 import { ensureDaemon } from '../review/ensure-daemon.js'
@@ -106,8 +107,10 @@ export async function runReview(files: string[], options: ReviewQueueOptions): P
   const { theme, daemonTimeout } = config
   const enableSharing = sharesPlan(config, options.share)
   const deps: ReviewQueueDeps = {
-    readSource: async (file: string) =>
-      (await readFile(resolvePlanFile(file), 'utf8')).replace(/^﻿/, ''),
+    readSource: async (file: string) => {
+      const raw = (await readFile(resolvePlanFile(file), 'utf8')).replace(/^﻿/, '')
+      return (await inlineSvgIncludes(raw, svgBaseDir(file, false))).source
+    },
     check: checkSource,
     ensureDaemon: () => ensureDaemon({ idleMs: daemonTimeout }),
     enqueue: (port, source, file) =>

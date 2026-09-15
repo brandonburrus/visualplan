@@ -93,6 +93,21 @@
   background: var(--vp-surface-2);
 }
 
+.vp-queue__rowtext {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.vp-queue__rowtitle {
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* The active plan is the one the main pane shows, so it gets the strongest weight in the rail: an
  * ink-tinted fill (distinct from the plain-grey hover) plus a bolder, full-contrast title. No side
  * accent bar (a design ban); the fill + weight carry it. */
@@ -150,21 +165,6 @@
   to {
     transform: rotate(360deg);
   }
-}
-
-.vp-queue__rowtext {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-  min-width: 0;
-}
-
-.vp-queue__rowtitle {
-  font-size: 0.8rem;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 /* Revision chip (v2, v3, ...) pushed to the row's trailing edge; present only on re-reviews. */

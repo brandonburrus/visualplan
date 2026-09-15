@@ -213,14 +213,6 @@ body {
   color: var(--vp-muted);
 }
 
-.vp-main blockquote :first-child {
-  margin-top: 0;
-}
-
-.vp-main blockquote :last-child {
-  margin-bottom: 0;
-}
-
 :focus-visible {
   outline: 2px solid var(--vp-accent);
   outline-offset: 2px;
@@ -456,6 +448,17 @@ body {
   margin-top: 0;
 }
 .vp-callout__body > :last-child {
+  margin-bottom: 0;
+}
+
+/* Edge-margin collapse inside prose. Kept after the component-body rules above so source
+   order matches specificity: a blockquote's descendant selector outranks them, and the
+   computed cascade is unchanged. */
+.vp-main blockquote :first-child {
+  margin-top: 0;
+}
+
+.vp-main blockquote :last-child {
   margin-bottom: 0;
 }
 
@@ -1070,6 +1073,32 @@ label.vp-questions__option {
   white-space: pre-wrap;
 }
 
+/* <Svg src>: a file-inlined diagram. Same shape as Mermaid so the two sit side by side; the
+   figure element carries an optional caption. The inlined <svg> keeps its own viewBox and any
+   scoped <style> it shipped with (a tool-exported diagram brings its palette); we only bound it
+   to the column. */
+.vp-svg {
+  margin: 1.4rem 0;
+  text-align: center;
+}
+
+.vp-svg svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.vp-svg__caption {
+  margin-top: 0.45rem;
+  font-size: 0.8rem;
+  color: var(--vp-muted, var(--vp-faint));
+}
+
+.vp-svg--error {
+  text-align: left;
+  color: var(--vp-risk);
+  white-space: pre-wrap;
+}
+
 /* Display math from a ```math fence. Temml emits MathML, which inherits color via currentColor
    so it tracks light/dark with no per-scheme work; scroll wide equations rather than clip. */
 .vp-math {
@@ -1212,7 +1241,8 @@ label.vp-questions__option {
 
 /* In fullscreen the content renders at its natural size; the pan/zoom transform
    scales it. The fit-on-open computes the scale that fills the viewport. */
-.vp-mermaid:fullscreen .vp-mermaid__svg svg {
+.vp-mermaid:fullscreen .vp-mermaid__svg svg,
+.vp-svg:fullscreen .vp-svg__svg svg {
   max-width: none;
   width: auto;
   height: auto;
@@ -1224,7 +1254,7 @@ label.vp-questions__option {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .vp-expand-btn {
+  .vp-expandable > .vp-expand-btn {
     transition: none;
   }
 }

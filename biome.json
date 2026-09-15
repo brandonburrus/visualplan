@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
   "files": {
     "ignoreUnknown": false,
     "includes": ["**", "!**/*.astro", "!**/*.svg", "!**/*.mdx"]
@@ -13,7 +13,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "style": {
         "noNonNullAssertion": "off"
       },
@@ -23,15 +23,22 @@
       "nursery": {
         "useSortedClasses": "warn"
       }
-    },
-    "domains": {
-      "test": "recommended"
     }
   },
+  "overrides": [
+    {
+      "includes": ["**/tests/**", "**/*.test.ts", "**/*.test.tsx"],
+      "linter": {
+        "domains": {
+          "test": "recommended"
+        }
+      }
+    }
+  ],
   "assist": {
     "enabled": true,
     "actions": {
-      "recommended": true,
+      "preset": "recommended",
       "source": {
         "organizeImports": "off"
       }

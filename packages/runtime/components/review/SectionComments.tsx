@@ -19,11 +19,12 @@ export interface Section {
  * otherwise collapse into one oversized first section. `.vp-matrix-wrap` is the Matrix's scroll
  * wrapper (its real top-level element). */
 const SECTION_START_SELECTOR =
-  '.vp-phase, h1, h2, h3, .vp-callout, .vp-mermaid, .vp-chart, .vp-filetree, .vp-matrix-wrap, .vp-compare, .vp-checklist, .vp-stat, .vp-questions'
+  '.vp-phase, h1, h2, h3, .vp-callout, .vp-mermaid, .vp-svg, .vp-chart, .vp-filetree, .vp-matrix-wrap, .vp-compare, .vp-checklist, .vp-stat, .vp-questions'
 
 /** Friendly labels for blocks with no heading text of their own, by the class that identifies each. */
 const BLOCK_LABELS: ReadonlyArray<[string, string]> = [
   ['.vp-mermaid', 'Diagram'],
+  ['.vp-svg', 'Diagram'],
   ['.vp-filetree', 'File changes'],
   ['.vp-matrix-wrap', 'Comparison'],
   ['.vp-compare', 'Comparison'],
